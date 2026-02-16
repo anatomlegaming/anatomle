@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ANATOMLE | Pro Integration v18</title>
+    <title>ANATOMLE | Pro Colors v18</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
@@ -15,20 +15,17 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@900&family=EB+Garamond:wght@400;700&display=swap');
         body { font-family: 'EB Garamond', serif; background-color: #050505; color: #d6d3d1; margin: 0; overflow: hidden; }
         
-        /* Layout Grid */
         #root { position: relative; z-index: 50; width: 450px; height: 100vh; pointer-events: none; }
         .sidebar { pointer-events: auto; background: rgba(8, 8, 8, 0.96); border-right: 1px solid #222; height: 100%; display: flex; flex-direction: column; }
         #canvas-container { position: absolute; right: 0; top: 0; width: calc(100% - 450px); height: 100vh; z-index: 10; background: radial-gradient(circle at center, #111 0%, #000 100%); }
         
-        /* UI Utilities */
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
         .suggestion-item { cursor: pointer; border-bottom: 1px solid #222; transition: background 0.2s; }
         .suggestion-item:hover { background: #10b981; color: black; }
         
-        /* Animations */
-        @keyframes flash-green { 0% { background-color: rgba(16, 185, 129, 0.5); } 100% { background-color: transparent; } }
-        .animate-flash { animation: flash-green 1s ease-out; }
+        @keyframes flash-blue { 0% { background-color: rgba(59, 130, 246, 0.5); } 100% { background-color: transparent; } }
+        .animate-flash { animation: flash-blue 1s ease-out; }
     </style>
 </head>
 <body>
@@ -38,7 +35,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useCallback } = React;
 
-        // --- 1. FULL DATA GRAPH (Expanded) ---
+        // --- 1. DATA GRAPH ---
         const SKELETON_GRAPH = {
             'Frontal Bone': ['Parietal Bone', 'Ethmoid', 'Sphenoid', 'Nasal Bone', 'Maxilla', 'Zygomatic Bone'],
             'Parietal Bone': ['Frontal Bone', 'Temporal Bone', 'Occipital Bone', 'Sphenoid'],
@@ -74,14 +71,9 @@
             'Phalanges': ['Metacarpals']
         };
 
-        const TWIN_BONES = [
-            ['Radius', 'Ulna'], 
-            ['Tibia', 'Fibula'], 
-            ['Ilium', 'Ischium', 'Pubis'],
-            ['Carpals', 'Metacarpals'] // Logical grouping
-        ];
+        const TWIN_BONES = [['Radius', 'Ulna'], ['Tibia', 'Fibula'], ['Ilium', 'Ischium', 'Pubis'], ['Carpals', 'Metacarpals']];
 
-        // --- 2. 3D MAPPING (Wildcard + Specifics) ---
+        // --- 2. 3D MAPPING ---
         const MAPPING_3D = {
             "Frontal Bone": "Frontal", "Parietal Bone": "Parietal", "Occipital Bone": "Occipital",
             "Temporal Bone": "Temporal", "Mandible": "Mandible", "Maxilla": "Maxilla", "Zygomatic Bone": "Zygomatic",
@@ -114,7 +106,7 @@
             const [inputValue, setInputValue] = useState('');
             const [lastFilled, setLastFilled] = useState(null);
 
-            // --- v18 LOGIC: RANDOMIZATION ---
+            // --- INITIALIZATION ---
             const initGame = useCallback(() => {
                 const bones = Object.keys(SKELETON_GRAPH);
                 let s, e, p;
@@ -125,61 +117,77 @@
                 } while (!p || p.length < 3 || p.length > 7);
                 
                 setTarget({ start: s, end: e, path: p });
-                // v18 Rule: Start is revealed, End is a visible target, rest is hidden initially
-                setChain([{ bone: s, emoji: '📍', hidden: false, id: 0 }]);
+                // Initialize with Start AND End visible
+                setChain([
+                    { bone: s, type: 'start', emoji: '📍', hidden: false, id: 0 },
+                    { bone: e, type: 'end', emoji: '🎯', hidden: false, id: 999 }
+                ]);
                 setGuessesLeft(10);
                 setBadGuesses([]);
                 setInputValue('');
+                setLastFilled(null);
             }, []);
 
             useEffect(() => { initGame(); }, [initGame]);
 
-            // --- 3D SYNC ---
+            // --- 3D SYNC (SENDS COLOR DATA) ---
             useEffect(() => {
-                const revealed = chain.filter(c => !c.hidden).map(c => c.bone);
-                if (window.update3D) window.update3D(revealed);
+                const visibleNodes = chain.filter(c => !c.hidden).map(c => ({
+                    name: c.bone,
+                    type: c.type // 'start', 'end', or 'guess'
+                }));
+                if (window.update3D) window.update3D(visibleNodes);
             }, [chain]);
 
-            // --- v18 LOGIC: GUESS HANDLING & PATH JUMPING ---
+            // --- GUESS LOGIC ---
             const submitGuess = (guess) => {
-                setGuessesLeft(prev => prev - 1); // Always cost a guess
+                setGuessesLeft(prev => prev - 1);
                 
-                // 1. Is it a valid neighbor or jump?
-                const lastVisible = [...chain].reverse().find(n => !n.hidden);
+                // 1. Validate Jump Logic
+                const currentVisible = chain.filter(n => !n.hidden && n.type !== 'end');
+                const lastVisible = currentVisible[currentVisible.length - 1]; // Get last revealed bone (excluding end target)
+                
+                if (!lastVisible) return; // Safety
+
                 const pathToEnd = findShortestPath(lastVisible.bone, guess);
                 
                 if (pathToEnd) {
-                    // Logic: Reveal the path to the guess
-                    // If the path length > 2, it means we skipped bones -> create '???' slots
                     const newItems = [];
-                    // Start from 1 to avoid duplicating lastVisible
+                    // We only care about the path UP TO the guess.
+                    // If path is [A, B, C] and A is lastVisible and C is guess.
+                    
                     for (let k = 1; k < pathToEnd.length; k++) {
                         const boneName = pathToEnd[k];
                         const isGuess = boneName === guess;
-                        const isHidden = !isGuess; 
                         
-                        // Check if we already have this bone in the chain to avoid dupes (simple check)
-                        const exists = chain.some(c => c.bone === boneName);
-                        if (!exists) {
-                            newItems.push({
+                        // Check if already in chain (ignore start/end dupes)
+                        const existingIdx = chain.findIndex(c => c.bone === boneName);
+                        
+                        if (existingIdx === -1) {
+                             newItems.push({
                                 bone: boneName,
-                                hidden: isHidden,
-                                emoji: isGuess ? '🧬' : '', // DNA for jump, check for neighbor
+                                hidden: !isGuess,
+                                type: 'guess', // Middle bones are blue
+                                emoji: isGuess ? '🧬' : '', 
                                 id: Date.now() + k
                             });
-                        } else if (isGuess) {
-                             // If it existed but was hidden, reveal it
-                             setChain(prev => prev.map(c => c.bone === guess ? { ...c, hidden: false, emoji: '✅' } : c));
-                             return;
+                        } else if (isGuess && chain[existingIdx].hidden) {
+                            // If it exists but is hidden, reveal it
+                            setChain(prev => prev.map(c => c.bone === guess ? { ...c, hidden: false, type: 'guess', emoji: '🧬' } : c));
+                            return;
                         }
                     }
                     
                     if (newItems.length > 0) {
-                        setChain(prev => [...prev, ...newItems]);
+                        // Insert new items BEFORE the end node
+                        setChain(prev => {
+                            const endNode = prev[prev.length - 1];
+                            const others = prev.slice(0, prev.length - 1);
+                            return [...others, ...newItems, endNode];
+                        });
                         setLastFilled(guess);
                     }
                 } else {
-                    // Bad guess
                     setBadGuesses(prev => [guess, ...prev]);
                 }
                 setInputValue('');
@@ -190,18 +198,16 @@
                 return Object.keys(SKELETON_GRAPH).filter(b => b.toLowerCase().includes(inputValue.toLowerCase())).slice(0, 5);
             }, [inputValue]);
 
-            // --- GROUPING LOGIC (Twin Bones) ---
+            // --- GROUPING LOGIC ---
             const groupedDisplay = useMemo(() => {
+                // We want to group items, but keep the visual gap before the End node if there's a jump
                 return chain.reduce((acc, item) => {
                     const lastGroup = acc.length > 0 ? acc[acc.length - 1] : null;
                     const lastBone = lastGroup ? lastGroup[0].bone : null;
                     
-                    // Check if current item is a twin of the last item's group
-                    const isTwin = TWIN_BONES.some(pair => 
-                        pair.includes(item.bone) && lastBone && pair.includes(lastBone)
-                    );
-
-                    if (isTwin) {
+                    const isTwin = TWIN_BONES.some(pair => pair.includes(item.bone) && lastBone && pair.includes(lastBone));
+                    // Don't group the End node with previous ones usually, unless strictly twin
+                    if (isTwin && item.type !== 'end') {
                         lastGroup.push(item);
                     } else {
                         acc.push([item]);
@@ -212,22 +218,21 @@
 
             return (
                 <div className="sidebar p-8 shadow-2xl">
-                    <header className="mb-8">
+                    <header className="mb-6">
                         <h1 className="text-5xl font-black text-white tracking-tighter mb-2">ANATOMLE</h1>
                         <div className="flex items-center gap-3 border-b border-stone-800 pb-4">
-                            <span className="bg-emerald-500 text-black text-[10px] font-black px-2 py-1 uppercase rounded">PRO v18</span>
-                            <span className="text-[10px] text-stone-500 tracking-widest uppercase">Clinical Integration</span>
+                            <span className="bg-emerald-500 text-black text-[10px] font-black px-2 py-1 uppercase rounded">PRO COLORS</span>
+                            <span className="text-[10px] text-stone-500 tracking-widest uppercase">v18.Colors</span>
                         </div>
                     </header>
 
-                    {/* TARGET CARD */}
                     <div className="bg-stone-900/60 p-6 rounded-lg border border-stone-800 mb-6 flex justify-between items-end">
                         <div>
-                            <p className="text-[10px] text-stone-500 uppercase font-bold mb-1">Diagnostic Target</p>
+                            <p className="text-[10px] text-stone-500 uppercase font-bold mb-1">Target Diagnostic</p>
                             <div className="flex items-center gap-2 text-white">
-                                <span className="font-bold uppercase text-emerald-400">{target.start}</span>
+                                <span className="font-bold uppercase text-emerald-500">{target.start}</span>
                                 <span className="text-stone-600">→</span>
-                                <span className="font-bold uppercase text-white">{target.end}</span>
+                                <span className="font-bold uppercase text-amber-500">{target.end}</span>
                             </div>
                         </div>
                         <div className="text-right">
@@ -236,33 +241,51 @@
                         </div>
                     </div>
 
-                    {/* CHAIN DISPLAY */}
                     <div className="flex-1 overflow-y-auto space-y-4 mb-6 pr-2 custom-scrollbar">
-                        {groupedDisplay.map((group, gIdx) => (
-                            <div key={gIdx} className="relative">
-                                {/* Connector Line */}
-                                {gIdx < groupedDisplay.length - 1 && (
-                                    <div className="absolute left-6 top-full h-4 w-[1px] bg-stone-800 z-0"></div>
-                                )}
-                                
-                                <div className="flex gap-2 relative z-10">
-                                    {group.map((node) => (
-                                        <div key={node.id} 
-                                             className={`flex-1 p-4 rounded border transition-all duration-300 ${node.hidden ? 'border-dashed border-stone-800 bg-transparent opacity-40' : 'bg-stone-900 border-stone-700 shadow-lg'} ${lastFilled === node.bone ? 'animate-flash' : ''}`}>
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-stone-300">
-                                                    {node.hidden ? '???' : node.bone}
-                                                </span>
-                                                <span className="text-xs">{node.emoji}</span>
-                                            </div>
+                        {groupedDisplay.map((group, gIdx) => {
+                            const isEndGroup = group[0].type === 'end';
+                            // Calculate if we need a visual gap (if this is the end group and previous wasn't a direct neighbor)
+                            // For simplicity, we just put a gap before the End Node if the list is short
+                            const showGap = isEndGroup && chain.length === 2; // Only start and end exist
+
+                            return (
+                                <React.Fragment key={gIdx}>
+                                    {showGap && (
+                                        <div className="flex flex-col items-center py-4 opacity-30">
+                                            <div className="w-[1px] h-4 bg-stone-500 mb-1"></div>
+                                            <span className="text-[9px] uppercase tracking-widest text-stone-500">Path Gap</span>
+                                            <div className="w-[1px] h-4 bg-stone-500 mt-1"></div>
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
-                        ))}
+                                    )}
+                                    
+                                    {!isEndGroup && gIdx > 0 && <div className="ml-6 w-[1px] h-4 bg-stone-800"></div>}
+
+                                    <div className="flex gap-2">
+                                        {group.map((node) => {
+                                            // Determine Border Color based on Type
+                                            let borderColor = 'border-stone-700';
+                                            if (node.type === 'start') borderColor = 'border-emerald-500/50';
+                                            if (node.type === 'end') borderColor = 'border-amber-500/50';
+                                            if (node.type === 'guess' && !node.hidden) borderColor = 'border-blue-500/50';
+
+                                            return (
+                                                <div key={node.id} 
+                                                     className={`flex-1 p-4 rounded border transition-all duration-300 ${node.hidden ? 'border-dashed border-stone-800 bg-transparent opacity-40' : `bg-stone-900 ${borderColor} shadow-lg`} ${lastFilled === node.bone ? 'animate-flash' : ''}`}>
+                                                    <div className="flex justify-between items-center">
+                                                        <span className={`text-[10px] font-black uppercase tracking-widest ${node.type === 'start' ? 'text-emerald-500' : node.type === 'end' ? 'text-amber-500' : 'text-stone-300'}`}>
+                                                            {node.hidden ? '???' : node.bone}
+                                                        </span>
+                                                        <span className="text-xs">{node.emoji}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </React.Fragment>
+                            );
+                        })}
                     </div>
 
-                    {/* CONTROLS */}
                     <div className="mt-auto pt-6 border-t border-stone-800 space-y-4">
                         <div className="relative group">
                             <input 
@@ -298,7 +321,7 @@
             );
         }
 
-        // --- 3. 3D ENGINE (Wildcard Matcher) ---
+        // --- 3. 3D ENGINE (COLORS UPDATE) ---
         const init3D = () => {
             const container = document.getElementById('canvas-container');
             const scene = new THREE.Scene();
@@ -307,22 +330,16 @@
             
             renderer.setSize(container.clientWidth, container.clientHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.outputEncoding = THREE.sRGBEncoding;
-            renderer.toneMapping = THREE.ACESFilmicToneMapping;
             container.appendChild(renderer.domElement);
 
             const controls = new THREE.OrbitControls(camera, renderer.domElement);
-            camera.position.set(2, 2, 5); // Angle view
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
+            camera.position.set(2, 2, 5); 
 
-            // Lighting
             scene.add(new THREE.AmbientLight(0xffffff, 0.6));
             const spot = new THREE.SpotLight(0xffffff, 1.5);
             spot.position.set(10, 20, 10);
             scene.add(spot);
 
-            // Loader
             const draco = new THREE.DRACOLoader();
             draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
             const loader = new THREE.GLTFLoader();
@@ -332,48 +349,55 @@
             loader.load('./overview-skeleton.glb', (gltf) => {
                 skeleton = gltf.scene;
                 scene.add(skeleton);
-                
-                // Initial Dark Material
-                skeleton.traverse(node => {
-                    if (node.isMesh) {
-                        node.material = new THREE.MeshStandardMaterial({
-                            color: 0x111111,
-                            roughness: 0.6,
-                            metalness: 0.1,
-                            transparent: true,
-                            opacity: 0.2,
-                            wireframe: true // Ghost mode
-                        });
-                    }
-                });
+                // Initial Reset
+                updateMaterials([]);
             });
 
-            // The Listener
-            window.update3D = (revealedBones) => {
+            // Reusable Material Updater
+            const updateMaterials = (boneData) => {
                 if (!skeleton) return;
                 
                 skeleton.traverse(node => {
                     if (node.isMesh) {
-                        // Check match against MAPPING_3D keywords
-                        const shouldHighlight = revealedBones.some(boneName => {
-                            const keyword = MAPPING_3D[boneName];
+                        // Find if this node matches any visible bone
+                        const match = boneData.find(b => {
+                            const keyword = MAPPING_3D[b.name];
                             return keyword && node.name.includes(keyword);
                         });
 
-                        if (shouldHighlight) {
-                            // Emerald Glow
+                        if (match) {
+                            // DETERMINE COLOR
+                            let colorHex = 0x3b82f6; // Default Blue (Guess)
+                            if (match.type === 'start') colorHex = 0x10b981; // Green
+                            if (match.type === 'end') colorHex = 0xf59e0b;   // Gold
+
                             node.material = new THREE.MeshStandardMaterial({
-                                color: 0x10b981,
-                                emissive: 0x064e3b,
-                                emissiveIntensity: 0.5,
+                                color: colorHex,
+                                emissive: colorHex,
+                                emissiveIntensity: 0.6,
                                 roughness: 0.2,
                                 metalness: 0.8,
                                 transparent: false,
                                 opacity: 1.0
                             });
+                        } else {
+                            // Ghost Mode
+                            node.material = new THREE.MeshStandardMaterial({
+                                color: 0x111111,
+                                roughness: 0.6,
+                                metalness: 0.1,
+                                transparent: true,
+                                opacity: 0.2,
+                                wireframe: true
+                            });
                         }
                     }
                 });
+            };
+
+            // Global Hook
+            window.update3D = (boneData) => {
+                updateMaterials(boneData);
             };
 
             const animate = () => {
