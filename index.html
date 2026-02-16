@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>aaaaa | Pro v18.4</title>
+    <title>ok | Pro v18.5</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
@@ -18,8 +18,7 @@
         .sidebar { width: 400px; height: 100vh; background: rgba(8,8,8,0.98); border-right: 1px solid #222; position: relative; z-index: 50; display: flex; flex-direction: column; pointer-events: auto; }
         .custom-scrollbar::-webkit-scrollbar { width: 2px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #444; }
-        .suggestion-item { transition: all 0.2s ease; cursor: pointer; border-bottom: 1px solid #1a1a1a; }
-        .suggestion-item:hover { background: #3b82f6; color: white; padding-left: 1rem; }
+        .suggestion-item:hover { background: #3b82f6; color: white; padding-left: 1rem; cursor: pointer; }
         .victory-bg { background: radial-gradient(circle, rgba(16,185,129,0.3) 0%, rgba(0,0,0,1) 100%); }
         .loss-bg { background: radial-gradient(circle, rgba(239,68,68,0.3) 0%, rgba(0,0,0,1) 100%); }
     </style>
@@ -81,8 +80,9 @@
             const [guessesLeft, setGuessesLeft] = useState(10);
             const [badGuesses, setBadGuesses] = useState([]);
             const [inputValue, setInputValue] = useState('');
-            const [gameState, setGameState] = useState('playing'); 
+            const [gameState, setGameState] = useState('playing');
 
+            // --- RE-IMPLEMENTED RANDOMISE ---
             const initGame = useCallback(() => {
                 const bones = Object.keys(SKELETON_GRAPH);
                 let s, e, p;
@@ -94,7 +94,10 @@
 
                 setTarget({ start: s, end: e, path: p });
                 setChain([{ bone: s, type: 'start', hidden: false }]);
-                setGuessesLeft(10); setBadGuesses([]); setInputValue(''); setGameState('playing');
+                setGuessesLeft(10); 
+                setBadGuesses([]); 
+                setInputValue(''); 
+                setGameState('playing');
                 if (window.reset3D) window.reset3D();
             }, []);
 
@@ -109,17 +112,14 @@
             const submitGuess = (guess) => {
                 if (gameState !== 'playing') return;
                 
-                // 1. Cost a guess
                 const newGuessesLeft = guessesLeft - 1;
                 setGuessesLeft(newGuessesLeft);
 
-                // 2. Logic check
                 const lastVisible = chain.filter(c => !c.hidden).pop();
                 const pathToGuess = findShortestPath(lastVisible.bone, guess);
 
                 if (pathToGuess) {
                     const newItems = [];
-                    // Add steps between last bone and this guess
                     for (let i = 1; i < pathToGuess.length; i++) {
                         const bone = pathToGuess[i];
                         const isGuess = (bone === guess);
@@ -130,16 +130,15 @@
                     const updatedChain = [...chain, ...newItems];
                     setChain(updatedChain);
                     
-                    // 3. WIN CHECK: Is this bone a neighbor of the target end?
                     if (SKELETON_GRAPH[guess].includes(target.end)) {
                         setGameState('won');
                         return;
                     }
                 } else {
-                    setBadGuesses(prev => [guess, ...prev]);
+                    // --- INCORRECT GUESS LOGIC ---
+                    setBadGuesses(prev => [...new Set([guess, ...prev])]);
                 }
                 
-                // 4. LOSE CHECK
                 if (newGuessesLeft <= 0) {
                     setGameState('lost');
                 }
@@ -163,34 +162,36 @@
                     <header className="mb-4">
                         <h1 className="text-3xl font-black text-white tracking-tighter uppercase">Anatomle</h1>
                         <div className="flex justify-between items-center border-b border-stone-800 pb-2">
-                            <span className="text-[9px] text-stone-500 tracking-[0.3em] uppercase">Clinical Pro v18.4</span>
+                            <span className="text-[9px] text-stone-500 tracking-[0.3em] uppercase">Clinical Pro v18.5</span>
                             <span className={`text-xs font-bold ${guessesLeft < 4 ? 'text-red-500' : 'text-emerald-500'}`}>{guessesLeft} Guesses Left</span>
                         </div>
                     </header>
 
-                    <div className="bg-stone-900/30 p-3 border border-stone-800 mb-4 rounded">
-                        <p className="text-[8px] text-stone-600 uppercase font-bold">Pathway</p>
-                        <p className="text-xs font-bold uppercase tracking-tight">
-                            <span className="text-emerald-500">{target.start}</span> 
-                            <span className="px-2 text-stone-700">→</span> 
-                            <span className="text-amber-500">{target.end}</span>
-                        </p>
+                    <div className="bg-stone-900/30 p-3 border border-stone-800 mb-4 rounded flex justify-between">
+                        <div>
+                            <p className="text-[8px] text-stone-600 uppercase font-bold">Start Path</p>
+                            <p className="text-[10px] font-bold uppercase text-emerald-500">{target.start}</p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-[8px] text-stone-600 uppercase font-bold">End Target</p>
+                            <p className="text-[10px] font-bold uppercase text-amber-500">{target.end}</p>
+                        </div>
                     </div>
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar space-y-1 mb-4">
                         {chain.map((item, idx) => (
-                            <div key={idx} className={`p-2 border ${item.hidden ? 'border-dashed border-stone-800/50 bg-transparent opacity-20' : 'bg-stone-900/80 border-stone-700 shadow-sm'}`}>
+                            <div key={idx} className={`p-2 border transition-all ${item.hidden ? 'border-dashed border-stone-800/30 opacity-20' : 'bg-stone-900 border-stone-700 shadow-sm'}`}>
                                 <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest">
                                     <span className={item.type === 'start' ? 'text-emerald-500' : 'text-blue-400'}>{item.hidden ? '???' : item.bone}</span>
                                     <span>{item.type === 'start' ? '📍' : '🧬'}</span>
                                 </div>
                             </div>
                         ))}
-                        <div className="py-1 flex flex-col items-center opacity-10">
-                            <div className="w-[1px] h-3 bg-white"></div>
+                        <div className="py-2 flex justify-center opacity-10">
+                            <div className="w-1 h-1 rounded-full bg-white"></div>
                         </div>
-                        <div className="p-2 bg-stone-900/20 border border-amber-900/30 rounded">
-                            <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-amber-500/60">
+                        <div className="p-2 bg-stone-900/10 border border-amber-900/20 rounded">
+                            <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-amber-500/40">
                                 <span>{target.end}</span>
                                 <span>🎯</span>
                             </div>
@@ -198,10 +199,21 @@
                     </div>
 
                     <div className="mt-auto space-y-3">
+                        {/* --- INCORRECT GUESSES BOX --- */}
+                        {badGuesses.length > 0 && (
+                            <div className="bg-red-950/5 border border-red-900/20 p-2 rounded min-h-[40px] flex flex-wrap gap-1">
+                                {badGuesses.map((g, i) => (
+                                    <span key={i} className="text-[8px] font-bold text-red-500 bg-red-900/10 px-2 py-0.5 border border-red-900/20 uppercase tracking-tighter">
+                                        {g}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+
                         <div className="relative">
                             <input 
                                 className="w-full bg-black border border-stone-800 p-3 text-white outline-none focus:border-blue-500 text-xs italic" 
-                                placeholder="Search structures..." 
+                                placeholder="Clinical identification..." 
                                 value={inputValue} 
                                 onChange={e => setInputValue(e.target.value)} 
                             />
@@ -211,19 +223,16 @@
                                 </div>
                             )}
                         </div>
-                        <div className="flex flex-wrap gap-1 min-h-[30px]">
-                            {badGuesses.map((g, i) => <span key={i} className="text-[8px] text-red-500 bg-red-950/10 px-2 py-0.5 border border-red-900/20 uppercase font-bold">{g}</span>)}
-                        </div>
+
+                        <button onClick={initGame} className="w-full py-3 bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-emerald-500 hover:text-white transition-all">Next Patient</button>
                     </div>
 
                     {gameState !== 'playing' && (
                         <div className={`fixed inset-0 z-[100] flex flex-col items-center justify-center backdrop-blur-xl ${gameState === 'won' ? 'victory-bg' : 'loss-bg'}`}>
-                            <div className="text-center p-12 bg-black/60 border border-white/10 rounded-2xl shadow-2xl">
-                                <h2 className="text-5xl font-black text-white mb-2 tracking-tighter uppercase">{gameState === 'won' ? 'Diagnostic Success' : 'Critical Failure'}</h2>
-                                <p className="text-stone-400 italic mb-8 uppercase text-[10px] tracking-widest">
-                                    {gameState === 'won' ? `System Synced: ${target.start} to ${target.end}` : `Patient Lost at ${target.end}`}
-                                </p>
-                                <button onClick={initGame} className="px-10 py-4 bg-white text-black font-black text-xs uppercase hover:bg-emerald-500 hover:text-white transition-all shadow-xl">New Case</button>
+                            <div className="text-center p-12 bg-black/80 border border-white/5 rounded-3xl">
+                                <h2 className="text-5xl font-black text-white mb-2 tracking-tighter uppercase">{gameState === 'won' ? 'Success' : 'Failure'}</h2>
+                                <p className="text-stone-500 text-[10px] tracking-widest uppercase mb-8">Clinical pathway {gameState === 'won' ? 'verified' : 'unresolved'}</p>
+                                <button onClick={initGame} className="px-12 py-4 bg-white text-black font-black text-xs uppercase hover:scale-105 transition-transform">Reset Data</button>
                             </div>
                         </div>
                     )}
@@ -258,9 +267,7 @@
                 if (!skeleton) return;
                 skeleton.traverse(node => {
                     if (node.isMesh) {
-                        node.material = new THREE.MeshStandardMaterial({ 
-                            color: 0x1a1a1a, transparent: true, opacity: 0.1, wireframe: true 
-                        });
+                        node.material = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, transparent: true, opacity: 0.1, wireframe: true });
                     }
                 });
             };
@@ -277,9 +284,7 @@
                             let col = 0x3b82f6; 
                             if (match.type === 'start') col = 0x10b981;
                             if (match.type === 'end') col = 0xf59e0b;
-                            node.material = new THREE.MeshStandardMaterial({ 
-                                color: col, emissive: col, emissiveIntensity: 0.4, transparent: false, opacity: 1 
-                            });
+                            node.material = new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.3, transparent: false, opacity: 1 });
                         }
                     }
                 });
