@@ -460,7 +460,16 @@
             const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(container.clientWidth, container.clientHeight);
             container.appendChild(renderer.domElement);
-            new THREE.OrbitControls(camera, renderer.domElement);
+            
+            // Store controls so we can update them
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true; // Smooth camera movement
+            controls.dampingFactor = 0.05;
+            controls.screenSpacePanning = false; // Don't pan up/down
+            controls.minDistance = 1; // Min zoom
+            controls.maxDistance = 10; // Max zoom
+            controls.maxPolarAngle = Math.PI; // Can rotate fully
+            
             camera.position.set(0, 1.2, 5);
             
             // Better lighting for visibility
@@ -478,6 +487,26 @@
             loader.load('./overview-skeleton.glb', (gltf) => {
                 skeleton = gltf.scene;
                 scene.add(skeleton);
+                
+                // Calculate bounding box to center the model
+                const box = new THREE.Box3().setFromObject(skeleton);
+                const center = box.getCenter(new THREE.Vector3());
+                const size = box.getSize(new THREE.Vector3());
+                
+                // Set controls target to center of model
+                controls.target.copy(center);
+                controls.update();
+                
+                // Adjust camera to see whole model
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const fov = camera.fov * (Math.PI / 180);
+                let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+                cameraZ *= 1.5; // Add some padding
+                
+                camera.position.set(center.x, center.y, center.z + cameraZ);
+                camera.lookAt(center);
+                controls.update();
+                
                 window.reset3D();
             });
 
@@ -557,7 +586,8 @@
             };
             
             const animate = () => { 
-                requestAnimationFrame(animate); 
+                requestAnimationFrame(animate);
+                controls.update(); // Required for damping
                 renderer.render(scene, camera); 
             };
             animate();
