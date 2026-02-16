@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>laste | v24.8 Final</title>
+    <title>pls | v24.9 Final Clinical</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
@@ -16,10 +16,10 @@
         body { font-family: 'EB Garamond', serif; background-color: #050505; color: #d6d3d1; margin: 0; overflow: hidden; }
         .glitch-text { font-family: 'Inter', sans-serif; font-weight: 900; letter-spacing: -0.05em; }
         .sidebar { background: rgba(10, 10, 10, 0.98); border-right: 1px solid #222; width: 420px; height: 100vh; display: flex; flex-direction: column; position: relative; z-index: 50; }
-        #canvas-container { position: absolute; right: 0; top: 0; width: calc(100% - 420px); height: 100vh; z-index: 10; background: radial-gradient(circle at center, #111 0%, #000 100%); }
+        #canvas-container { position: absolute; right: 0; top: 0; width: calc(100% - 420px); height: 100vh; z-index: 10; }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-        .suggestion-item { cursor: pointer; transition: all 0.2s; }
+        .suggestion-item { cursor: pointer; transition: all 0.2s; border-bottom: 1px solid #222; }
         .suggestion-item:hover { background: #10b981; color: black; }
         .interactive { pointer-events: auto; }
     </style>
@@ -29,22 +29,54 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo, useRef } = React;
+        const { useState, useEffect, useMemo } = React;
 
-        // --- 1. DATA (FULL GRAPH) ---
+        // --- 1. EXPANDED GRAPH (Based on your screenshots) ---
         const SKELETON_GRAPH = {
-            'Frontal Bone': ['Parietal Bone', 'Ethmoid', 'Sphenoid', 'Nasal Bone', 'Maxilla', 'Zygomatic Bone', 'Lacrimal Bone'],
-            'Parietal Bone': ['Frontal Bone', 'Temporal Bone', 'Occipital Bone', 'Sphenoid'],
-            'Occipital Bone': ['Parietal Bone', 'Temporal Bone', 'Sphenoid', 'Atlas (C1)'],
+            'Frontal Bone': ['Parietal Bone', 'Nasal Bone', 'Maxilla', 'Sphenoid'],
+            'Parietal Bone': ['Frontal Bone', 'Occipital Bone', 'Temporal Bone'],
+            'Occipital Bone': ['Parietal Bone', 'Atlas (C1)'],
             'Atlas (C1)': ['Occipital Bone', 'Axis (C2)'],
-            'Axis (C2)': ['Atlas (C1)', 'Cervical Vertebrae (C3-C7)'],
-            'Cervical Vertebrae (C3-C7)': ['Axis (C2)', 'Thoracic Vertebrae (T1-T12)'],
-            'Thoracic Vertebrae (T1-T12)': ['Cervical Vertebrae (C3-C7)', 'Lumbar Vertebrae (L1-L5)', 'Ribs'],
-            'Lumbar Vertebrae (L1-L5)': ['Thoracic Vertebrae (T1-T12)', 'Sacrum'],
-            'Sacrum': ['Lumbar Vertebrae (L1-L5)', 'Coccyx', 'Ilium'],
-            'Coccyx': ['Sacrum'],
-            'Femur': ['Ilium', 'Ischium', 'Patella', 'Tibia'],
-            'Tibia': ['Femur', 'Patella', 'Fibula', 'Talus']
+            'Axis (C2)': ['Atlas (C1)', 'Cervical Vertebrae'],
+            'Cervical Vertebrae': ['Axis (C2)', 'Thoracic Vertebrae'],
+            'Thoracic Vertebrae': ['Cervical Vertebrae', 'Lumbar Vertebrae', 'Ribs', 'Sternum'],
+            'Sternum': ['Thoracic Vertebrae', 'Clavicle'],
+            'Lumbar Vertebrae': ['Thoracic Vertebrae', 'Sacrum'],
+            'Sacrum': ['Lumbar Vertebrae', 'Ilium', 'Coccyx'],
+            'Ilium': ['Sacrum', 'Ischium', 'Pubis', 'Femur'],
+            'Femur': ['Ilium', 'Patella', 'Tibia'],
+            'Tibia': ['Femur', 'Fibula', 'Talus'],
+            'Fibula': ['Tibia'],
+            'Clavicle': ['Sternum', 'Scapula'],
+            'Scapula': ['Clavicle', 'Humerus'],
+            'Humerus': ['Scapula', 'Radius', 'Ulna'],
+            'Radius': ['Humerus', 'Ulna', 'Carpals'],
+            'Ulna': ['Humerus', 'Radius']
+        };
+
+        // --- 2. FULL 3D MAPPING (Matches mesh names from your images) ---
+        const MAPPING_3D = {
+            "Frontal Bone": "Frontal_bone",
+            "Parietal Bone": "Parietal_bone",
+            "Occipital Bone": "Occipital_bone",
+            "Mandible": "Mandible_bone",
+            "Atlas (C1)": "Atlas_(C1)",
+            "Axis (C2)": "Axis_(C2)",
+            "Cervical Vertebrae": "Cervical_vertebrae_(C3)",
+            "Thoracic Vertebrae": "Thoracic_vertebrae_(T1)",
+            "Lumbar Vertebrae": "Lumbar_vertebrae_(L1)",
+            "Sacrum": "Sacrum",
+            "Coccyx": "Coccyx",
+            "Sternum": "Body_of_sternum",
+            "Femur": "Femurr",
+            "Tibia": "Tibiar",
+            "Fibula": "Fibular",
+            "Humerus": "Humerusr",
+            "Radius": "Radiusr",
+            "Ulna": "Ulnar",
+            "Clavicle": "Clavicler",
+            "Scapula": "Scapular",
+            "Ilium": "Iliumr"
         };
 
         const findShortestPath = (start, end) => {
@@ -65,9 +97,7 @@
             const [badGuesses, setBadGuesses] = useState([]);
             const [guessesLeft, setGuessesLeft] = useState(10);
             const [inputValue, setInputValue] = useState('');
-            const [win, setWin] = useState(false);
 
-            // INITIALIZE
             const initGame = () => {
                 const bones = Object.keys(SKELETON_GRAPH);
                 let s, e, p;
@@ -80,39 +110,30 @@
                 setTarget({ start: s, end: e, path: p });
                 setGuessesLeft(10);
                 setBadGuesses([]);
-                setWin(false);
-                
-                // Only start and end visible. No random placeholders.
-                setChain([
-                    { bone: s, emoji: '📍', status: 'start', id: 0 },
-                    { bone: e, emoji: '🎯', status: 'end', id: 99 }
-                ]);
+                setChain([{ bone: s, emoji: '📍', id: 0 }, { bone: e, emoji: '🎯', id: 99 }]);
             };
 
             useEffect(() => { initGame(); }, []);
 
-            // UPDATE 3D MODEL
             useEffect(() => {
                 const revealed = chain.map(c => c.bone);
                 if (window.update3D) window.update3D(revealed);
             }, [chain]);
 
             const submitGuess = (guess) => {
-                if (!SKELETON_GRAPH[guess]) return;
-                
+                // ALWAYS decrement guesses left per v24 rules
+                setGuessesLeft(prev => prev - 1);
+
                 const index = target.path.indexOf(guess);
                 if (index !== -1 && !chain.some(c => c.bone === guess)) {
-                    const newEntry = { bone: guess, emoji: '🧬', status: 'correct', id: index };
-                    const newChain = [...chain, newEntry].sort((a, b) => {
+                    const newEntry = { bone: guess, emoji: '🧬', id: index };
+                    setChain(prev => [...prev, newEntry].sort((a, b) => {
                         const idxA = target.path.indexOf(a.bone);
                         const idxB = target.path.indexOf(b.bone);
                         return idxA - idxB;
-                    });
-                    setChain(newChain);
-                    if (newChain.length === target.path.length) setWin(true);
+                    }));
                 } else {
                     setBadGuesses(prev => [guess, ...prev]);
-                    setGuessesLeft(g => g - 1);
                 }
                 setInputValue('');
             };
@@ -125,15 +146,15 @@
             }, [inputValue]);
 
             return (
-                <div className="sidebar p-8 shadow-2xl">
+                <div className="sidebar p-8">
                     <header className="mb-6">
                         <h1 className="glitch-text text-4xl text-white">ANATOMLE</h1>
-                        <p className="text-[10px] text-stone-500 tracking-[0.4em] border-b border-stone-800 pb-4">CLINICAL v24.8</p>
+                        <p className="text-[10px] text-stone-500 tracking-[0.4em] border-b border-stone-800 pb-4 uppercase">Clinical v24.9</p>
                     </header>
 
                     <div className="bg-stone-900/40 p-5 rounded border border-stone-800 mb-6 flex justify-between items-center">
                         <div>
-                            <p className="text-[9px] text-stone-600 uppercase tracking-widest">Active Diagnostic</p>
+                            <p className="text-[9px] text-stone-600 uppercase tracking-widest italic">Target Pathway</p>
                             <p className="text-sm font-bold text-emerald-500 uppercase">{target.start} → {target.end}</p>
                         </div>
                         <div className="text-right">
@@ -142,30 +163,36 @@
                         </div>
                     </div>
 
-                    {/* SCROLLABLE CHAIN AREA */}
                     <div className="flex-1 overflow-y-auto space-y-3 mb-6 pr-2 custom-scrollbar">
-                        {chain.map(item => (
-                            <div key={item.id} className="p-4 bg-stone-900 border border-stone-700 flex justify-between items-center animate-in slide-in-from-left duration-500">
-                                <span className="text-[11px] font-bold uppercase tracking-widest text-stone-200">{item.bone}</span>
-                                <span>{item.emoji}</span>
-                            </div>
+                        {chain.map((item, idx) => (
+                            <React.Fragment key={item.id}>
+                                <div className="p-4 bg-stone-900 border border-stone-700 flex justify-between items-center">
+                                    <span className="text-[11px] font-bold uppercase tracking-widest">{item.bone}</span>
+                                    <span>{item.emoji}</span>
+                                </div>
+                                {/* Visual Gap between connected nodes */}
+                                {idx < chain.length - 1 && (
+                                    <div className="flex justify-center py-1">
+                                        <div className="w-[1px] h-4 bg-stone-800"></div>
+                                    </div>
+                                )}
+                            </React.Fragment>
                         ))}
                     </div>
 
-                    {/* INPUT SECTION */}
                     <div className="mt-auto space-y-4 pt-4 border-t border-stone-800">
                         <div className="relative">
                             <input 
                                 className="w-full bg-black border border-stone-800 p-4 text-white outline-none focus:border-emerald-500 italic text-sm"
-                                placeholder="Search structures..."
+                                placeholder="Diagnostic Input..."
                                 value={inputValue}
                                 onChange={e => setInputValue(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && suggestions[0] && submitGuess(suggestions[0])}
                             />
                             {suggestions.length > 0 && (
-                                <div className="absolute bottom-full left-0 w-full bg-stone-900 border border-stone-700 mb-1 rounded-t overflow-hidden">
+                                <div className="absolute bottom-full left-0 w-full bg-stone-900 border border-stone-700 mb-1 rounded-t z-[60]">
                                     {suggestions.map(s => (
-                                        <div key={s} onClick={() => submitGuess(s)} className="suggestion-item p-3 text-[10px] uppercase font-bold border-b border-stone-800">
+                                        <div key={s} onClick={() => submitGuess(s)} className="suggestion-item p-3 text-[10px] uppercase font-bold">
                                             {s}
                                         </div>
                                     ))}
@@ -176,11 +203,11 @@
                         <div className="p-4 border border-red-900/20 rounded min-h-[80px]">
                             <p className="text-[9px] text-red-500 uppercase font-black mb-2 tracking-widest">Diagnostic Errors</p>
                             <div className="flex flex-wrap gap-2">
-                                {badGuesses.map((g, i) => <span key={i} className="text-[10px] text-red-400 bg-red-950/20 px-2 py-1 border border-red-900/40 uppercase">{g}</span>)}
+                                {badGuesses.map((g, i) => <span key={i} className="text-[10px] text-red-400 bg-red-950/20 px-2 py-1 border border-red-900/40 uppercase font-mono">{g}</span>)}
                             </div>
                         </div>
 
-                        <button onClick={initGame} className="w-full py-4 bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-emerald-500 transition-colors">
+                        <button onClick={initGame} className="w-full py-4 bg-stone-100 text-black text-[10px] font-black uppercase tracking-widest hover:bg-emerald-500 transition-colors">
                             Next Patient
                         </button>
                     </div>
@@ -207,11 +234,10 @@
             loader.setDRACOLoader(draco);
 
             let skeleton;
-            const MAPPING_3D = { "Frontal Bone": "Frontal_bone", "Femur": "Femurr", "Sacrum": "Sacrum", "Tibia": "Tibiar", "Mandible": "Mandible_bone" };
-
             loader.load('./overview-skeleton.glb', (gltf) => {
                 skeleton = gltf.scene;
                 scene.add(skeleton);
+                window.update3D([]);
             });
 
             window.update3D = (revealed) => {
@@ -221,7 +247,7 @@
                         const isLit = revealed.some(r => MAPPING_3D[r] === node.name || MAPPING_3D[r] + 'r' === node.name);
                         node.material = new THREE.MeshStandardMaterial({
                             color: isLit ? 0x10b981 : 0x222222,
-                            transparent: true, opacity: isLit ? 1 : 0.1, wireframe: !isLit
+                            transparent: true, opacity: isLit ? 1 : 0.08, wireframe: !isLit
                         });
                     }
                 });
