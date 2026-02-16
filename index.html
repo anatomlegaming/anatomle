@@ -13,14 +13,47 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@900&family=EB+Garamond:wght@400;700&display=swap');
-        body { font-family: 'EB Garamond', serif; background-color: #050505; color: #d6d3d1; margin: 0; overflow: hidden; }
-        #canvas-container { position: absolute; right: 0; top: 0; width: calc(100% - 400px); height: 100vh; z-index: 10; background: #000; }
-        .sidebar { width: 400px; height: 100vh; background: rgba(8,8,8,0.98); border-right: 1px solid #222; position: relative; z-index: 50; display: flex; flex-direction: column; pointer-events: auto; }
+        body { 
+            font-family: 'EB Garamond', serif; 
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: #d6d3d1; 
+            margin: 0; 
+            overflow: hidden; 
+        }
+        #canvas-container { 
+            position: absolute; 
+            right: 0; 
+            top: 0; 
+            width: calc(100% - 400px); 
+            height: 100vh; 
+            z-index: 10; 
+            background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+        }
+        .sidebar { 
+            width: 400px; 
+            height: 100vh; 
+            background: rgba(15, 23, 42, 0.98); 
+            border-right: 1px solid #334155; 
+            position: relative; 
+            z-index: 50; 
+            display: flex; 
+            flex-direction: column; 
+            pointer-events: auto; 
+            box-shadow: 2px 0 20px rgba(0,0,0,0.5);
+        }
         .custom-scrollbar::-webkit-scrollbar { width: 2px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #444; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }
         .suggestion-item:hover { background: #3b82f6; color: white; padding-left: 1rem; cursor: pointer; }
         .victory-bg { background: radial-gradient(circle, rgba(16,185,129,0.3) 0%, rgba(0,0,0,1) 100%); }
         .loss-bg { background: radial-gradient(circle, rgba(239,68,68,0.3) 0%, rgba(0,0,0,1) 100%); }
+        .failure-item {
+            animation: shake 0.3s ease-in-out;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
     </style>
 </head>
 <body>
@@ -81,6 +114,7 @@
             const [badGuesses, setBadGuesses] = useState([]);
             const [inputValue, setInputValue] = useState('');
             const [gameState, setGameState] = useState('playing');
+            const [showReveal, setShowReveal] = useState(false);
 
             const initGame = useCallback(() => {
                 const bones = Object.keys(SKELETON_GRAPH);
@@ -93,7 +127,11 @@
 
                 setTarget({ start: s, end: e, path: p });
                 setChain([{ bone: s, type: 'start', hidden: false }]);
-                setGuessesLeft(10); setBadGuesses([]); setInputValue(''); setGameState('playing');
+                setGuessesLeft(10); 
+                setBadGuesses([]); 
+                setInputValue(''); 
+                setGameState('playing');
+                setShowReveal(false);
                 if (window.reset3D) window.reset3D();
             }, []);
 
@@ -101,14 +139,45 @@
 
             useEffect(() => {
                 const highlights = [];
+                
+                // Show current chain
                 chain.filter(c => !c.hidden).forEach(c => highlights.push({ name: c.bone, type: c.type }));
+                
+                // Show target
                 highlights.push({ name: target.end, type: 'end' });
+                
+                // Show bad guesses
                 badGuesses.forEach(g => highlights.push({ name: g, type: 'bad' }));
+                
+                // Show reveal if game is lost and reveal is active
+                if (showReveal && gameState === 'lost' && target.path.length > 0) {
+                    target.path.forEach(bone => {
+                        if (!highlights.some(h => h.name === bone)) {
+                            highlights.push({ name: bone, type: 'reveal' });
+                        }
+                    });
+                }
+                
                 if (window.update3D) window.update3D(highlights);
-            }, [chain, target, badGuesses]);
+            }, [chain, target, badGuesses, showReveal, gameState]);
 
             const submitGuess = (guess) => {
                 if (gameState !== 'playing' || guess === target.end) return;
+                
+                // Check if guess is on the correct path
+                const isOnCorrectPath = target.path.includes(guess);
+                
+                if (!isOnCorrectPath) {
+                    // Off-path guess = failure
+                    setBadGuesses(prev => [...new Set([guess, ...prev])]);
+                    setGuessesLeft(prev => prev - 1);
+                    
+                    if (guessesLeft <= 1) {
+                        setGameState('lost');
+                    }
+                    setInputValue('');
+                    return;
+                }
                 
                 setGuessesLeft(prev => prev - 1);
                 const lastVisible = chain.filter(c => !c.hidden).pop();
@@ -128,7 +197,7 @@
                     const updatedChain = [...chain, ...newItems];
                     setChain(updatedChain);
                     
-                    // --- WIN LOGIC: Is this guess the neighbor of target AND is the chain solid? ---
+                    // WIN LOGIC: Is this guess the neighbor of target AND is the chain solid?
                     const isNeighborOfTarget = SKELETON_GRAPH[guess]?.includes(target.end);
                     const anyHiddenLeft = updatedChain.some(c => c.hidden);
                     
@@ -136,8 +205,6 @@
                         setGameState('won');
                         return;
                     }
-                } else {
-                    setBadGuesses(prev => [...new Set([guess, ...prev])]);
                 }
                 
                 if (guessesLeft <= 1) setGameState('lost');
@@ -152,30 +219,54 @@
                         b.toLowerCase().includes(inputValue.toLowerCase()) && 
                         !revealed.includes(b) && 
                         b !== target.start &&
-                        b !== target.end
+                        b !== target.end &&
+                        !badGuesses.includes(b)
                     ).slice(0, 5);
-            }, [inputValue, chain, target]);
+            }, [inputValue, chain, target, badGuesses]);
 
             return (
                 <div className="sidebar p-6">
                     <header className="mb-4">
                         <h1 className="text-3xl font-black text-white tracking-tighter uppercase">Anatomle</h1>
-                        <div className="flex justify-between items-center border-b border-stone-800 pb-2">
-                            <span className="text-[9px] text-stone-500 tracking-[0.3em] uppercase">Clinical Pro v18.7</span>
-                            <span className={`text-xs font-bold ${guessesLeft < 4 ? 'text-red-500' : 'text-emerald-500'}`}>{guessesLeft} Guesses</span>
+                        <div className="flex justify-between items-center border-b border-slate-700 pb-2">
+                            <span className="text-[9px] text-slate-500 tracking-[0.3em] uppercase">Clinical Pro v18.7</span>
+                            <span className={`text-xs font-bold ${guessesLeft < 4 ? 'text-red-400' : 'text-emerald-400'}`}>{guessesLeft} Guesses</span>
                         </div>
                     </header>
 
-                    <div className="bg-stone-900/40 p-3 border border-stone-800 mb-4 rounded flex justify-between">
-                        <div><p className="text-[8px] text-stone-600 uppercase font-bold">Start</p><p className="text-[10px] font-bold uppercase text-emerald-500">{target.start}</p></div>
-                        <div className="text-right"><p className="text-[8px] text-stone-600 uppercase font-bold">Target</p><p className="text-[10px] font-bold uppercase text-amber-500">{target.end}</p></div>
+                    <div className="bg-slate-800/40 p-3 border border-slate-700 mb-4 rounded flex justify-between">
+                        <div>
+                            <p className="text-[8px] text-slate-500 uppercase font-bold">Start</p>
+                            <p className="text-[10px] font-bold uppercase text-emerald-400">{target.start}</p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-[8px] text-slate-500 uppercase font-bold">Target</p>
+                            <p className="text-[10px] font-bold uppercase text-amber-400">{target.end}</p>
+                        </div>
                     </div>
 
+                    {/* Failed Guesses Section */}
+                    {badGuesses.length > 0 && (
+                        <div className="mb-4">
+                            <p className="text-[8px] text-red-400 uppercase font-bold mb-2 tracking-wider">❌ Failed Attempts</p>
+                            <div className="bg-red-950/20 border border-red-900/40 p-3 rounded space-y-1 max-h-32 overflow-y-auto custom-scrollbar">
+                                {badGuesses.map((g, i) => (
+                                    <div key={i} className="failure-item flex items-center justify-between text-[9px] font-bold text-red-400 bg-red-900/30 px-2 py-1.5 border border-red-800/40 uppercase tracking-tight rounded">
+                                        <span>{g}</span>
+                                        <span className="text-red-500">✗</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Correct Path Chain */}
                     <div className="flex-1 overflow-y-auto custom-scrollbar space-y-1 mb-4">
+                        <p className="text-[8px] text-slate-500 uppercase font-bold mb-2 tracking-wider">🧬 Your Path</p>
                         {chain.map((item, idx) => (
-                            <div key={idx} className={`p-2 border transition-all ${item.hidden ? 'border-dashed border-stone-800/40 opacity-20' : 'bg-stone-900 border-stone-700 shadow-sm'}`}>
+                            <div key={idx} className={`p-2 border transition-all ${item.hidden ? 'border-dashed border-slate-700/40 opacity-20' : 'bg-slate-800 border-slate-600 shadow-sm'}`}>
                                 <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest">
-                                    <span className={item.type === 'start' ? 'text-emerald-500' : 'text-blue-400'}>{item.hidden ? '???' : item.bone}</span>
+                                    <span className={item.type === 'start' ? 'text-emerald-400' : 'text-blue-400'}>{item.hidden ? '???' : item.bone}</span>
                                     <span>{item.type === 'start' ? '📍' : '🧬'}</span>
                                 </div>
                             </div>
@@ -183,33 +274,80 @@
                     </div>
 
                     <div className="mt-auto space-y-3">
-                        {badGuesses.length > 0 && (
-                            <div className="bg-red-950/10 border border-red-900/20 p-2 rounded flex flex-wrap gap-1">
-                                {badGuesses.map((g, i) => (
-                                    <span key={i} className="text-[8px] font-bold text-red-500 bg-red-900/20 px-2 py-0.5 border border-red-900/20 uppercase tracking-tighter">
-                                        {g}
-                                    </span>
-                                ))}
-                            </div>
-                        )}
-
                         <div className="relative">
-                            <input className="w-full bg-black border border-stone-800 p-3 text-white outline-none focus:border-blue-500 text-xs italic" placeholder="Identify next structure..." value={inputValue} onChange={e => setInputValue(e.target.value)} />
+                            <input 
+                                className="w-full bg-slate-900 border border-slate-700 p-3 text-white outline-none focus:border-blue-500 text-xs italic" 
+                                placeholder="Identify next structure..." 
+                                value={inputValue} 
+                                onChange={e => setInputValue(e.target.value)}
+                                disabled={gameState !== 'playing'}
+                            />
                             {suggestions.length > 0 && (
-                                <div className="absolute bottom-full left-0 w-full bg-stone-950 border border-stone-800 z-[60] shadow-2xl">
-                                    {suggestions.map(s => <div key={s} onClick={() => submitGuess(s)} className="suggestion-item p-3 text-[10px] uppercase font-black">{s}</div>)}
+                                <div className="absolute bottom-full left-0 w-full bg-slate-900 border border-slate-700 z-[60] shadow-2xl">
+                                    {suggestions.map(s => (
+                                        <div 
+                                            key={s} 
+                                            onClick={() => submitGuess(s)} 
+                                            className="suggestion-item p-3 text-[10px] uppercase font-black transition-all"
+                                        >
+                                            {s}
+                                        </div>
+                                    ))}
                                 </div>
                             )}
                         </div>
 
-                        <button onClick={initGame} className="w-full py-3 bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-emerald-500 hover:text-white transition-all">Next Case</button>
+                        <button 
+                            onClick={initGame} 
+                            className="w-full py-3 bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-emerald-400 hover:text-white transition-all"
+                        >
+                            Next Case
+                        </button>
                     </div>
 
                     {gameState !== 'playing' && (
                         <div className={`fixed inset-0 z-[100] flex flex-col items-center justify-center backdrop-blur-xl ${gameState === 'won' ? 'victory-bg' : 'loss-bg'}`}>
-                            <div className="text-center p-12 bg-black/90 border border-white/5 rounded-3xl">
-                                <h2 className="text-5xl font-black text-white mb-2 tracking-tighter uppercase">{gameState === 'won' ? 'Synchronized' : 'Flatline'}</h2>
-                                <button onClick={initGame} className="px-12 py-4 bg-white text-black font-black text-xs uppercase hover:scale-105 transition-transform mt-6">Restart Diagnostic</button>
+                            <div className="text-center p-12 bg-slate-950/90 border border-white/10 rounded-3xl max-w-md">
+                                <h2 className="text-5xl font-black text-white mb-2 tracking-tighter uppercase">
+                                    {gameState === 'won' ? '✓ Synchronized' : '✗ Flatline'}
+                                </h2>
+                                <p className="text-slate-400 text-sm mb-6">
+                                    {gameState === 'won' 
+                                        ? `Correct path identified in ${10 - guessesLeft} guesses!` 
+                                        : `Path not found. ${badGuesses.length} failed attempt${badGuesses.length !== 1 ? 's' : ''}.`
+                                    }
+                                </p>
+                                
+                                {gameState === 'lost' && (
+                                    <div className="mb-6">
+                                        <button 
+                                            onClick={() => setShowReveal(!showReveal)}
+                                            className="px-6 py-2 bg-amber-500 text-black font-black text-xs uppercase hover:bg-amber-400 transition-all mb-4"
+                                        >
+                                            {showReveal ? 'Hide' : 'Reveal'} Correct Path
+                                        </button>
+                                        
+                                        {showReveal && (
+                                            <div className="bg-slate-900/50 border border-amber-500/30 p-4 rounded text-left">
+                                                <p className="text-[8px] text-amber-400 uppercase font-bold mb-2">Correct Path:</p>
+                                                <div className="space-y-1">
+                                                    {target.path.map((bone, idx) => (
+                                                        <div key={idx} className="text-[10px] text-slate-300 font-mono">
+                                                            {idx + 1}. {bone}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                
+                                <button 
+                                    onClick={initGame} 
+                                    className="px-12 py-4 bg-white text-black font-black text-xs uppercase hover:scale-105 transition-transform"
+                                >
+                                    Restart Diagnostic
+                                </button>
                             </div>
                         </div>
                     )}
@@ -226,7 +364,12 @@
             container.appendChild(renderer.domElement);
             new THREE.OrbitControls(camera, renderer.domElement);
             camera.position.set(0, 1.2, 5);
-            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+            
+            // Better lighting for visibility
+            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 10, 7.5);
+            scene.add(dirLight);
 
             const draco = new THREE.DRACOLoader();
             draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
@@ -244,7 +387,12 @@
                 if (!skeleton) return;
                 skeleton.traverse(node => {
                     if (node.isMesh) {
-                        node.material = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, transparent: true, opacity: 0.1, wireframe: true });
+                        node.material = new THREE.MeshStandardMaterial({ 
+                            color: 0x475569, 
+                            transparent: true, 
+                            opacity: 0.25, 
+                            wireframe: false 
+                        });
                     }
                 });
             };
@@ -258,17 +406,44 @@
                             return key && node.name.includes(key);
                         });
                         if (match) {
-                            let col = 0x3b82f6; 
-                            if (match.type === 'start') col = 0x10b981;
-                            if (match.type === 'end') col = 0xf59e0b;
-                            if (match.type === 'bad') col = 0xef4444; // Blood Red for errors
+                            let col = 0x3b82f6; // Blue for correct guesses
+                            let emissiveInt = 0.5;
                             
-                            node.material = new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.5, transparent: false, opacity: 1 });
+                            if (match.type === 'start') col = 0x10b981; // Green for start
+                            if (match.type === 'end') col = 0xf59e0b; // Amber for end
+                            if (match.type === 'bad') { 
+                                col = 0xef4444; // Red for failures
+                                emissiveInt = 0.8;
+                            }
+                            if (match.type === 'reveal') {
+                                col = 0xfbbf24; // Yellow for revealed path
+                                emissiveInt = 0.3;
+                            }
+                            
+                            node.material = new THREE.MeshStandardMaterial({ 
+                                color: col, 
+                                emissive: col, 
+                                emissiveIntensity: emissiveInt, 
+                                transparent: false, 
+                                opacity: 1 
+                            });
+                        } else {
+                            // Reset to default gray
+                            node.material = new THREE.MeshStandardMaterial({ 
+                                color: 0x475569, 
+                                transparent: true, 
+                                opacity: 0.25, 
+                                wireframe: false 
+                            });
                         }
                     }
                 });
             };
-            const animate = () => { requestAnimationFrame(animate); renderer.render(scene, camera); };
+            
+            const animate = () => { 
+                requestAnimationFrame(animate); 
+                renderer.render(scene, camera); 
+            };
             animate();
         };
 
