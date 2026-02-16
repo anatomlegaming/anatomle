@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ANATOMLE | Pro v18.7</title>
+    <title>ANATOMLE | I hope so /title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
@@ -331,10 +331,10 @@
                                 
                                 return (
                                     <div className={`p-2 border transition-all ${isInPair ? 'flex-1' : ''} ${
-                                        !boneItem.guessed && !boneIsLastBone
+                                        !boneItem.guessed && !boneIsLastBone && !showReveal
                                             ? 'border-dashed border-slate-700/40 opacity-20' 
                                             : boneIsMissing 
-                                                ? 'bg-amber-900/20 border-amber-700/40 shadow-sm' 
+                                                ? 'bg-fuchsia-900/20 border-fuchsia-700/40 shadow-sm' 
                                                 : boneIsLastBone
                                                     ? 'bg-amber-900/20 border-amber-700/40 shadow-sm'
                                                     : 'bg-slate-800 border-slate-600 shadow-sm'
@@ -343,12 +343,11 @@
                                             <span className={
                                                 boneItem.type === 'start' ? 'text-emerald-400' : 
                                                 boneIsLastBone ? 'text-amber-400' :
-                                                boneIsMissing ? 'text-amber-400' : 
+                                                boneIsMissing ? 'text-fuchsia-400' : 
                                                 'text-blue-400'
                                             }>
-                                                {!boneItem.guessed && !boneIsLastBone ? '???' : 
-                                                 showReveal && gameState === 'lost' ? boneItem.bone :
-                                                 !boneItem.guessed && boneIsLastBone ? boneItem.bone : boneItem.bone}
+                                                {showReveal && gameState === 'lost' ? boneItem.bone : 
+                                                 !boneItem.guessed && !boneIsLastBone ? '???' : boneItem.bone}
                                             </span>
                                             <span>
                                                 {boneItem.type === 'start' ? '📍' : 
@@ -357,7 +356,7 @@
                                             </span>
                                         </div>
                                         {boneIsMissing && (
-                                            <p className="text-[7px] text-amber-500 mt-1 tracking-wider">MISSING LINK</p>
+                                            <p className="text-[7px] text-fuchsia-400 mt-1 tracking-wider">MISSING LINK</p>
                                         )}
                                     </div>
                                 );
@@ -431,12 +430,12 @@
                                     <div className="mb-6">
                                         <button 
                                             onClick={() => setShowReveal(!showReveal)}
-                                            className="px-6 py-3 bg-amber-500 text-black font-black text-xs uppercase hover:bg-amber-400 transition-all"
+                                            className="px-6 py-3 bg-fuchsia-500 text-white font-black text-xs uppercase hover:bg-fuchsia-400 transition-all"
                                         >
                                             {showReveal ? '✗ Hide' : '👁️ Reveal'} Correct Path
                                         </button>
                                         <p className="text-[10px] text-slate-500 mt-2">
-                                            {showReveal ? 'Missing links shown in amber' : 'See what you missed'}
+                                            {showReveal ? 'Missing links shown in magenta' : 'See what you missed'}
                                         </p>
                                     </div>
                                 )}
@@ -533,8 +532,8 @@
                                 emissiveInt = 0.8;
                             }
                             if (match.type === 'reveal') {
-                                col = 0xf59e0b; // Amber for revealed path
-                                emissiveInt = 0.6;
+                                col = 0xd946ef; // Fuchsia/Magenta for revealed missing bones
+                                emissiveInt = 0.8;
                             }
                             
                             node.material = new THREE.MeshStandardMaterial({ 
