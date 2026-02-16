@@ -1,115 +1,152 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>ANATOMLE 3D | V5</title>
+    <meta charset="UTF-8">
+    <title>ANATOMLE | Clinical 3D</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
-        .ui-overlay { position: absolute; top: 20px; left: 20px; width: 300px; pointer-events: none; }
-        .interactive { pointer-events: auto; }
-        .feedback-item { animation: slideIn 0.3s ease-out; }
-        @keyframes slideIn { from { transform: translateX(-20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@900&family=EB+Garamond&display=swap');
+        body { margin: 0; background: #050505; color: #d6d3d1; font-family: 'EB Garamond', serif; overflow: hidden; }
+        .ui-panel { background: rgba(10, 10, 10, 0.9); backdrop-filter: blur(15px); border-right: 1px solid #222; z-index: 10; }
+        .glitch-text { font-family: 'Inter', sans-serif; font-weight: 900; letter-spacing: -0.05em; }
+        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; }
+        .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; }
     </style>
 </head>
 <body>
-    <div class="ui-overlay">
-        <h1 class="text-white text-3xl font-black italic tracking-tighter mb-4">ANATOMLE 3D</h1>
-        
-        <div class="bg-zinc-900/90 border border-zinc-800 p-4 rounded-xl interactive shadow-2xl">
-            <p class="text-[10px] text-zinc-500 uppercase font-bold mb-2">Target: <span id="target-ui" class="text-emerald-500">Sacrum</span></p>
-            <input id="guess-input" type="text" placeholder="Search structures..." 
-                class="bg-black/50 border border-zinc-700 text-white outline-none w-full p-3 rounded-lg focus:border-emerald-500 transition-all">
+    <div id="ui-layer" class="fixed inset-0 pointer-events-none flex">
+        <div class="w-85 p-6 flex flex-col pointer-events-auto ui-panel border-r border-stone-800">
+            <h1 class="glitch-text text-4xl text-white mb-1">ANATOMLE</h1>
+            <p class="text-[10px] text-stone-500 uppercase tracking-[0.3em] mb-8 border-b border-stone-800 pb-4">Clinical Pathway v24.3</p>
             
-            <div id="path-list" class="mt-4 space-y-2 max-height-[400px] overflow-y-auto">
+            <div id="path-container" class="flex-1 overflow-y-auto space-y-3 mb-6 pr-2 custom-scrollbar">
                 </div>
+
+            <div class="space-y-4">
+                <div class="p-4 bg-stone-900/50 rounded border border-stone-700">
+                    <p class="text-[10px] text-stone-500 uppercase mb-2 font-bold italic">Diagnostic Target</p>
+                    <div class="flex justify-between items-center">
+                        <span id="target-name" class="font-bold uppercase text-white tracking-tight text-sm">Sacrum</span>
+                        <span class="text-emerald-500">🎯</span>
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <input id="guess-input" type="text" placeholder="Search structures..." 
+                        class="w-full bg-black border border-stone-800 p-4 rounded-lg italic text-white outline-none focus:border-emerald-500 transition-colors">
+                    <div id="suggestions" class="absolute bottom-full left-0 w-full bg-stone-900 border border-stone-700 rounded-t-lg hidden mb-1 overflow-hidden z-20"></div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        // 1. SCENE SETUP
+        // --- 1. GAME DATA & MAPPING ---
+        // Mapping common names to the internal GLB names from your screenshots
+        const BONE_LOOKUP = {
+            "Sacrum": "Sacrum",
+            "Frontal Bone": "Frontal_bone",
+            "Femur": "Femurr",
+            "Tibia": "Tibiar",
+            "Mandible": "Mandible_bone",
+            "Atlas": "Atlas_(C1)",
+            "Axis": "Axis_(C2)",
+            "Sternum": "Body_of_sternum",
+            "Radius": "Radiusr",
+            "Ulna": "Ulnar"
+        };
+
+        const targetBone = "Sacrum";
+        let guessChain = [];
+
+        // --- 2. THREE.JS ENGINE ---
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
-        
+
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        camera.position.set(0, 1, 4);
+        camera.position.set(0, 1, 5);
 
-        scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-        const sun = new THREE.DirectionalLight(0xffffff, 1);
-        sun.position.set(5, 10, 5);
-        scene.add(sun);
+        // Lights
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(5, 10, 5);
+        scene.add(light);
 
-        // 2. LOADER SETUP WITH DRACO FIX
+        // Draco Fix
         const dracoLoader = new THREE.DRACOLoader();
         dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
-        
         const loader = new THREE.GLTFLoader();
         loader.setDRACOLoader(dracoLoader);
 
-        let skeleton;
-        let guesses = [];
-        const TARGET_BONE = "Sacrum"; // Game Logic Target
-
+        let skeletonModel = null;
         loader.load('./overview-skeleton.glb', (gltf) => {
-            skeleton = gltf.scene;
-            scene.add(skeleton);
-            resetMaterials();
-        }, undefined, (e) => console.error("Loader Error:", e));
-
-        // 3. GAME LOGIC FUNCTIONS
-        function resetMaterials() {
-            skeleton.traverse(node => {
-                if(node.isMesh) {
-                    node.material = new THREE.MeshStandardMaterial({ 
-                        color: 0x222222, transparent: true, opacity: 0.2 
-                    });
-                }
-            });
-        }
-
-        const input = document.getElementById('guess-input');
-        input.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                const val = input.value.trim();
-                processGuess(val);
-                input.value = '';
-            }
+            skeletonModel = gltf.scene;
+            scene.add(skeletonModel);
+            updateVisuals();
         });
 
-        function processGuess(guessName) {
-            if (!skeleton) return;
+        // --- 3. THE "SWAP/AHEAD" LOGIC INTEGRATION ---
+        function getBoneStatus(guess) {
+            if (guess.toLowerCase() === targetBone.toLowerCase()) return { emoji: '✅', color: 0x10b981 };
             
-            // Logic for visual feedback
-            let status = "✅";
-            let color = 0x10b981; // Emerald
+            // Simulation of "Swap" (Yellow) vs "Ahead" (Blue) logic
+            // In the full game, this would check your Graph connectivity
+            const isRelated = ["Frontal Bone", "Mandible"].includes(guess);
+            return isRelated ? { emoji: '🔀', color: 0xf59e0b } : { emoji: '🧬', color: 0x3b82f6 };
+        }
 
-            // Simple demo logic: if it's not the target, call it 'Ahead'
-            if (guessName.toLowerCase() !== TARGET_BONE.toLowerCase()) {
-                status = "🧬";
-                color = 0x3b82f6; // Blue
-            }
+        function updateVisuals() {
+            if (!skeletonModel) return;
+            skeletonModel.traverse((node) => {
+                if (node.isMesh) {
+                    // Match by name or name+'r'
+                    const guessData = guessChain.find(g => 
+                        BONE_LOOKUP[g.name] === node.name || (BONE_LOOKUP[g.name] + 'r') === node.name
+                    );
 
-            skeleton.traverse(node => {
-                // Matching based on your screenshots (includes right-side 'r' suffix)
-                if (node.isMesh && (node.name.toLowerCase() === guessName.toLowerCase() || node.name.toLowerCase() === guessName.toLowerCase() + 'r')) {
-                    node.material = new THREE.MeshStandardMaterial({ 
-                        color: color, emissive: color, emissiveIntensity: 0.5 
-                    });
+                    if (guessData) {
+                        node.material = new THREE.MeshStandardMaterial({
+                            color: guessData.color,
+                            emissive: guessData.color,
+                            emissiveIntensity: 0.4
+                        });
+                    } else {
+                        node.material = new THREE.MeshStandardMaterial({
+                            color: 0x222222,
+                            transparent: true,
+                            opacity: 0.15
+                        });
+                    }
                 }
             });
-
-            // Add to UI List
-            const div = document.createElement('div');
-            div.className = "feedback-item flex justify-between bg-black/40 p-2 rounded border border-zinc-800 text-xs text-white uppercase font-bold";
-            div.innerHTML = `<span>${guessName}</span><span>${status}</span>`;
-            document.getElementById('path-list').prepend(div);
         }
+
+        // --- 4. UI HANDLERS ---
+        const input = document.getElementById('guess-input');
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && input.value) {
+                const val = input.value.trim();
+                const status = getBoneStatus(val);
+                
+                guessChain.push({ name: val, ...status });
+                
+                const item = document.createElement('div');
+                item.className = "p-4 bg-stone-900 border border-stone-800 rounded flex justify-between items-center text-xs font-bold uppercase tracking-widest text-white";
+                item.innerHTML = `<span>${val}</span><span style="color: #${status.color.toString(16)}">${status.emoji}</span>`;
+                document.getElementById('path-container').prepend(item);
+                
+                input.value = '';
+                updateVisuals();
+            }
+        });
 
         function animate() {
             requestAnimationFrame(animate);
@@ -120,4 +157,3 @@
     </script>
 </body>
 </html>
-
