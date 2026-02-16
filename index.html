@@ -2,8 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ANATOMLE - Clinical Pathfinding v24.5</title>
+    <title>please - v24.7 Restoration</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
@@ -15,15 +14,14 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,900;1,900&family=EB+Garamond:wght@400;700&family=Inter:wght@400;900&display=swap');
         body { font-family: 'EB Garamond', serif; background-color: #050505; color: #d6d3d1; margin: 0; overflow: hidden; }
-        .medical-card { background: rgba(15, 15, 15, 0.98); backdrop-filter: blur(20px); border: 1px solid #333; }
         .glitch-text { font-family: 'Inter', sans-serif; font-weight: 900; letter-spacing: -0.05em; }
-        #canvas-container { position: absolute; right: 0; top: 0; width: 60%; height: 100vh; z-index: 10; }
-        #root { position: relative; z-index: 20; width: 40%; height: 100vh; pointer-events: none; }
+        .medical-card { background: rgba(10, 10, 10, 0.98); border-right: 1px solid #333; height: 100vh; display: flex; flex-direction: column; }
+        #canvas-container { position: absolute; right: 0; top: 0; width: calc(100% - 420px); height: 100vh; z-index: 10; }
+        #root { position: relative; z-index: 20; width: 420px; pointer-events: none; }
         .interactive { pointer-events: auto; }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #444; border-radius: 10px; }
-        .animate-fill { animation: fill-flash 0.8s ease-out; }
-        @keyframes fill-flash { 0% { background-color: rgba(16, 185, 129, 0.8); } 100% { background-color: transparent; } }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        .victory-bg { background: linear-gradient(to bottom, #050505, #064e3b); }
     </style>
 </head>
 <body>
@@ -31,148 +29,148 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useMemo, useEffect, useCallback, useRef } = React;
+        const { useState, useEffect, useMemo, useRef } = React;
 
-        // 1. ORIGINAL SKELETON GRAPH
+        // PASTE YOUR FULL SKELETON_GRAPH FROM V24 HERE
         const SKELETON_GRAPH = {
             'Frontal Bone': ['Parietal Bone', 'Ethmoid', 'Sphenoid', 'Nasal Bone', 'Maxilla', 'Zygomatic Bone', 'Lacrimal Bone'],
             'Parietal Bone': ['Frontal Bone', 'Temporal Bone', 'Occipital Bone', 'Sphenoid'],
             'Occipital Bone': ['Parietal Bone', 'Temporal Bone', 'Sphenoid', 'Atlas (C1)'],
-            'Mandible': ['Temporal Bone'],
             'Atlas (C1)': ['Occipital Bone', 'Axis (C2)'],
             'Axis (C2)': ['Atlas (C1)', 'Cervical Vertebrae (C3-C7)'],
             'Cervical Vertebrae (C3-C7)': ['Axis (C2)', 'Thoracic Vertebrae (T1-T12)'],
             'Thoracic Vertebrae (T1-T12)': ['Cervical Vertebrae (C3-C7)', 'Lumbar Vertebrae (L1-L5)', 'Ribs'],
             'Lumbar Vertebrae (L1-L5)': ['Thoracic Vertebrae (T1-T12)', 'Sacrum'],
             'Sacrum': ['Lumbar Vertebrae (L1-L5)', 'Coccyx', 'Ilium'],
-            'Coccyx': ['Sacrum'],
             'Femur': ['Ilium', 'Ischium', 'Patella', 'Tibia'],
             'Tibia': ['Femur', 'Patella', 'Fibula', 'Talus']
         };
 
-        // 3D BONE MAPPING (Fixes highlighting based on your screenshots)
-        const MAPPING_3D = {
-            "Frontal Bone": "Frontal_bone",
-            "Femur": "Femurr",
-            "Tibia": "Tibiar",
-            "Sacrum": "Sacrum",
-            "Mandible": "Mandible_bone"
-        };
-
         const findShortestPath = (start, end) => {
-            if (start === end) return [start];
             const queue = [[start]]; const visited = new Set([start]);
             while (queue.length > 0) {
                 const path = queue.shift(); const current = path[path.length - 1];
+                if (current === end) return path;
                 for (const neighbor of (SKELETON_GRAPH[current] || [])) {
-                    if (neighbor === end) return [...path, neighbor];
                     if (!visited.has(neighbor)) { visited.add(neighbor); queue.push([...path, neighbor]); }
                 }
             }
             return null;
         };
 
-        // Global 3D Update Function
-        window.update3DSkeleton = (visibleBones) => {}; 
-
         function App() {
-            // Restore Original v24 State
-            const [target, setTarget] = useState({ start: 'Frontal Bone', end: 'Sacrum', optimalPath: findShortestPath('Frontal Bone', 'Sacrum') });
-            const [chain, setChain] = useState([{ bone: 'Frontal Bone', emoji: '📍', hidden: false, id: 0 }]);
+            const [target, setTarget] = useState({ start: '', end: '', path: [] });
+            const [chain, setChain] = useState([]);
             const [capacity, setCapacity] = useState(10);
             const [badGuesses, setBadGuesses] = useState([]);
             const [inputValue, setInputValue] = useState('');
-            const [lastFilled, setLastFilled] = useState(null);
+            const [win, setWin] = useState(false);
 
-            // Sync with 3D Model
-            useEffect(() => {
-                const revealed = chain.filter(n => !n.hidden).map(n => n.bone);
-                window.update3DSkeleton(revealed);
-            }, [chain]);
+            // INITIALIZATION / RANDOMIZATION
+            const initGame = () => {
+                const bones = Object.keys(SKELETON_GRAPH);
+                let s, e, p;
+                do {
+                    s = bones[Math.floor(Math.random() * bones.length)];
+                    e = bones[Math.floor(Math.random() * bones.length)];
+                    p = findShortestPath(s, e);
+                } while (!p || p.length < 3 || p.length > 6);
 
-            const handleGuess = (guessBone) => {
-                let currentChain = [...chain];
-                let handled = false;
-                let emoji = '✅';
-
-                // Path-finding Logic (Swap/Ahead)
-                const lastVisible = [...currentChain].reverse().find(n => !n.hidden);
-                const pathToEnd = findShortestPath(lastVisible.bone, guessBone);
-
-                if (pathToEnd) {
-                    const newItems = [];
-                    for (let k = 1; k < pathToEnd.length; k++) {
-                        const isGuess = pathToEnd[k] === guessBone;
-                        newItems.push({ 
-                            bone: pathToEnd[k], 
-                            hidden: !isGuess, 
-                            id: Date.now() + k, 
-                            emoji: isGuess ? '🧬' : '' 
-                        });
-                    }
-                    currentChain = [...currentChain, ...newItems];
-                    setLastFilled(guessBone);
-                    setChain(currentChain);
-                    handled = true;
-                }
-
-                if (!handled) {
-                    setBadGuesses(prev => [guessBone, ...prev]);
-                }
-                setCapacity(c => c - 1);
-                setInputValue('');
+                setTarget({ start: s, end: e, path: p });
+                setCapacity(10);
+                setBadGuesses([]);
+                setWin(false);
+                
+                const initialChain = p.map((bone, i) => ({
+                    bone,
+                    hidden: i !== 0 && i !== p.length - 1,
+                    emoji: i === 0 ? '📍' : (i === p.length - 1 ? '🎯' : ''),
+                    id: i
+                }));
+                setChain(initialChain);
             };
 
-            const filteredBones = useMemo(() => {
-                const search = inputValue.toLowerCase().trim();
-                if (!search) return [];
-                return Object.keys(SKELETON_GRAPH).filter(b => b.toLowerCase().includes(search)).slice(0, 5);
-            }, [inputValue]);
+            useEffect(() => { initGame(); }, []);
+
+            // 3D UPDATE HOOK
+            useEffect(() => {
+                const revealed = chain.filter(c => !c.hidden).map(c => c.bone);
+                if (window.update3D) window.update3D(revealed);
+            }, [chain]);
+
+            const handleGuess = (e) => {
+                if (e.key === 'Enter' && inputValue) {
+                    const guess = inputValue.trim();
+                    const indexInPath = target.path.indexOf(guess);
+
+                    if (indexInPath !== -1 && chain[indexInPath].hidden) {
+                        const newChain = [...chain];
+                        newChain[indexInPath] = { ...newChain[indexInPath], hidden: false, emoji: '🧬' };
+                        setChain(newChain);
+                        if (newChain.every(c => !c.hidden)) setWin(true);
+                    } else {
+                        setBadGuesses([guess, ...badGuesses]);
+                        setCapacity(c => c - 1);
+                    }
+                    setInputValue('');
+                }
+            };
 
             return (
-                <div className="h-full p-8 flex flex-col">
-                    <div className="medical-card rounded-xl p-8 flex-1 flex flex-col pointer-events-auto interactive shadow-2xl">
-                        <header className="mb-8">
-                            <h1 className="glitch-text text-4xl text-white">ANATOMLE <span className="text-[10px] text-emerald-500 font-mono">v24.PATH</span></h1>
-                            <div className="flex justify-between mt-6 border-t border-stone-800 pt-6">
-                                <div>
-                                    <p className="text-[10px] text-stone-500 uppercase">Pathway</p>
-                                    <p className="text-emerald-400 font-bold text-sm">{target.start} → {target.end}</p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-[10px] text-stone-500 uppercase">Capacity</p>
-                                    <p className="text-2xl font-black text-white">{capacity}</p>
+                <div className={`medical-card p-8 interactive ${win ? 'victory-bg' : ''}`}>
+                    <header className="mb-6">
+                        <h1 className="glitch-text text-4xl text-white">ANATOMLE</h1>
+                        <p className="text-[10px] text-stone-500 tracking-[0.4em] border-b border-stone-800 pb-4">CLINICAL v24.7</p>
+                    </header>
+
+                    <div className="flex justify-between items-center mb-6 bg-stone-900/50 p-4 border border-stone-800">
+                        <div>
+                            <p className="text-[9px] text-stone-500 uppercase">Diagnostic Loop</p>
+                            <p className="text-sm font-bold text-emerald-500 uppercase tracking-tighter">{target.start} → {target.end}</p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-[9px] text-stone-500 uppercase">Capacity</p>
+                            <p className="text-2xl font-black text-white">{capacity}</p>
+                        </div>
+                    </div>
+
+                    {/* SCROLLABLE GUESS BOX */}
+                    <div className="flex-1 overflow-y-auto space-y-3 mb-6 pr-2 custom-scrollbar">
+                        {chain.map(item => (
+                            <div key={item.id} className={`p-4 border transition-all duration-500 ${item.hidden ? 'border-dashed border-stone-800 opacity-40' : 'bg-stone-900 border-stone-700 shadow-lg'}`}>
+                                <div className="flex justify-between items-center uppercase text-[11px] font-bold tracking-widest">
+                                    <span>{item.hidden ? '???' : item.bone}</span>
+                                    <span>{item.emoji}</span>
                                 </div>
                             </div>
-                        </header>
+                        ))}
+                    </div>
 
-                        <div className="flex-1 overflow-y-auto space-y-4 mb-6 pr-2 custom-scrollbar">
-                            {chain.map(node => (
-                                <div key={node.id} className={`p-4 rounded border flex justify-between items-center transition-all ${node.hidden ? 'border-dashed border-stone-800 text-stone-700' : 'bg-stone-900 border-stone-700 text-white'} ${lastFilled === node.bone ? 'animate-fill' : ''}`}>
-                                    <span className="text-xs font-bold uppercase tracking-widest">{node.hidden ? '???' : node.bone}</span>
-                                    <span>{node.emoji}</span>
-                                </div>
-                            ))}
-                        </div>
+                    <div className="mt-auto space-y-4 pt-4 border-t border-stone-800">
+                        <input 
+                            className="w-full bg-black border border-stone-800 p-4 text-white outline-none focus:border-emerald-500 italic"
+                            placeholder="Identify structure..."
+                            value={inputValue}
+                            onChange={e => setInputValue(e.target.value)}
+                            onKeyDown={handleGuess}
+                        />
 
-                        <div className="space-y-4">
-                            <input className="w-full bg-black border-b border-stone-700 p-4 outline-none text-white italic focus:border-emerald-500 transition-all" placeholder="Enter structure..." value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && filteredBones[0] && handleGuess(filteredBones[0])}/>
+                        <div className="p-4 border border-red-900/20 rounded">
+                            <p className="text-[9px] text-red-500 uppercase font-black mb-2 tracking-widest">Diagnostic Errors</p>
                             <div className="flex flex-wrap gap-2">
-                                {filteredBones.map(b => <button key={b} onClick={() => handleGuess(b)} className="text-[10px] font-bold uppercase p-2 border border-stone-800 text-stone-400 hover:text-emerald-400">{b}</button>)}
-                            </div>
-                            <div className="p-4 border border-red-900/20 rounded max-h-32 overflow-y-auto">
-                                <p className="text-[9px] text-red-500 uppercase font-black mb-2 tracking-widest">Diagnostic Errors</p>
-                                <div className="flex flex-wrap gap-2">
-                                    {badGuesses.map((g, i) => <span key={i} className="text-[10px] text-red-400 bg-red-950/20 px-2 py-1 border border-red-900/40">{g}</span>)}
-                                </div>
+                                {badGuesses.map((g, i) => <span key={i} className="text-[10px] text-red-400 bg-red-950/20 px-2 py-1 border border-red-900/40">{g}</span>)}
                             </div>
                         </div>
+
+                        <button onClick={initGame} className="w-full py-3 bg-stone-900 text-white text-[10px] font-black uppercase tracking-widest border border-stone-800 hover:bg-white hover:text-black transition-all">
+                            Next Patient
+                        </button>
                     </div>
                 </div>
             );
         }
 
-        // --- 3D ENGINE (STANDALONE) ---
+        // --- 3D ENGINE ---
         const init3D = () => {
             const container = document.getElementById('canvas-container');
             const scene = new THREE.Scene();
@@ -180,15 +178,10 @@
             const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(container.clientWidth, container.clientHeight);
             container.appendChild(renderer.domElement);
+            new THREE.OrbitControls(camera, renderer.domElement);
+            camera.position.set(2, 1, 5);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
             
-            const controls = new THREE.OrbitControls(camera, renderer.domElement);
-            camera.position.set(2, 1.2, 5); // Offset camera to look at the right side
-
-            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-            const sun = new THREE.DirectionalLight(0xffffff, 1);
-            sun.position.set(5, 10, 5);
-            scene.add(sun);
-
             const draco = new THREE.DRACOLoader();
             draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
             const loader = new THREE.GLTFLoader();
@@ -198,25 +191,22 @@
             loader.load('./overview-skeleton.glb', (gltf) => {
                 skeleton = gltf.scene;
                 scene.add(skeleton);
-                window.update3DSkeleton([]); // Initial state
             });
 
-            window.update3DSkeleton = (revealedNames) => {
+            window.update3D = (revealed) => {
                 if (!skeleton) return;
+                const BONE_MAP_3D = { "Frontal Bone": "Frontal_bone", "Femur": "Femurr", "Sacrum": "Sacrum", "Tibia": "Tibiar", "Mandible": "Mandible_bone" };
                 skeleton.traverse(node => {
                     if (node.isMesh) {
-                        const isRevealed = revealedNames.some(name => MAPPING_3D[name] === node.name || MAPPING_3D[name] + 'r' === node.name);
+                        const isLit = revealed.some(r => BONE_MAP_3D[r] === node.name || BONE_MAP_3D[r] + 'r' === node.name);
                         node.material = new THREE.MeshStandardMaterial({
-                            color: isRevealed ? 0x10b981 : 0x222222,
-                            transparent: true,
-                            opacity: isRevealed ? 1 : 0.15,
-                            wireframe: !isRevealed
+                            color: isLit ? 0x10b981 : 0x222222,
+                            transparent: true, opacity: isLit ? 1 : 0.1, wireframe: !isLit
                         });
                     }
                 });
             };
-
-            const animate = () => { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); };
+            const animate = () => { requestAnimationFrame(animate); renderer.render(scene, camera); };
             animate();
         };
 
