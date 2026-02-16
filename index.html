@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ANATOMLE | i hope</title>
+    <title>ANATOMLE | Pro v18.7</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
@@ -78,12 +78,23 @@
             'Humerus': ['Scapula', 'Radius', 'Ulna'],
             'Radius': ['Humerus', 'Ulna', 'Carpals'],
             'Ulna': ['Humerus', 'Radius', 'Carpals'],
+            'Carpals': ['Radius', 'Ulna', 'Metacarpals'],
+            'Metacarpals': ['Carpals', 'Phalanges (Hand)'],
+            'Phalanges (Hand)': ['Metacarpals'],
             'Lumbar Vertebrae': ['Thoracic Vertebrae', 'Sacrum'],
             'Sacrum': ['Lumbar Vertebrae', 'Ilium'],
             'Ilium': ['Sacrum', 'Pubis', 'Ischium', 'Femur'],
             'Femur': ['Ilium', 'Tibia', 'Patella'],
-            'Tibia': ['Femur', 'Fibula', 'Talus'],
-            'Fibula': ['Tibia']
+            'Patella': ['Femur', 'Tibia'],
+            'Tibia': ['Femur', 'Patella', 'Fibula', 'Talus'],
+            'Fibula': ['Tibia', 'Talus'],
+            'Talus': ['Tibia', 'Fibula', 'Calcaneus', 'Navicular'],
+            'Calcaneus': ['Talus', 'Cuboid'],
+            'Navicular': ['Talus', 'Cuneiforms'],
+            'Cuboid': ['Calcaneus', 'Metatarsals'],
+            'Cuneiforms': ['Navicular', 'Metatarsals'],
+            'Metatarsals': ['Cuboid', 'Cuneiforms', 'Phalanges (Foot)'],
+            'Phalanges (Foot)': ['Metatarsals']
         };
 
         // Define anatomically paired bones that should display side by side
@@ -91,7 +102,9 @@
             'Radius': 'Ulna',
             'Ulna': 'Radius',
             'Tibia': 'Fibula',
-            'Fibula': 'Tibia'
+            'Fibula': 'Tibia',
+            'Talus': 'Calcaneus',
+            'Calcaneus': 'Talus'
         };
 
         // Helper to check if two bones are twins
@@ -103,9 +116,22 @@
             "Frontal Bone": "Frontal", "Parietal Bone": "Parietal", "Occipital Bone": "Occipital",
             "Atlas (C1)": "Atlas", "Axis (C2)": "Axis", "Cervical Vertebrae": "Cervical",
             "Thoracic Vertebrae": "Thoracic", "Lumbar Vertebrae": "Lumbar", "Sacrum": "Sacrum",
-            "Sternum": "Sternum", "Clavicle": "Clavicle", "Scapula": "Scapula",
+            "Sternum": "sternum", "Clavicle": "Clavicl", "Scapula": "Scapula",
             "Humerus": "Humerus", "Radius": "Radius", "Ulna": "Ulna",
-            "Ilium": "Ilium", "Femur": "Femur", "Tibia": "Tibia", "Fibula": "Fibula", "Ribs": "Rib"
+            "Ilium": "Ilium", "Femur": "Femur", "Tibia": "Tibia", "Fibula": "Fibula", 
+            "Ribs": "Rib_", "Patella": "Patellar",
+            // Hand bones - matching actual GLB patterns
+            "Carpals": "Capitate", // Representative carpal bone (could also match Hamate, Lunate, Trapezium, etc.)
+            "Metacarpals": "metacarpal_boner", // Matches all 5 metacarpal bones
+            "Phalanges (Hand)": "d_finger", // Matches hand phalanges with digit format (2d_finger, 3d_finger)
+            // Foot bones - matching actual GLB patterns
+            "Talus": "Talus",
+            "Calcaneus": "Calcaneus",
+            "Navicular": "Navicular_boner",
+            "Cuboid": "Cuboid_boner",
+            "Cuneiforms": "cuneiform_boner", // Matches Lateral, Medial, Intermediate cuneiform
+            "Metatarsals": "metatarsal_boner", // Matches all 5 metatarsal bones
+            "Phalanges (Foot)": "_of_foot" // Matches all toe phalanges (have _of_footr suffix)
         };
 
         const findShortestPath = (start, end) => {
@@ -124,6 +150,7 @@
             const [target, setTarget] = useState({ start: '', end: '', path: [] });
             const [chain, setChain] = useState([]);
             const [guessesLeft, setGuessesLeft] = useState(10);
+            const [maxGuesses, setMaxGuesses] = useState(10);
             const [badGuesses, setBadGuesses] = useState([]);
             const [inputValue, setInputValue] = useState('');
             const [gameState, setGameState] = useState('playing');
@@ -146,7 +173,11 @@
                     guessed: idx === 0 // Only start is guessed initially
                 }));
                 setChain(initialChain);
-                setGuessesLeft(10); 
+                // Guesses = path length (excluding start which is free) + 3 extra attempts
+                const optimalGuesses = p.length - 1; // -1 because start is free
+                const totalGuesses = optimalGuesses + 3;
+                setGuessesLeft(totalGuesses);
+                setMaxGuesses(totalGuesses); 
                 setBadGuesses([]); 
                 setInputValue(''); 
                 setGameState('playing');
@@ -383,7 +414,7 @@
                         </button>
                     </div>
 
-                    {gameState !== 'playing' && (
+                    {gameState !== 'playing' && !showReveal && (
                         <div className={`fixed inset-0 z-[100] flex flex-col items-center justify-center backdrop-blur-xl ${gameState === 'won' ? 'victory-bg' : 'loss-bg'}`}>
                             <div className="text-center p-12 bg-slate-950/90 border border-white/10 rounded-3xl max-w-md">
                                 <h2 className="text-5xl font-black text-white mb-2 tracking-tighter uppercase">
@@ -391,7 +422,7 @@
                                 </h2>
                                 <p className="text-slate-400 text-sm mb-6">
                                     {gameState === 'won' 
-                                        ? `Correct path completed with ${10 - guessesLeft} guess${10 - guessesLeft !== 1 ? 'es' : ''}!` 
+                                        ? `Correct path completed with ${maxGuesses - guessesLeft}/${maxGuesses} guesses!` 
                                         : `Path not found. ${badGuesses.length} failed attempt${badGuesses.length !== 1 ? 's' : ''}.`
                                     }
                                 </p>
@@ -471,8 +502,26 @@
                     if (node.isMesh) {
                         const match = bones.find(b => {
                             const key = MAPPING_3D[b.name];
-                            return key && node.name.includes(key);
+                            if (!key) return false;
+                            
+                            // Special case: differentiate hand vs foot phalanges
+                            if (b.name === "Phalanges (Hand)") {
+                                return node.name.includes("phalanx") && !node.name.includes("footr");
+                            }
+                            if (b.name === "Phalanges (Foot)") {
+                                return node.name.includes("phalanx") && node.name.includes("footr");
+                            }
+                            
+                            // Special case: match all carpal bones
+                            if (b.name === "Carpals") {
+                                const carpalBones = ["Hamate", "Lunate", "Capitate", "Trapezium", "Trapezoid", "Scaphoid", "Pisiform", "Triquetrum"];
+                                return carpalBones.some(carpal => node.name.includes(carpal));
+                            }
+                            
+                            // Default: standard includes check
+                            return node.name.includes(key);
                         });
+                        
                         if (match) {
                             let col = 0x3b82f6; // Blue for correct guesses
                             let emissiveInt = 0.5;
