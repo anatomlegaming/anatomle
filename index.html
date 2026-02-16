@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ANATOMLE | Clinical 3D</title>
+    <title>ANATOMLE | test Clinical 3D</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
@@ -11,142 +11,159 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@900&family=EB+Garamond&display=swap');
         body { margin: 0; background: #050505; color: #d6d3d1; font-family: 'EB Garamond', serif; overflow: hidden; }
-        .ui-panel { background: rgba(10, 10, 10, 0.9); backdrop-filter: blur(15px); border-right: 1px solid #222; z-index: 10; }
+        
+        /* Fixed UI Layer */
+        #ui-root { position: absolute; inset: 0; z-index: 20; pointer-events: none; display: flex; }
+        .sidebar { 
+            width: 380px; height: 100vh; pointer-events: auto;
+            background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(20px);
+            border-right: 1px solid #222; display: flex; flex-direction: column;
+        }
+        
+        /* 3D Canvas Layer */
+        #canvas-container { position: absolute; inset: 0; z-index: 10; }
+        
         .glitch-text { font-family: 'Inter', sans-serif; font-weight: 900; letter-spacing: -0.05em; }
-        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; }
         .custom-scrollbar::-webkit-scrollbar { width: 3px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; }
+        
+        input::placeholder { color: #444; font-style: italic; }
     </style>
 </head>
 <body>
-    <div id="ui-layer" class="fixed inset-0 pointer-events-none flex">
-        <div class="w-85 p-6 flex flex-col pointer-events-auto ui-panel border-r border-stone-800">
-            <h1 class="glitch-text text-4xl text-white mb-1">ANATOMLE</h1>
-            <p class="text-[10px] text-stone-500 uppercase tracking-[0.3em] mb-8 border-b border-stone-800 pb-4">Clinical Pathway v24.3</p>
-            
-            <div id="path-container" class="flex-1 overflow-y-auto space-y-3 mb-6 pr-2 custom-scrollbar">
+
+    <div id="canvas-container"></div>
+
+    <div id="ui-root">
+        <div class="sidebar p-8">
+            <div class="mb-10">
+                <h1 class="glitch-text text-5xl text-white mb-1 leading-none">ANATOMLE</h1>
+                <div class="flex items-center gap-2">
+                    <span class="h-[1px] w-8 bg-emerald-500"></span>
+                    <p class="text-[10px] text-stone-500 uppercase tracking-[0.4em] font-bold">Clinical Pathway v24.3</p>
+                </div>
+            </div>
+
+            <div id="path-container" class="flex-1 overflow-y-auto space-y-4 mb-8 pr-2 custom-scrollbar">
                 </div>
 
-            <div class="space-y-4">
-                <div class="p-4 bg-stone-900/50 rounded border border-stone-700">
-                    <p class="text-[10px] text-stone-500 uppercase mb-2 font-bold italic">Diagnostic Target</p>
-                    <div class="flex justify-between items-center">
-                        <span id="target-name" class="font-bold uppercase text-white tracking-tight text-sm">Sacrum</span>
-                        <span class="text-emerald-500">🎯</span>
+            <div class="space-y-6 border-t border-stone-800 pt-8">
+                <div class="bg-stone-900/40 p-5 rounded-sm border border-stone-800 flex justify-between items-end">
+                    <div>
+                        <p class="text-[9px] text-stone-600 uppercase tracking-widest mb-1">Diagnostic Target</p>
+                        <h2 id="target-display" class="text-xl text-stone-200 font-bold uppercase tracking-tight">---</h2>
                     </div>
+                    <span class="text-emerald-500 text-2xl">🎯</span>
                 </div>
 
-                <div class="relative">
-                    <input id="guess-input" type="text" placeholder="Search structures..." 
-                        class="w-full bg-black border border-stone-800 p-4 rounded-lg italic text-white outline-none focus:border-emerald-500 transition-colors">
-                    <div id="suggestions" class="absolute bottom-full left-0 w-full bg-stone-900 border border-stone-700 rounded-t-lg hidden mb-1 overflow-hidden z-20"></div>
+                <div class="relative group">
+                    <input id="guess-input" type="text" autocomplete="off" placeholder="Identify structure..." 
+                        class="w-full bg-transparent border-b border-stone-800 py-4 text-lg text-white outline-none focus:border-emerald-500 transition-all duration-500">
+                    <div class="absolute bottom-0 left-0 h-[1px] w-0 bg-emerald-500 group-focus-within:w-full transition-all duration-700"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // --- 1. GAME DATA & MAPPING ---
-        // Mapping common names to the internal GLB names from your screenshots
-        const BONE_LOOKUP = {
+        // --- DATA SETUP ---
+        const TARGET_BONE = "Sacrum"; // Original Target
+        const BONE_MAP = {
             "Sacrum": "Sacrum",
-            "Frontal Bone": "Frontal_bone",
             "Femur": "Femurr",
-            "Tibia": "Tibiar",
+            "Frontal Bone": "Frontal_bone",
             "Mandible": "Mandible_bone",
             "Atlas": "Atlas_(C1)",
-            "Axis": "Axis_(C2)",
-            "Sternum": "Body_of_sternum",
-            "Radius": "Radiusr",
-            "Ulna": "Ulnar"
+            "Tibia": "Tibiar"
         };
-
-        const targetBone = "Sacrum";
         let guessChain = [];
 
-        // --- 2. THREE.JS ENGINE ---
+        // --- 3. THE 3D ENGINE ---
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
 
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        camera.position.set(0, 1, 5);
+        camera.position.set(0, 1.2, 5);
+        controls.enableDamping = true;
 
-        // Lights
-        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-        const light = new THREE.DirectionalLight(0xffffff, 1);
-        light.position.set(5, 10, 5);
-        scene.add(light);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+        const spot = new THREE.SpotLight(0xffffff, 1);
+        spot.position.set(5, 10, 5);
+        scene.add(spot);
 
-        // Draco Fix
-        const dracoLoader = new THREE.DRACOLoader();
-        dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
+        // Draco/GLTF Loader
+        const draco = new THREE.DRACOLoader();
+        draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
         const loader = new THREE.GLTFLoader();
-        loader.setDRACOLoader(dracoLoader);
+        loader.setDRACOLoader(draco);
 
-        let skeletonModel = null;
+        let skeleton = null;
         loader.load('./overview-skeleton.glb', (gltf) => {
-            skeletonModel = gltf.scene;
-            scene.add(skeletonModel);
-            updateVisuals();
+            skeleton = gltf.scene;
+            scene.add(skeleton);
+            updateModelVisuals();
         });
 
-        // --- 3. THE "SWAP/AHEAD" LOGIC INTEGRATION ---
-        function getBoneStatus(guess) {
-            if (guess.toLowerCase() === targetBone.toLowerCase()) return { emoji: '✅', color: 0x10b981 };
-            
-            // Simulation of "Swap" (Yellow) vs "Ahead" (Blue) logic
-            // In the full game, this would check your Graph connectivity
-            const isRelated = ["Frontal Bone", "Mandible"].includes(guess);
-            return isRelated ? { emoji: '🔀', color: 0xf59e0b } : { emoji: '🧬', color: 0x3b82f6 };
-        }
+        // --- LOGIC INTEGRATION ---
+        document.getElementById('target-display').innerText = TARGET_BONE;
 
-        function updateVisuals() {
-            if (!skeletonModel) return;
-            skeletonModel.traverse((node) => {
+        function updateModelVisuals() {
+            if (!skeleton) return;
+            skeleton.traverse(node => {
                 if (node.isMesh) {
-                    // Match by name or name+'r'
-                    const guessData = guessChain.find(g => 
-                        BONE_LOOKUP[g.name] === node.name || (BONE_LOOKUP[g.name] + 'r') === node.name
-                    );
-
-                    if (guessData) {
+                    const guess = guessChain.find(g => BONE_MAP[g.bone] === node.name || (BONE_MAP[g.bone] + 'r') === node.name);
+                    
+                    if (guess) {
                         node.material = new THREE.MeshStandardMaterial({
-                            color: guessData.color,
-                            emissive: guessData.color,
-                            emissiveIntensity: 0.4
+                            color: guess.color,
+                            emissive: guess.color,
+                            emissiveIntensity: 0.3
                         });
                     } else {
                         node.material = new THREE.MeshStandardMaterial({
-                            color: 0x222222,
+                            color: 0x1a1a1a,
                             transparent: true,
-                            opacity: 0.15
+                            opacity: 0.1,
+                            wireframe: true
                         });
                     }
                 }
             });
         }
 
-        // --- 4. UI HANDLERS ---
         const input = document.getElementById('guess-input');
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && input.value) {
                 const val = input.value.trim();
-                const status = getBoneStatus(val);
+                let status = { emoji: '🧬', color: 0x3b82f6 }; // Default: Ahead
                 
-                guessChain.push({ name: val, ...status });
-                
-                const item = document.createElement('div');
-                item.className = "p-4 bg-stone-900 border border-stone-800 rounded flex justify-between items-center text-xs font-bold uppercase tracking-widest text-white";
-                item.innerHTML = `<span>${val}</span><span style="color: #${status.color.toString(16)}">${status.emoji}</span>`;
-                document.getElementById('path-container').prepend(item);
-                
+                if (val.toLowerCase() === TARGET_BONE.toLowerCase()) {
+                    status = { emoji: '✅', color: 0x10b981 }; // Correct
+                } else if (val.toLowerCase().includes('lumbar')) {
+                    status = { emoji: '🔀', color: 0xf59e0b }; // Swap simulation
+                }
+
+                guessChain.push({ bone: val, ...status });
+                addUICard(val, status);
+                updateModelVisuals();
                 input.value = '';
-                updateVisuals();
             }
         });
+
+        function addUICard(name, status) {
+            const container = document.getElementById('path-container');
+            const card = document.createElement('div');
+            card.className = "p-4 bg-stone-900/60 border-l-2 border-stone-800 flex justify-between items-center group hover:border-emerald-500 transition-all duration-300";
+            card.style.borderLeftColor = '#' + status.color.toString(16);
+            card.innerHTML = `
+                <span class="text-[11px] uppercase tracking-widest text-stone-300 font-bold">${name}</span>
+                <span class="text-lg">${status.emoji}</span>
+            `;
+            container.prepend(card);
+        }
 
         function animate() {
             requestAnimationFrame(animate);
