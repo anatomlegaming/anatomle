@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ANATOMLE 3D | V24 LOCAL</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@900&family=EB+Garamond&display=swap');
+        body { margin: 0; background: #050505; color: #d6d3d1; font-family: 'EB Garamond', serif; overflow: hidden; }
+        .ui-panel { background: rgba(10, 10, 10, 0.9); backdrop-filter: blur(15px); border-right: 1px solid #222; }
+        .glitch-text { font-family: 'Inter', sans-serif; font-weight: 900; letter-spacing: -0.05em; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <div id="ui-layer" class="fixed inset-0 pointer-events-none flex">
+        <div class="w-80 p-6 flex flex-col pointer-events-auto ui-panel">
+            <h1 class="glitch-text text-4xl text-white mb-1">ANATOMLE</h1>
+            <p class="text-[10px] text-stone-500 uppercase tracking-[0.3em] mb-8 border-b border-stone-800 pb-4">Native 3D Build</p>
+            
+            <div id="path-container" class="flex-1 overflow-y-auto space-y-3 mb-6 pr-2"></div>
+
+            <div class="space-y-4">
+                <div class="p-4 bg-stone-900/50 rounded border border-stone-700">
+                    <p class="text-[10px] text-stone-500 uppercase mb-2">Target</p>
+                    <div class="flex justify-between items-center">
+                        <span id="target-name" class="font-bold uppercase text-white text-sm">Sacrum</span>
+                        <span>🎯</span>
+                    </div>
+                </div>
+                <input id="guess-input" type="text" placeholder="Type bone name..." 
+                    class="w-full bg-black border border-stone-800 p-4 rounded italic text-white outline-none focus:border-emerald-500 transition-all">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. EXPANDED BONE MAPPING FROM SCREENSHOTS ---
+        const BONE_MAP = {
+            "Frontal Bone": "Frontal_bone",
+            "Mandible": "Mandible_bone",
+            "Sacrum": "Sacrum",
+            "Atlas (C1)": "Atlas_(C1)",
+            "Axis (C2)": "Axis_(C2)",
+            "Femur": "Femurr",
+            "Tibia": "Tibiar",
+            "Fibula": "Fibular",
+            "Radius": "Radiusr",
+            "Ulna": "Ulnar",
+            "Lumbar L1": "Lumbar_vertebrae_(L1)",
+            "Thoracic T1": "Thoracic_vertebrae_(T1)",
+            "Parietal Left": "Parietal_bone_left",
+            "Parietal Right": "Parietal_bone_right"
+        };
+
+        const targetBone = "Sacrum";
+        let guessChain = [];
+
+        // --- 2. THREE.JS BOILERPLATE ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        camera.position.set(0, 1, 5);
+
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(5, 10, 5);
+        scene.add(light);
+
+        let skeletonModel = null;
+        const loader = new THREE.GLTFLoader();
+
+        // 3. LOAD LOCAL GLB
+        loader.load('./overview-skeleton.glb', (gltf) => {
+            skeletonModel = gltf.scene;
+            scene.add(skeletonModel);
+            updateVisuals();
+        });
+
+        // 4. HIGHLIGHTING LOGIC
+        function updateVisuals() {
+            if (!skeletonModel) return;
+            skeletonModel.traverse((node) => {
+                if (node.isMesh) {
+                    const internalName = node.name;
+                    const gameBone = Object.keys(BONE_MAP).find(k => BONE_MAP[k] === internalName);
+                    
+                    const isGuessed = guessChain.find(c => c.bone === gameBone);
+                    const isTarget = gameBone === targetBone;
+
+                    node.material = new THREE.MeshStandardMaterial({
+                        color: isTarget ? 0xef4444 : (isGuessed ? 0x10b981 : 0x222222),
+                        transparent: !isGuessed && !isTarget,
+                        opacity: isGuessed || isTarget ? 1 : 0.1,
+                        emissive: isGuessed ? 0x10b981 : (isTarget ? 0xef4444 : 0x000000),
+                        emissiveIntensity: 0.3
+                    });
+                }
+            });
+        }
+
+        // --- 5. UI INTERACTION ---
+        const input = document.getElementById('guess-input');
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && input.value) {
+                const val = input.value;
+                guessChain.push({ bone: val });
+                
+                const item = document.createElement('div');
+                item.className = "p-3 bg-stone-900 border border-stone-800 rounded flex justify-between text-xs font-bold uppercase";
+                item.innerHTML = `<span>${val}</span><span class="text-emerald-500">✅</span>`;
+                document.getElementById('path-container').prepend(item);
+                
+                input.value = '';
+                updateVisuals();
+            }
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
