@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>aa | Pro Colors v18</title>
+    <title>aaaaa | Pro v18.4</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
@@ -14,18 +14,14 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@900&family=EB+Garamond:wght@400;700&display=swap');
         body { font-family: 'EB Garamond', serif; background-color: #050505; color: #d6d3d1; margin: 0; overflow: hidden; }
-        
-        #root { position: relative; z-index: 50; width: 450px; height: 100vh; pointer-events: none; }
-        .sidebar { pointer-events: auto; background: rgba(8, 8, 8, 0.96); border-right: 1px solid #222; height: 100%; display: flex; flex-direction: column; }
-        #canvas-container { position: absolute; right: 0; top: 0; width: calc(100% - 450px); height: 100vh; z-index: 10; background: radial-gradient(circle at center, #111 0%, #000 100%); }
-        
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-        .suggestion-item { cursor: pointer; border-bottom: 1px solid #222; transition: background 0.2s; }
-        .suggestion-item:hover { background: #10b981; color: black; }
-        
-        @keyframes flash-blue { 0% { background-color: rgba(59, 130, 246, 0.5); } 100% { background-color: transparent; } }
-        .animate-flash { animation: flash-blue 1s ease-out; }
+        #canvas-container { position: absolute; right: 0; top: 0; width: calc(100% - 400px); height: 100vh; z-index: 10; background: #000; }
+        .sidebar { width: 400px; height: 100vh; background: rgba(8,8,8,0.98); border-right: 1px solid #222; position: relative; z-index: 50; display: flex; flex-direction: column; pointer-events: auto; }
+        .custom-scrollbar::-webkit-scrollbar { width: 2px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #444; }
+        .suggestion-item { transition: all 0.2s ease; cursor: pointer; border-bottom: 1px solid #1a1a1a; }
+        .suggestion-item:hover { background: #3b82f6; color: white; padding-left: 1rem; }
+        .victory-bg { background: radial-gradient(circle, rgba(16,185,129,0.3) 0%, rgba(0,0,0,1) 100%); }
+        .loss-bg { background: radial-gradient(circle, rgba(239,68,68,0.3) 0%, rgba(0,0,0,1) 100%); }
     </style>
 </head>
 <body>
@@ -35,55 +31,36 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useCallback } = React;
 
-        // --- 1. DATA GRAPH ---
         const SKELETON_GRAPH = {
             'Frontal Bone': ['Parietal Bone', 'Ethmoid', 'Sphenoid', 'Nasal Bone', 'Maxilla', 'Zygomatic Bone'],
             'Parietal Bone': ['Frontal Bone', 'Temporal Bone', 'Occipital Bone', 'Sphenoid'],
             'Occipital Bone': ['Parietal Bone', 'Temporal Bone', 'Atlas (C1)'],
-            'Temporal Bone': ['Parietal Bone', 'Occipital Bone', 'Sphenoid', 'Zygomatic Bone', 'Mandible'],
-            'Mandible': ['Temporal Bone', 'Maxilla'],
-            'Maxilla': ['Frontal Bone', 'Nasal Bone', 'Zygomatic Bone', 'Mandible'],
-            'Zygomatic Bone': ['Frontal Bone', 'Sphenoid', 'Temporal Bone', 'Maxilla'],
             'Atlas (C1)': ['Occipital Bone', 'Axis (C2)'],
             'Axis (C2)': ['Atlas (C1)', 'Cervical Vertebrae'],
             'Cervical Vertebrae': ['Axis (C2)', 'Thoracic Vertebrae'],
             'Thoracic Vertebrae': ['Cervical Vertebrae', 'Lumbar Vertebrae', 'Ribs', 'Sternum'],
             'Sternum': ['Thoracic Vertebrae', 'Clavicle', 'Ribs'],
             'Ribs': ['Thoracic Vertebrae', 'Sternum'],
-            'Lumbar Vertebrae': ['Thoracic Vertebrae', 'Sacrum'],
-            'Sacrum': ['Lumbar Vertebrae', 'Coccyx', 'Ilium'],
-            'Coccyx': ['Sacrum'],
-            'Ilium': ['Sacrum', 'Pubis', 'Ischium', 'Femur'],
-            'Pubis': ['Ilium', 'Ischium'],
-            'Ischium': ['Ilium', 'Pubis'],
             'Clavicle': ['Sternum', 'Scapula'],
             'Scapula': ['Clavicle', 'Humerus'],
             'Humerus': ['Scapula', 'Radius', 'Ulna'],
             'Radius': ['Humerus', 'Ulna', 'Carpals'],
             'Ulna': ['Humerus', 'Radius', 'Carpals'],
-            'Femur': ['Ilium', 'Patella', 'Tibia'],
-            'Patella': ['Femur', 'Tibia'],
-            'Tibia': ['Femur', 'Patella', 'Fibula', 'Talus'],
-            'Fibula': ['Tibia', 'Talus'],
-            'Talus': ['Tibia', 'Fibula', 'Calcaneus'],
-            'Carpals': ['Radius', 'Ulna', 'Metacarpals'],
-            'Metacarpals': ['Carpals', 'Phalanges'],
-            'Phalanges': ['Metacarpals']
+            'Lumbar Vertebrae': ['Thoracic Vertebrae', 'Sacrum'],
+            'Sacrum': ['Lumbar Vertebrae', 'Ilium'],
+            'Ilium': ['Sacrum', 'Pubis', 'Ischium', 'Femur'],
+            'Femur': ['Ilium', 'Tibia', 'Patella'],
+            'Tibia': ['Femur', 'Fibula', 'Talus'],
+            'Fibula': ['Tibia']
         };
 
-        const TWIN_BONES = [['Radius', 'Ulna'], ['Tibia', 'Fibula'], ['Ilium', 'Ischium', 'Pubis'], ['Carpals', 'Metacarpals']];
-
-        // --- 2. 3D MAPPING ---
         const MAPPING_3D = {
             "Frontal Bone": "Frontal", "Parietal Bone": "Parietal", "Occipital Bone": "Occipital",
-            "Temporal Bone": "Temporal", "Mandible": "Mandible", "Maxilla": "Maxilla", "Zygomatic Bone": "Zygomatic",
-            "Atlas (C1)": "Atlas", "Axis (C2)": "Axis", 
-            "Cervical Vertebrae": "Cervical", "Thoracic Vertebrae": "Thoracic", "Lumbar Vertebrae": "Lumbar",
-            "Sacrum": "Sacrum", "Coccyx": "Coccyx", "Sternum": "Sternum", "Ribs": "Rib",
-            "Clavicle": "Clavicle", "Scapula": "Scapula", "Humerus": "Humerus", "Radius": "Radius", "Ulna": "Ulna",
-            "Carpals": "Carpal", "Metacarpals": "Metacarpal", "Phalanges": "Phalan",
-            "Ilium": "Ilium", "Ischium": "Ischium", "Pubis": "Pubis",
-            "Femur": "Femur", "Patella": "Patella", "Tibia": "Tibia", "Fibula": "Fibula", "Talus": "Talus"
+            "Atlas (C1)": "Atlas", "Axis (C2)": "Axis", "Cervical Vertebrae": "Cervical",
+            "Thoracic Vertebrae": "Thoracic", "Lumbar Vertebrae": "Lumbar", "Sacrum": "Sacrum",
+            "Sternum": "Sternum", "Clavicle": "Clavicle", "Scapula": "Scapula",
+            "Humerus": "Humerus", "Radius": "Radius", "Ulna": "Ulna",
+            "Ilium": "Ilium", "Femur": "Femur", "Tibia": "Tibia", "Fibula": "Fibula", "Ribs": "Rib"
         };
 
         const findShortestPath = (start, end) => {
@@ -104,9 +81,8 @@
             const [guessesLeft, setGuessesLeft] = useState(10);
             const [badGuesses, setBadGuesses] = useState([]);
             const [inputValue, setInputValue] = useState('');
-            const [lastFilled, setLastFilled] = useState(null);
+            const [gameState, setGameState] = useState('playing'); 
 
-            // --- INITIALIZATION ---
             const initGame = useCallback(() => {
                 const bones = Object.keys(SKELETON_GRAPH);
                 let s, e, p;
@@ -114,231 +90,157 @@
                     s = bones[Math.floor(Math.random() * bones.length)];
                     e = bones[Math.floor(Math.random() * bones.length)];
                     p = findShortestPath(s, e);
-                } while (!p || p.length < 3 || p.length > 7);
-                
+                } while (!p || p.length < 3 || p.length > 8 || s === e);
+
                 setTarget({ start: s, end: e, path: p });
-                // Initialize with Start AND End visible
-                setChain([
-                    { bone: s, type: 'start', emoji: '📍', hidden: false, id: 0 },
-                    { bone: e, type: 'end', emoji: '🎯', hidden: false, id: 999 }
-                ]);
-                setGuessesLeft(10);
-                setBadGuesses([]);
-                setInputValue('');
-                setLastFilled(null);
+                setChain([{ bone: s, type: 'start', hidden: false }]);
+                setGuessesLeft(10); setBadGuesses([]); setInputValue(''); setGameState('playing');
+                if (window.reset3D) window.reset3D();
             }, []);
 
             useEffect(() => { initGame(); }, [initGame]);
 
-            // --- 3D SYNC (SENDS COLOR DATA) ---
             useEffect(() => {
-                const visibleNodes = chain.filter(c => !c.hidden).map(c => ({
-                    name: c.bone,
-                    type: c.type // 'start', 'end', or 'guess'
-                }));
-                if (window.update3D) window.update3D(visibleNodes);
-            }, [chain]);
+                const visible = chain.filter(c => !c.hidden).map(c => ({ name: c.bone, type: c.type }));
+                visible.push({ name: target.end, type: 'end' });
+                if (window.update3D) window.update3D(visible);
+            }, [chain, target]);
 
-            // --- GUESS LOGIC ---
             const submitGuess = (guess) => {
-                setGuessesLeft(prev => prev - 1);
+                if (gameState !== 'playing') return;
                 
-                // 1. Validate Jump Logic
-                const currentVisible = chain.filter(n => !n.hidden && n.type !== 'end');
-                const lastVisible = currentVisible[currentVisible.length - 1]; // Get last revealed bone (excluding end target)
-                
-                if (!lastVisible) return; // Safety
+                // 1. Cost a guess
+                const newGuessesLeft = guessesLeft - 1;
+                setGuessesLeft(newGuessesLeft);
 
-                const pathToEnd = findShortestPath(lastVisible.bone, guess);
-                
-                if (pathToEnd) {
+                // 2. Logic check
+                const lastVisible = chain.filter(c => !c.hidden).pop();
+                const pathToGuess = findShortestPath(lastVisible.bone, guess);
+
+                if (pathToGuess) {
                     const newItems = [];
-                    // We only care about the path UP TO the guess.
-                    // If path is [A, B, C] and A is lastVisible and C is guess.
-                    
-                    for (let k = 1; k < pathToEnd.length; k++) {
-                        const boneName = pathToEnd[k];
-                        const isGuess = boneName === guess;
-                        
-                        // Check if already in chain (ignore start/end dupes)
-                        const existingIdx = chain.findIndex(c => c.bone === boneName);
-                        
-                        if (existingIdx === -1) {
-                             newItems.push({
-                                bone: boneName,
-                                hidden: !isGuess,
-                                type: 'guess', // Middle bones are blue
-                                emoji: isGuess ? '🧬' : '', 
-                                id: Date.now() + k
-                            });
-                        } else if (isGuess && chain[existingIdx].hidden) {
-                            // If it exists but is hidden, reveal it
-                            setChain(prev => prev.map(c => c.bone === guess ? { ...c, hidden: false, type: 'guess', emoji: '🧬' } : c));
-                            return;
+                    // Add steps between last bone and this guess
+                    for (let i = 1; i < pathToGuess.length; i++) {
+                        const bone = pathToGuess[i];
+                        const isGuess = (bone === guess);
+                        if (!chain.some(c => c.bone === bone)) {
+                            newItems.push({ bone, type: 'guess', hidden: !isGuess });
                         }
                     }
+                    const updatedChain = [...chain, ...newItems];
+                    setChain(updatedChain);
                     
-                    if (newItems.length > 0) {
-                        // Insert new items BEFORE the end node
-                        setChain(prev => {
-                            const endNode = prev[prev.length - 1];
-                            const others = prev.slice(0, prev.length - 1);
-                            return [...others, ...newItems, endNode];
-                        });
-                        setLastFilled(guess);
+                    // 3. WIN CHECK: Is this bone a neighbor of the target end?
+                    if (SKELETON_GRAPH[guess].includes(target.end)) {
+                        setGameState('won');
+                        return;
                     }
                 } else {
                     setBadGuesses(prev => [guess, ...prev]);
+                }
+                
+                // 4. LOSE CHECK
+                if (newGuessesLeft <= 0) {
+                    setGameState('lost');
                 }
                 setInputValue('');
             };
 
             const suggestions = useMemo(() => {
                 if (!inputValue) return [];
-                return Object.keys(SKELETON_GRAPH).filter(b => b.toLowerCase().includes(inputValue.toLowerCase())).slice(0, 5);
-            }, [inputValue]);
-
-            // --- GROUPING LOGIC ---
-            const groupedDisplay = useMemo(() => {
-                // We want to group items, but keep the visual gap before the End node if there's a jump
-                return chain.reduce((acc, item) => {
-                    const lastGroup = acc.length > 0 ? acc[acc.length - 1] : null;
-                    const lastBone = lastGroup ? lastGroup[0].bone : null;
-                    
-                    const isTwin = TWIN_BONES.some(pair => pair.includes(item.bone) && lastBone && pair.includes(lastBone));
-                    // Don't group the End node with previous ones usually, unless strictly twin
-                    if (isTwin && item.type !== 'end') {
-                        lastGroup.push(item);
-                    } else {
-                        acc.push([item]);
-                    }
-                    return acc;
-                }, []);
-            }, [chain]);
+                const alreadyInChain = chain.map(c => c.bone);
+                return Object.keys(SKELETON_GRAPH)
+                    .filter(b => 
+                        b.toLowerCase().includes(inputValue.toLowerCase()) && 
+                        !alreadyInChain.includes(b) && 
+                        b !== target.end && 
+                        b !== target.start
+                    ).slice(0, 5);
+            }, [inputValue, chain, target]);
 
             return (
-                <div className="sidebar p-8 shadow-2xl">
-                    <header className="mb-6">
-                        <h1 className="text-5xl font-black text-white tracking-tighter mb-2">ANATOMLE</h1>
-                        <div className="flex items-center gap-3 border-b border-stone-800 pb-4">
-                            <span className="bg-emerald-500 text-black text-[10px] font-black px-2 py-1 uppercase rounded">PRO COLORS</span>
-                            <span className="text-[10px] text-stone-500 tracking-widest uppercase">v18.Colors</span>
+                <div className="sidebar p-6">
+                    <header className="mb-4">
+                        <h1 className="text-3xl font-black text-white tracking-tighter uppercase">Anatomle</h1>
+                        <div className="flex justify-between items-center border-b border-stone-800 pb-2">
+                            <span className="text-[9px] text-stone-500 tracking-[0.3em] uppercase">Clinical Pro v18.4</span>
+                            <span className={`text-xs font-bold ${guessesLeft < 4 ? 'text-red-500' : 'text-emerald-500'}`}>{guessesLeft} Guesses Left</span>
                         </div>
                     </header>
 
-                    <div className="bg-stone-900/60 p-6 rounded-lg border border-stone-800 mb-6 flex justify-between items-end">
-                        <div>
-                            <p className="text-[10px] text-stone-500 uppercase font-bold mb-1">Target Diagnostic</p>
-                            <div className="flex items-center gap-2 text-white">
-                                <span className="font-bold uppercase text-emerald-500">{target.start}</span>
-                                <span className="text-stone-600">→</span>
-                                <span className="font-bold uppercase text-amber-500">{target.end}</span>
+                    <div className="bg-stone-900/30 p-3 border border-stone-800 mb-4 rounded">
+                        <p className="text-[8px] text-stone-600 uppercase font-bold">Pathway</p>
+                        <p className="text-xs font-bold uppercase tracking-tight">
+                            <span className="text-emerald-500">{target.start}</span> 
+                            <span className="px-2 text-stone-700">→</span> 
+                            <span className="text-amber-500">{target.end}</span>
+                        </p>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-1 mb-4">
+                        {chain.map((item, idx) => (
+                            <div key={idx} className={`p-2 border ${item.hidden ? 'border-dashed border-stone-800/50 bg-transparent opacity-20' : 'bg-stone-900/80 border-stone-700 shadow-sm'}`}>
+                                <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest">
+                                    <span className={item.type === 'start' ? 'text-emerald-500' : 'text-blue-400'}>{item.hidden ? '???' : item.bone}</span>
+                                    <span>{item.type === 'start' ? '📍' : '🧬'}</span>
+                                </div>
+                            </div>
+                        ))}
+                        <div className="py-1 flex flex-col items-center opacity-10">
+                            <div className="w-[1px] h-3 bg-white"></div>
+                        </div>
+                        <div className="p-2 bg-stone-900/20 border border-amber-900/30 rounded">
+                            <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-amber-500/60">
+                                <span>{target.end}</span>
+                                <span>🎯</span>
                             </div>
                         </div>
-                        <div className="text-right">
-                            <p className="text-[10px] text-stone-500 uppercase font-bold">Guesses</p>
-                            <p className={`text-3xl font-black ${guessesLeft < 4 ? 'text-red-500' : 'text-white'}`}>{guessesLeft}</p>
-                        </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto space-y-4 mb-6 pr-2 custom-scrollbar">
-                        {groupedDisplay.map((group, gIdx) => {
-                            const isEndGroup = group[0].type === 'end';
-                            // Calculate if we need a visual gap (if this is the end group and previous wasn't a direct neighbor)
-                            // For simplicity, we just put a gap before the End Node if the list is short
-                            const showGap = isEndGroup && chain.length === 2; // Only start and end exist
-
-                            return (
-                                <React.Fragment key={gIdx}>
-                                    {showGap && (
-                                        <div className="flex flex-col items-center py-4 opacity-30">
-                                            <div className="w-[1px] h-4 bg-stone-500 mb-1"></div>
-                                            <span className="text-[9px] uppercase tracking-widest text-stone-500">Path Gap</span>
-                                            <div className="w-[1px] h-4 bg-stone-500 mt-1"></div>
-                                        </div>
-                                    )}
-                                    
-                                    {!isEndGroup && gIdx > 0 && <div className="ml-6 w-[1px] h-4 bg-stone-800"></div>}
-
-                                    <div className="flex gap-2">
-                                        {group.map((node) => {
-                                            // Determine Border Color based on Type
-                                            let borderColor = 'border-stone-700';
-                                            if (node.type === 'start') borderColor = 'border-emerald-500/50';
-                                            if (node.type === 'end') borderColor = 'border-amber-500/50';
-                                            if (node.type === 'guess' && !node.hidden) borderColor = 'border-blue-500/50';
-
-                                            return (
-                                                <div key={node.id} 
-                                                     className={`flex-1 p-4 rounded border transition-all duration-300 ${node.hidden ? 'border-dashed border-stone-800 bg-transparent opacity-40' : `bg-stone-900 ${borderColor} shadow-lg`} ${lastFilled === node.bone ? 'animate-flash' : ''}`}>
-                                                    <div className="flex justify-between items-center">
-                                                        <span className={`text-[10px] font-black uppercase tracking-widest ${node.type === 'start' ? 'text-emerald-500' : node.type === 'end' ? 'text-amber-500' : 'text-stone-300'}`}>
-                                                            {node.hidden ? '???' : node.bone}
-                                                        </span>
-                                                        <span className="text-xs">{node.emoji}</span>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </React.Fragment>
-                            );
-                        })}
-                    </div>
-
-                    <div className="mt-auto pt-6 border-t border-stone-800 space-y-4">
-                        <div className="relative group">
+                    <div className="mt-auto space-y-3">
+                        <div className="relative">
                             <input 
-                                className="w-full bg-black border border-stone-800 p-4 text-white outline-none focus:border-emerald-500 italic text-sm transition-all"
-                                placeholder="Identify structure..."
-                                value={inputValue}
-                                onChange={e => setInputValue(e.target.value)}
+                                className="w-full bg-black border border-stone-800 p-3 text-white outline-none focus:border-blue-500 text-xs italic" 
+                                placeholder="Search structures..." 
+                                value={inputValue} 
+                                onChange={e => setInputValue(e.target.value)} 
                             />
                             {suggestions.length > 0 && (
-                                <div className="absolute bottom-full left-0 w-full bg-stone-900 border border-stone-700 mb-2 rounded-t-lg overflow-hidden shadow-2xl z-[100]">
-                                    {suggestions.map(s => (
-                                        <div key={s} onClick={() => submitGuess(s)} className="suggestion-item p-3 text-[10px] uppercase font-black text-stone-400">
-                                            {s}
-                                        </div>
-                                    ))}
+                                <div className="absolute bottom-full left-0 w-full bg-stone-950 border border-stone-800 z-[60] shadow-2xl">
+                                    {suggestions.map(s => <div key={s} onClick={() => submitGuess(s)} className="suggestion-item p-3 text-[10px] uppercase font-black">{s}</div>)}
                                 </div>
                             )}
                         </div>
-
-                        {badGuesses.length > 0 && (
-                            <div className="p-3 border border-red-900/30 bg-red-950/10 rounded flex flex-wrap gap-2">
-                                {badGuesses.map((g, i) => (
-                                    <span key={i} className="text-[9px] font-bold text-red-500 bg-red-900/20 px-2 py-1 rounded border border-red-900/30 uppercase">{g}</span>
-                                ))}
-                            </div>
-                        )}
-
-                        <button onClick={initGame} className="w-full py-4 bg-white text-black text-[10px] font-black uppercase tracking-[0.2em] hover:bg-emerald-500 hover:text-white transition-all">
-                            Next Patient
-                        </button>
+                        <div className="flex flex-wrap gap-1 min-h-[30px]">
+                            {badGuesses.map((g, i) => <span key={i} className="text-[8px] text-red-500 bg-red-950/10 px-2 py-0.5 border border-red-900/20 uppercase font-bold">{g}</span>)}
+                        </div>
                     </div>
+
+                    {gameState !== 'playing' && (
+                        <div className={`fixed inset-0 z-[100] flex flex-col items-center justify-center backdrop-blur-xl ${gameState === 'won' ? 'victory-bg' : 'loss-bg'}`}>
+                            <div className="text-center p-12 bg-black/60 border border-white/10 rounded-2xl shadow-2xl">
+                                <h2 className="text-5xl font-black text-white mb-2 tracking-tighter uppercase">{gameState === 'won' ? 'Diagnostic Success' : 'Critical Failure'}</h2>
+                                <p className="text-stone-400 italic mb-8 uppercase text-[10px] tracking-widest">
+                                    {gameState === 'won' ? `System Synced: ${target.start} to ${target.end}` : `Patient Lost at ${target.end}`}
+                                </p>
+                                <button onClick={initGame} className="px-10 py-4 bg-white text-black font-black text-xs uppercase hover:bg-emerald-500 hover:text-white transition-all shadow-xl">New Case</button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         }
 
-        // --- 3. 3D ENGINE (COLORS UPDATE) ---
         const init3D = () => {
             const container = document.getElementById('canvas-container');
             const scene = new THREE.Scene();
             const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
             const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            
             renderer.setSize(container.clientWidth, container.clientHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
             container.appendChild(renderer.domElement);
-
-            const controls = new THREE.OrbitControls(camera, renderer.domElement);
-            camera.position.set(2, 2, 5); 
-
-            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-            const spot = new THREE.SpotLight(0xffffff, 1.5);
-            spot.position.set(10, 20, 10);
-            scene.add(spot);
+            new THREE.OrbitControls(camera, renderer.domElement);
+            camera.position.set(0, 1.2, 5);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
 
             const draco = new THREE.DRACOLoader();
             draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
@@ -349,62 +251,40 @@
             loader.load('./overview-skeleton.glb', (gltf) => {
                 skeleton = gltf.scene;
                 scene.add(skeleton);
-                // Initial Reset
-                updateMaterials([]);
+                window.reset3D();
             });
 
-            // Reusable Material Updater
-            const updateMaterials = (boneData) => {
+            window.reset3D = () => {
                 if (!skeleton) return;
-                
                 skeleton.traverse(node => {
                     if (node.isMesh) {
-                        // Find if this node matches any visible bone
-                        const match = boneData.find(b => {
-                            const keyword = MAPPING_3D[b.name];
-                            return keyword && node.name.includes(keyword);
+                        node.material = new THREE.MeshStandardMaterial({ 
+                            color: 0x1a1a1a, transparent: true, opacity: 0.1, wireframe: true 
                         });
+                    }
+                });
+            };
 
+            window.update3D = (bones) => {
+                if (!skeleton) return;
+                skeleton.traverse(node => {
+                    if (node.isMesh) {
+                        const match = bones.find(b => {
+                            const key = MAPPING_3D[b.name];
+                            return key && node.name.includes(key);
+                        });
                         if (match) {
-                            // DETERMINE COLOR
-                            let colorHex = 0x3b82f6; // Default Blue (Guess)
-                            if (match.type === 'start') colorHex = 0x10b981; // Green
-                            if (match.type === 'end') colorHex = 0xf59e0b;   // Gold
-
-                            node.material = new THREE.MeshStandardMaterial({
-                                color: colorHex,
-                                emissive: colorHex,
-                                emissiveIntensity: 0.6,
-                                roughness: 0.2,
-                                metalness: 0.8,
-                                transparent: false,
-                                opacity: 1.0
-                            });
-                        } else {
-                            // Ghost Mode
-                            node.material = new THREE.MeshStandardMaterial({
-                                color: 0x111111,
-                                roughness: 0.6,
-                                metalness: 0.1,
-                                transparent: true,
-                                opacity: 0.2,
-                                wireframe: true
+                            let col = 0x3b82f6; 
+                            if (match.type === 'start') col = 0x10b981;
+                            if (match.type === 'end') col = 0xf59e0b;
+                            node.material = new THREE.MeshStandardMaterial({ 
+                                color: col, emissive: col, emissiveIntensity: 0.4, transparent: false, opacity: 1 
                             });
                         }
                     }
                 });
             };
-
-            // Global Hook
-            window.update3D = (boneData) => {
-                updateMaterials(boneData);
-            };
-
-            const animate = () => {
-                requestAnimationFrame(animate);
-                controls.update();
-                renderer.render(scene, camera);
-            };
+            const animate = () => { requestAnimationFrame(animate); renderer.render(scene, camera); };
             animate();
         };
 
