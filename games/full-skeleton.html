@@ -121,7 +121,33 @@
             controls.minDistance = 1;
             controls.maxDistance = 10;
             controls.maxPolarAngle = Math.PI;
+            controls.enableZoom = false; // replaced by cursor-based zoom below
             camera.position.set(0, 1.2, 5);
+
+            // Zoom toward wherever the mouse is, not the orbit center
+            renderer.domElement.addEventListener('wheel', function(e) {
+                e.preventDefault();
+                var rect = renderer.domElement.getBoundingClientRect();
+                var mouse = new THREE.Vector2(
+                    ((e.clientX - rect.left) / rect.width) * 2 - 1,
+                    -((e.clientY - rect.top) / rect.height) * 2 + 1
+                );
+                var ray = new THREE.Raycaster();
+                ray.setFromCamera(mouse, camera);
+                // Prefer a hit on the actual mesh; fall back to a point along the ray
+                var target3d;
+                if (_skeleton) {
+                    var hits = ray.intersectObjects([_skeleton], true);
+                    if (hits.length) target3d = hits[0].point.clone();
+                }
+                if (!target3d) target3d = ray.ray.at(camera.position.distanceTo(controls.target), new THREE.Vector3());
+                var dir = new THREE.Vector3().subVectors(target3d, camera.position);
+                var dist = camera.position.distanceTo(controls.target);
+                var step = dir.length() * 0.12;
+                if (e.deltaY < 0 && dist > controls.minDistance) camera.position.addScaledVector(dir.normalize(), step);
+                else if (e.deltaY > 0 && dist < controls.maxDistance) camera.position.addScaledVector(dir.normalize(), -step);
+                controls.update();
+            }, { passive: false });
 
             scene.add(new THREE.AmbientLight(0xffffff, 0.6));
             var dl = new THREE.DirectionalLight(0xffffff, 0.8);
