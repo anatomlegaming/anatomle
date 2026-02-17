@@ -9,24 +9,137 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;700;900&display=swap');
-        body { 
-            font-family: 'EB Garamond', serif; 
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); 
-            margin: 0; 
+        :root {
+            --cream: #fdf6ec;
+            --warm-white: #fffbf5;
+            --coral: #e8603c;
+            --coral-light: #f0876a;
+            --coral-dark: #c94d2b;
+            --golden: #f0a500;
+            --golden-light: #ffc840;
+            --sage: #5a8a6a;
+            --sage-light: #7aaa8a;
+            --ink: #2d1f14;
+            --ink-light: #4a3728;
+            --muted: #9a8070;
+            --card-bg: #fff8f0;
+            --border: #e8d5c0;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--cream);
+            margin: 0;
             overflow-x: hidden;
             min-height: 100vh;
         }
-        .category-card, .mode-card { 
-            transition: all 0.3s ease; 
+
+        /* Subtle grain texture overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.4;
         }
-        .category-card:hover, .mode-card:hover:not(.disabled) { 
-            transform: translateY(-6px); 
-            box-shadow: 0 16px 32px rgba(0,0,0,0.6); 
+
+        h1, h2, h3 {
+            font-family: 'Fraunces', serif;
         }
+
+        .category-card, .mode-card {
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .category-card:hover, .mode-card:hover:not(.disabled) {
+            transform: translateY(-6px) rotate(-0.5deg);
+            box-shadow: 0 20px 40px rgba(45, 31, 20, 0.15);
+        }
+
         .back-btn:hover {
             transform: translateX(-4px);
+        }
+
+        /* Loading dots */
+        @keyframes boing {
+            0%, 100% { transform: translateY(0) scale(1); }
+            40% { transform: translateY(-16px) scale(1.1); }
+            60% { transform: translateY(-12px) scale(0.95); }
+        }
+        .boing { animation: boing 1s ease-in-out infinite; }
+
+        /* Decorative squiggle */
+        .squiggle {
+            background: var(--coral);
+            height: 4px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        /* Pill tags */
+        .tag-easy   { background: #e8f5ec; color: var(--sage); border: 1.5px solid #b8dfc4; }
+        .tag-medium { background: #fff3e0; color: var(--golden); border: 1.5px solid #ffd580; }
+        .tag-hard   { background: #fce8e4; color: var(--coral); border: 1.5px solid #f4b8a8; }
+        .tag-expert { background: #f3e8ff; color: #8b5cf6; border: 1.5px solid #c4b5fd; }
+
+        /* Page fade in */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-up { animation: fadeUp 0.5s ease forwards; }
+        .fade-up-1 { animation-delay: 0.05s; opacity: 0; }
+        .fade-up-2 { animation-delay: 0.15s; opacity: 0; }
+        .fade-up-3 { animation-delay: 0.25s; opacity: 0; }
+        .fade-up-4 { animation-delay: 0.35s; opacity: 0; }
+
+        /* Daily streak badge */
+        .streak-badge {
+            background: linear-gradient(135deg, var(--golden-light), var(--golden));
+            color: var(--ink);
+            border-radius: 999px;
+            padding: 4px 14px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            box-shadow: 0 2px 8px rgba(240,165,0,0.35);
+        }
+
+        .card-glow-coral { box-shadow: 0 0 0 0 rgba(232,96,60,0); transition: box-shadow 0.3s; }
+        .card-glow-coral:hover { box-shadow: 0 8px 32px rgba(232,96,60,0.18); }
+        .card-glow-sage:hover { box-shadow: 0 8px 32px rgba(90,138,106,0.18); }
+        .card-glow-golden:hover { box-shadow: 0 8px 32px rgba(240,165,0,0.18); }
+        .card-glow-purple:hover { box-shadow: 0 8px 32px rgba(139,92,246,0.18); }
+
+        /* Divider */
+        hr.fancy {
+            border: none;
+            height: 1.5px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+            margin: 0;
+        }
+
+        /* Big number countdown style */
+        .daily-card {
+            background: linear-gradient(135deg, var(--coral), var(--coral-dark));
+            border-radius: 20px;
+            padding: 20px 28px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 8px 24px rgba(232,96,60,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
         }
     </style>
 </head>
@@ -38,15 +151,19 @@
 
         function LoadingScreen() {
             return (
-                <div className="fixed inset-0 flex flex-col items-center justify-center">
+                <div style={{background:'var(--cream)'}} className="fixed inset-0 flex flex-col items-center justify-center gap-8">
                     <div className="text-center">
-                        <h1 className="text-9xl font-black text-white mb-6 tracking-tighter uppercase">Anatomle</h1>
-                        <p className="text-slate-400 text-xl mb-10 tracking-wider uppercase">Anatomy Training Platform</p>
-                        <div className="flex gap-4 justify-center">
-                            <div className="w-5 h-5 bg-emerald-500 rounded-full animate-bounce" style={{animationDelay:'0s'}}></div>
-                            <div className="w-5 h-5 bg-blue-500 rounded-full animate-bounce" style={{animationDelay:'0.15s'}}></div>
-                            <div className="w-5 h-5 bg-amber-500 rounded-full animate-bounce" style={{animationDelay:'0.3s'}}></div>
-                        </div>
+                        <h1 style={{color:'var(--ink)', fontFamily:'Fraunces, serif', fontSize:'7rem', fontWeight:900, lineHeight:1, letterSpacing:'-0.04em'}}>
+                            Anatomle
+                        </h1>
+                        <p style={{color:'var(--muted)', fontSize:'0.8rem', letterSpacing:'0.35em', textTransform:'uppercase', marginTop:8}}>
+                            Daily Anatomy Challenge
+                        </p>
+                    </div>
+                    <div style={{display:'flex', gap:10, marginTop:8}}>
+                        <div className="boing" style={{width:14, height:14, background:'var(--coral)', borderRadius:'50%', animationDelay:'0s'}}></div>
+                        <div className="boing" style={{width:14, height:14, background:'var(--golden)', borderRadius:'50%', animationDelay:'0.18s'}}></div>
+                        <div className="boing" style={{width:14, height:14, background:'var(--sage)', borderRadius:'50%', animationDelay:'0.36s'}}></div>
                     </div>
                 </div>
             );
@@ -59,7 +176,9 @@
                     name: 'Bone Games',
                     description: 'Master skeletal anatomy through interactive pathfinding and flood-fill challenges.',
                     icon: '🦴',
-                    color: 'blue',
+                    glowClass: 'card-glow-coral',
+                    borderColor: 'var(--coral)',
+                    accentColor: 'var(--coral)',
                     available: true
                 },
                 {
@@ -67,7 +186,9 @@
                     name: 'Muscle Games',
                     description: 'Learn muscular systems, origins, insertions, and actions.',
                     icon: '💪',
-                    color: 'red',
+                    glowClass: 'card-glow-sage',
+                    borderColor: 'var(--sage)',
+                    accentColor: 'var(--sage)',
                     available: false
                 },
                 {
@@ -75,60 +196,143 @@
                     name: 'Blood Cell Games',
                     description: 'Identify blood cells, understand hematology, and master cellular morphology.',
                     icon: '🩸',
-                    color: 'rose',
+                    glowClass: 'card-glow-golden',
+                    borderColor: 'var(--golden)',
+                    accentColor: 'var(--golden)',
                     available: false
                 }
             ];
 
-            const colorStyles = {
-                blue: 'border-blue-500/50 hover:border-blue-400',
-                red: 'border-red-500/50 hover:border-red-400',
-                rose: 'border-rose-500/50 hover:border-rose-400'
-            };
-
             return (
-                <div className="min-h-screen flex flex-col items-center justify-center p-8">
-                    <div className="max-w-6xl w-full">
-                        <header className="text-center mb-16">
-                            <h1 className="text-8xl font-black text-white mb-4 tracking-tighter uppercase">Anatomle</h1>
-                            <p className="text-slate-400 text-base uppercase tracking-[0.4em] mb-2">Anatomy Training Platform</p>
-                            <p className="text-slate-500 text-sm max-w-2xl mx-auto leading-relaxed">
-                                Interactive medical education games designed for anatomy students and healthcare professionals.
+                <div style={{minHeight:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'48px 24px'}}>
+                    <div style={{maxWidth:900, width:'100%', position:'relative', zIndex:1}}>
+
+                        {/* Header */}
+                        <header className="fade-up fade-up-1" style={{textAlign:'center', marginBottom:48}}>
+                            <div style={{display:'flex', justifyContent:'center', marginBottom:16}}>
+                                <span className="streak-badge">🔥 Daily Challenge — Play Today</span>
+                            </div>
+                            <h1 style={{
+                                fontFamily:'Fraunces, serif',
+                                fontSize:'clamp(5rem, 12vw, 9rem)',
+                                fontWeight:900,
+                                color:'var(--ink)',
+                                margin:0,
+                                letterSpacing:'-0.04em',
+                                lineHeight:0.9
+                            }}>
+                                Anat<span style={{color:'var(--coral)', fontStyle:'italic'}}>om</span>le
+                            </h1>
+                            <p style={{color:'var(--muted)', fontSize:'0.75rem', letterSpacing:'0.4em', textTransform:'uppercase', marginTop:16, marginBottom:8}}>
+                                Anatomy Training Platform
+                            </p>
+                            <p style={{color:'var(--ink-light)', fontSize:'0.95rem', maxWidth:480, margin:'0 auto', lineHeight:1.6, opacity:0.7}}>
+                                Interactive anatomy games for students, healthcare professionals, and the genuinely curious.
                             </p>
                         </header>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                        {/* Daily challenge banner */}
+                        <div className="fade-up fade-up-2" style={{marginBottom:36}}>
+                            <div className="daily-card">
+                                <div style={{fontSize:'2rem'}}>📅</div>
+                                <div>
+                                    <div style={{fontFamily:'Fraunces, serif', fontWeight:700, fontSize:'1.1rem', marginBottom:2}}>Today's Puzzle is Live!</div>
+                                    <div style={{fontSize:'0.82rem', opacity:0.85}}>A new anatomy challenge refreshes every day at midnight. Come back tomorrow for more!</div>
+                                </div>
+                                <div style={{marginLeft:'auto', textAlign:'right', flexShrink:0}}>
+                                    <div style={{fontFamily:'Fraunces, serif', fontWeight:900, fontSize:'1.8rem', lineHeight:1}}>
+                                        {new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'})}
+                                    </div>
+                                    <div style={{fontSize:'0.7rem', opacity:0.75, textTransform:'uppercase', letterSpacing:'0.1em'}}>
+                                        {new Date().toLocaleDateString('en-US',{weekday:'long'})}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Category cards */}
+                        <div className="fade-up fade-up-3" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(260px, 1fr))', gap:20, marginBottom:36}}>
                             {categories.map(cat => (
                                 <div
                                     key={cat.id}
                                     onClick={() => cat.available && onSelectCategory(cat.id)}
-                                    className={`category-card ${cat.available ? 'cursor-pointer' : 'opacity-40 cursor-not-allowed'} 
-                                        relative bg-slate-800/70 border-2 ${cat.available ? colorStyles[cat.color] : 'border-slate-700/50'} 
-                                        rounded-2xl p-8 text-center`}
+                                    className={`category-card ${cat.glowClass}`}
+                                    style={{
+                                        background: 'var(--card-bg)',
+                                        border: `2px solid ${cat.available ? cat.borderColor + '55' : 'var(--border)'}`,
+                                        borderRadius: 20,
+                                        padding: '28px 24px',
+                                        textAlign: 'center',
+                                        cursor: cat.available ? 'pointer' : 'not-allowed',
+                                        opacity: cat.available ? 1 : 0.5,
+                                        position: 'relative',
+                                        overflow: 'hidden'
+                                    }}
                                 >
-                                    {!cat.available && (
-                                        <div className="absolute top-4 right-4 bg-slate-700 text-slate-400 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider">
-                                            Coming Soon
-                                        </div>
+                                    {/* Decorative corner dot */}
+                                    {cat.available && (
+                                        <div style={{
+                                            position:'absolute', top:14, right:14,
+                                            width:8, height:8, borderRadius:'50%',
+                                            background: cat.accentColor,
+                                            boxShadow:`0 0 0 3px ${cat.accentColor}30`
+                                        }}/>
                                     )}
-                                    <div className="text-6xl mb-4">{cat.icon}</div>
-                                    <h3 className="text-2xl font-black text-white mb-3 uppercase tracking-tight">{cat.name}</h3>
-                                    <p className="text-slate-400 text-sm leading-relaxed">{cat.description}</p>
+                                    {!cat.available && (
+                                        <div style={{
+                                            position:'absolute', top:12, right:12,
+                                            background:'var(--cream)', color:'var(--muted)',
+                                            fontSize:'9px', fontWeight:700,
+                                            padding:'4px 10px', borderRadius:999,
+                                            textTransform:'uppercase', letterSpacing:'0.1em',
+                                            border:'1.5px solid var(--border)'
+                                        }}>Coming Soon</div>
+                                    )}
+                                    <div style={{fontSize:'3.5rem', marginBottom:12, lineHeight:1}}>{cat.icon}</div>
+                                    <h3 style={{
+                                        fontFamily:'Fraunces, serif',
+                                        fontWeight:900,
+                                        fontSize:'1.4rem',
+                                        color:'var(--ink)',
+                                        margin:'0 0 8px',
+                                        letterSpacing:'-0.02em'
+                                    }}>{cat.name}</h3>
+                                    <p style={{color:'var(--muted)', fontSize:'0.85rem', lineHeight:1.6, margin:0}}>{cat.description}</p>
+                                    {cat.available && (
+                                        <div style={{
+                                            marginTop:18,
+                                            display:'inline-block',
+                                            background: cat.accentColor,
+                                            color:'white',
+                                            borderRadius:999,
+                                            padding:'7px 20px',
+                                            fontSize:'0.78rem',
+                                            fontWeight:600,
+                                            letterSpacing:'0.05em',
+                                            textTransform:'uppercase'
+                                        }}>Play Now →</div>
+                                    )}
                                 </div>
                             ))}
                         </div>
 
-                        <footer className="flex justify-center gap-6 pt-8 border-t border-slate-700/50">
-                            <button className="text-slate-500 text-xs uppercase tracking-widest hover:text-white transition-colors">
-                                Settings
-                            </button>
-                            <button className="text-slate-500 text-xs uppercase tracking-widest hover:text-white transition-colors">
-                                About Us
-                            </button>
-                            <button className="text-slate-500 text-xs uppercase tracking-widest hover:text-white transition-colors">
-                                Contact
-                            </button>
-                        </footer>
+                        {/* Footer */}
+                        <hr className="fancy" />
+                        <div className="fade-up fade-up-4" style={{display:'flex', justifyContent:'center', gap:32, paddingTop:20}}>
+                            {['Settings','About Us','Contact'].map(label => (
+                                <button key={label} style={{
+                                    background:'none', border:'none', cursor:'pointer',
+                                    color:'var(--muted)', fontSize:'0.72rem',
+                                    textTransform:'uppercase', letterSpacing:'0.15em',
+                                    fontFamily:'DM Sans, sans-serif',
+                                    padding:0,
+                                    transition:'color 0.2s'
+                                }}
+                                onMouseEnter={e => e.target.style.color='var(--ink)'}
+                                onMouseLeave={e => e.target.style.color='var(--muted)'}
+                                >{label}</button>
+                            ))}
+                        </div>
                     </div>
                 </div>
             );
@@ -141,112 +345,174 @@
                     name: 'Foot Bones',
                     description: 'Flood-fill all 29 foot bones — tarsals, metatarsals, and phalanges.',
                     difficulty: 'Easy',
-                    color: 'emerald',
                     icon: '🦶',
                     file: 'games/foot.html',
-                    disabled: false
+                    disabled: false,
+                    accent: 'var(--sage)',
+                    accentBg: '#e8f5ec',
                 },
                 {
                     id: 'hand',
                     name: 'Hand Bones',
                     description: 'Flood-fill all 29 hand bones — carpals, metacarpals, and phalanges.',
                     difficulty: 'Medium',
-                    color: 'blue',
                     icon: '✋',
                     file: 'games/hand.html',
-                    disabled: false
+                    disabled: false,
+                    accent: 'var(--coral)',
+                    accentBg: '#fce8e4',
                 },
                 {
                     id: 'skull',
                     name: 'Skull Bones',
                     description: 'Flood-fill all 14 cranial and facial bones starting from a random seed.',
                     difficulty: 'Medium',
-                    color: 'amber',
                     icon: '💀',
                     file: 'games/skull.html',
-                    disabled: false
+                    disabled: false,
+                    accent: 'var(--golden)',
+                    accentBg: '#fff3e0',
                 },
                 {
                     id: 'full-skeleton',
                     name: 'Full Skeleton',
                     description: 'Navigate pathfinding challenges across the complete skeletal system.',
                     difficulty: 'Hard',
-                    color: 'purple',
                     icon: '🦴',
                     file: 'games/full-skeleton.html',
-                    disabled: false
+                    disabled: false,
+                    accent: '#8b5cf6',
+                    accentBg: '#f3e8ff',
                 },
                 {
                     id: 'challenge',
                     name: 'Challenge Mode',
                     description: 'Invisible skeleton — expert pathfinding with no visual feedback.',
                     difficulty: 'Expert',
-                    color: 'fuchsia',
                     icon: '⚡',
                     file: 'games/challenge.html',
-                    disabled: true
+                    disabled: true,
+                    accent: '#ec4899',
+                    accentBg: '#fce7f3',
                 }
             ];
 
-            const difficultyStyle = {
-                Easy:   'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40',
-                Medium: 'bg-blue-500/20 text-blue-400 border border-blue-500/40',
-                Hard:   'bg-purple-500/20 text-purple-400 border border-purple-500/40',
-                Expert: 'bg-fuchsia-500/20 text-fuchsia-400 border border-fuchsia-500/40',
-            };
-
-            const borderStyle = {
-                emerald: 'border-emerald-500/40',
-                blue:    'border-blue-500/40',
-                amber:   'border-amber-500/40',
-                purple:  'border-purple-500/40',
-                fuchsia: 'border-fuchsia-500/40',
+            const difficultyTag = {
+                Easy:   { bg:'#e8f5ec', color:'var(--sage)',    border:'#b8dfc4' },
+                Medium: { bg:'#fff3e0', color:'var(--golden)',  border:'#ffd580' },
+                Hard:   { bg:'#fce8e4', color:'var(--coral)',   border:'#f4b8a8' },
+                Expert: { bg:'#f3e8ff', color:'#8b5cf6',        border:'#c4b5fd' },
             };
 
             return (
-                <div className="min-h-screen flex flex-col items-center justify-center p-8 py-16">
-                    <div className="max-w-6xl w-full">
-                        <header className="text-center mb-12">
-                            <button 
+                <div style={{minHeight:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'48px 24px'}}>
+                    <div style={{maxWidth:960, width:'100%', position:'relative', zIndex:1}}>
+
+                        <header className="fade-up fade-up-1" style={{textAlign:'center', marginBottom:44}}>
+                            <button
                                 onClick={onBack}
-                                className="back-btn mb-6 text-slate-500 hover:text-white text-sm uppercase tracking-wider transition-all inline-flex items-center gap-2"
+                                className="back-btn"
+                                style={{
+                                    background:'none', border:'none', cursor:'pointer',
+                                    color:'var(--muted)', fontSize:'0.78rem',
+                                    textTransform:'uppercase', letterSpacing:'0.15em',
+                                    display:'inline-flex', alignItems:'center', gap:6,
+                                    marginBottom:20, transition:'all 0.2s',
+                                    fontFamily:'DM Sans, sans-serif',
+                                    padding:0
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.color='var(--ink)'}
+                                onMouseLeave={e => e.currentTarget.style.color='var(--muted)'}
                             >
                                 ← Back to Categories
                             </button>
-                            <h1 className="text-7xl font-black text-white mb-3 tracking-tighter uppercase">Bone Games</h1>
-                            <p className="text-slate-400 text-sm uppercase tracking-[0.4em]">Master Skeletal Anatomy</p>
+                            <h1 style={{
+                                fontFamily:'Fraunces, serif',
+                                fontSize:'clamp(4rem, 10vw, 7rem)',
+                                fontWeight:900,
+                                color:'var(--ink)',
+                                margin:0,
+                                letterSpacing:'-0.04em',
+                                lineHeight:0.9
+                            }}>
+                                Bone <span style={{color:'var(--coral)', fontStyle:'italic'}}>Games</span>
+                            </h1>
+                            <p style={{color:'var(--muted)', fontSize:'0.75rem', letterSpacing:'0.4em', textTransform:'uppercase', marginTop:16}}>
+                                Master Skeletal Anatomy
+                            </p>
                         </header>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" style={{
-                            gridTemplateColumns: modes.length === 5 ? 'repeat(3, minmax(0, 1fr))' : 'repeat(auto-fit, minmax(280px, 1fr))'
+                        <div className="fade-up fade-up-2" style={{
+                            display:'grid',
+                            gridTemplateColumns:'repeat(3, 1fr)',
+                            gap:18,
+                            marginBottom:32
                         }}>
                             {modes.map((mode, idx) => {
-                                const isSecondRow = idx >= 3;
-                                const shouldCenter = modes.length === 5 && isSecondRow;
-                                
+                                const tag = difficultyTag[mode.difficulty];
+                                const isLast2 = modes.length === 5 && idx >= 3;
                                 return (
                                     <div
                                         key={mode.id}
                                         onClick={() => !mode.disabled && (window.location.href = mode.file)}
-                                        className={`mode-card ${mode.disabled ? 'disabled opacity-40 cursor-default' : 'cursor-pointer'} 
-                                            relative bg-slate-800/70 border-2 ${mode.disabled ? 'border-slate-700/50' : borderStyle[mode.color]} 
-                                            rounded-2xl p-7`}
-                                        style={shouldCenter && idx === 3 ? {gridColumn: '2 / 3'} : {}}
+                                        className="mode-card"
+                                        style={{
+                                            background:'var(--card-bg)',
+                                            border:`2px solid ${mode.disabled ? 'var(--border)' : mode.accent + '44'}`,
+                                            borderRadius:20,
+                                            padding:'24px 22px',
+                                            cursor: mode.disabled ? 'default' : 'pointer',
+                                            opacity: mode.disabled ? 0.45 : 1,
+                                            position:'relative',
+                                            gridColumn: isLast2 && idx === 3 ? '2 / 3' : undefined,
+                                        }}
                                     >
                                         {mode.disabled && (
-                                            <div className="absolute top-4 right-4 bg-slate-700 text-slate-400 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider">
-                                                Coming Soon
-                                            </div>
+                                            <div style={{
+                                                position:'absolute', top:12, right:12,
+                                                background:'var(--cream)', color:'var(--muted)',
+                                                fontSize:'9px', fontWeight:700,
+                                                padding:'4px 10px', borderRadius:999,
+                                                textTransform:'uppercase', letterSpacing:'0.1em',
+                                                border:'1.5px solid var(--border)'
+                                            }}>Coming Soon</div>
                                         )}
-                                        <div className="text-5xl mb-4">{mode.icon}</div>
-                                        <h3 className="text-2xl font-black text-white mb-2 uppercase tracking-tight">{mode.name}</h3>
-                                        <p className="text-slate-400 text-sm mb-5 leading-relaxed min-h-[60px]">{mode.description}</p>
-                                        <div className="flex items-center justify-between">
-                                            <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full ${difficultyStyle[mode.difficulty]}`}>
-                                                {mode.difficulty}
-                                            </span>
+
+                                        {/* Icon in colored pill */}
+                                        <div style={{
+                                            display:'inline-flex', alignItems:'center', justifyContent:'center',
+                                            background: mode.accentBg,
+                                            borderRadius:14,
+                                            width:52, height:52,
+                                            fontSize:'1.8rem',
+                                            marginBottom:14
+                                        }}>{mode.icon}</div>
+
+                                        <h3 style={{
+                                            fontFamily:'Fraunces, serif',
+                                            fontWeight:900,
+                                            fontSize:'1.2rem',
+                                            color:'var(--ink)',
+                                            margin:'0 0 6px',
+                                            letterSpacing:'-0.02em'
+                                        }}>{mode.name}</h3>
+
+                                        <p style={{color:'var(--muted)', fontSize:'0.82rem', lineHeight:1.55, margin:'0 0 18px', minHeight:60}}>{mode.description}</p>
+
+                                        <div style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+                                            <span style={{
+                                                background: tag.bg,
+                                                color: tag.color,
+                                                border:`1.5px solid ${tag.border}`,
+                                                borderRadius:999,
+                                                padding:'3px 12px',
+                                                fontSize:'10px',
+                                                fontWeight:700,
+                                                textTransform:'uppercase',
+                                                letterSpacing:'0.08em'
+                                            }}>{mode.difficulty}</span>
                                             {!mode.disabled && (
-                                                <span className="text-slate-500 text-xs uppercase tracking-wider hover:text-white transition-colors">Play →</span>
+                                                <span style={{color:'var(--muted)', fontSize:'0.78rem', fontWeight:600}}>Play →</span>
                                             )}
                                         </div>
                                     </div>
@@ -254,9 +520,10 @@
                             })}
                         </div>
 
-                        <footer className="text-center text-slate-600 text-xs uppercase tracking-widest pt-8">
-                            Interactive pathfinding and flood-fill challenges
-                        </footer>
+                        <hr className="fancy" />
+                        <div className="fade-up fade-up-3" style={{textAlign:'center', paddingTop:16, color:'var(--muted)', fontSize:'0.72rem', textTransform:'uppercase', letterSpacing:'0.2em'}}>
+                            Interactive pathfinding & flood-fill challenges
+                        </div>
                     </div>
                 </div>
             );
@@ -264,19 +531,15 @@
 
         function App() {
             const [loading, setLoading] = useState(true);
-            const [view, setView] = useState('categories'); // 'categories' | 'bone-games'
+            const [view, setView] = useState('categories');
 
-            useEffect(() => { 
-                const t = setTimeout(() => setLoading(false), 1200); 
-                return () => clearTimeout(t); 
+            useEffect(() => {
+                const t = setTimeout(() => setLoading(false), 1200);
+                return () => clearTimeout(t);
             }, []);
 
             if (loading) return <LoadingScreen />;
-
-            if (view === 'bone-games') {
-                return <BoneGamesMenu onBack={() => setView('categories')} />;
-            }
-
+            if (view === 'bone-games') return <BoneGamesMenu onBack={() => setView('categories')} />;
             return <CategoryMenu onSelectCategory={(cat) => setView(cat)} />;
         }
 
