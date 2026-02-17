@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ANATOMLE | Hand</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;700&display=swap');
+        body { font-family: 'EB Garamond', serif; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #d6d3d1; margin: 0; overflow: hidden; }
+        #canvas-container { position: absolute; right: 0; top: 0; width: calc(100% - 420px); height: 100vh; z-index: 10; background: linear-gradient(135deg, #334155 0%, #1e293b 100%); }
+        .sidebar { width: 420px; height: 100vh; background: rgba(15,23,42,0.98); border-right: 1px solid #334155; position: relative; z-index: 50; display: flex; flex-direction: column; pointer-events: auto; box-shadow: 2px 0 20px rgba(0,0,0,0.5); }
+        .custom-scrollbar::-webkit-scrollbar { width: 2px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }
+        .suggestion-item:hover { background: #10b981; color: white; padding-left: 1rem; cursor: pointer; }
+        .victory-bg { background: radial-gradient(circle, rgba(16,185,129,0.3) 0%, rgba(0,0,0,1) 100%); }
+        .loss-bg { background: radial-gradient(circle, rgba(239,68,68,0.3) 0%, rgba(0,0,0,1) 100%); }
+        .failure-item { animation: shake 0.3s ease-in-out; }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    <div id="root"></div>
+    <script>
+        var _skeleton = null;
+        // Hand bone mesh substrings — excludes foot phalanges by checking absence of 'foot'
+        var MESH_KEYS = ['Radius','Ulna','Scaphoid','Lunate','Triquetrum','Pisiform','Trapezium','Trapezoid','Capitate','Hamate','1st_metacarpal','2nd_metacarpal','3rd_metacarpal','4th_metacarpal','5th_metacarpal','phalanx_of_1st','phalanx_of_2d','phalanx_of_3d','phalanx_of_4th','phalanx_of_5th'];
+        var BONE_TO_MESH = {
+            'Radius':'Radius','Ulna':'Ulna',
+            'Scaphoid':'Scaphoid','Lunate':'Lunate','Triquetrum':'Triquetrum','Pisiform':'Pisiform',
+            'Trapezium':'Trapezium','Trapezoid':'Trapezoid','Capitate':'Capitate','Hamate':'Hamate',
+            'Metacarpal I':'1st_metacarpal','Metacarpal II':'2nd_metacarpal','Metacarpal III':'3rd_metacarpal','Metacarpal IV':'4th_metacarpal','Metacarpal V':'5th_metacarpal',
+            'Proximal Phalanx I':'phalanx_of_1st','Distal Phalanx I':'phalanx_of_1st',
+            'Proximal Phalanx II':'phalanx_of_2d','Middle Phalanx II':'phalanx_of_2d','Distal Phalanx II':'phalanx_of_2d',
+            'Proximal Phalanx III':'phalanx_of_3d','Middle Phalanx III':'phalanx_of_3d','Distal Phalanx III':'phalanx_of_3d',
+            'Proximal Phalanx IV':'phalanx_of_4th','Middle Phalanx IV':'phalanx_of_4th','Distal Phalanx IV':'phalanx_of_4th',
+            'Proximal Phalanx V':'phalanx_of_5th','Middle Phalanx V':'phalanx_of_5th','Distal Phalanx V':'phalanx_of_5th'
+        };
+        function isMine(n){
+            if(n.indexOf('foot')!==-1||n.indexOf('_of_foot')!==-1) return false;
+            for(var i=0;i<MESH_KEYS.length;i++) if(n.indexOf(MESH_KEYS[i])!==-1) return true;
+            return false;
+        }
+        window.update3D = function(bones){
+            if(!_skeleton) return;
+            _skeleton.traverse(function(node){
+                if(!node.isMesh) return;
+                if(!isMine(node.name)){node.visible=false;return;}
+                node.visible=true;
+                var m=null;
+                for(var i=0;i<bones.length;i++){var k=BONE_TO_MESH[bones[i].name];if(k&&node.name.indexOf(k)!==-1){m=bones[i];break;}}
+                if(m){
+                    var c=0x3b82f6,e=0.5;
+                    if(m.type==='start'){c=0x10b981;e=0.6;}
+                    if(m.type==='bad'){c=0xef4444;e=0.8;}
+                    if(m.type==='reveal'){c=0xd946ef;e=0.8;}
+                    node.material=new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:e,transparent:false,opacity:1});
+                } else {
+                    node.material=new THREE.MeshStandardMaterial({color:0x475569,transparent:true,opacity:0.25});
+                }
+            });
+        };
+        window.reset3D = function(){
+            if(!_skeleton) return;
+            _skeleton.traverse(function(node){
+                if(!node.isMesh) return;
+                if(isMine(node.name)){node.material=new THREE.MeshStandardMaterial({color:0x475569,transparent:true,opacity:0.25});node.visible=true;}
+                else node.visible=false;
+            });
+        };
+        window.addEventListener('DOMContentLoaded',function(){
+            var container=document.getElementById('canvas-container');
+            var scene=new THREE.Scene();
+            var camera=new THREE.PerspectiveCamera(45,container.clientWidth/container.clientHeight,0.1,1000);
+            var renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+            renderer.setSize(container.clientWidth,container.clientHeight);
+            container.appendChild(renderer.domElement);
+            var controls=new THREE.OrbitControls(camera,renderer.domElement);
+            controls.enableDamping=true;controls.dampingFactor=0.05;
+            controls.minDistance=0.05;controls.maxDistance=3;controls.maxPolarAngle=Math.PI;
+            controls.enableZoom=false;
+            renderer.domElement.addEventListener('wheel',function(e){
+                e.preventDefault();
+                var rect=renderer.domElement.getBoundingClientRect();
+                var mouse=new THREE.Vector2(((e.clientX-rect.left)/rect.width)*2-1,-((e.clientY-rect.top)/rect.height)*2+1);
+                var ray=new THREE.Raycaster();ray.setFromCamera(mouse,camera);
+                var t3d;
+                if(_skeleton){var hits=ray.intersectObjects([_skeleton],true);if(hits.length)t3d=hits[0].point.clone();}
+                if(!t3d)t3d=ray.ray.at(camera.position.distanceTo(controls.target),new THREE.Vector3());
+                var dir=new THREE.Vector3().subVectors(t3d,camera.position);
+                var dist=camera.position.distanceTo(controls.target);
+                var step=dir.length()*0.12;
+                if(e.deltaY<0&&dist>controls.minDistance)camera.position.addScaledVector(dir.normalize(),step);
+                else if(e.deltaY>0&&dist<controls.maxDistance)camera.position.addScaledVector(dir.normalize(),-step);
+                controls.update();
+            },{passive:false});
+            scene.add(new THREE.AmbientLight(0xffffff,0.7));
+            var dl=new THREE.DirectionalLight(0xffffff,0.8);dl.position.set(5,10,7.5);scene.add(dl);
+            var dl2=new THREE.DirectionalLight(0xffffff,0.3);dl2.position.set(-5,-5,-5);scene.add(dl2);
+            var draco=new THREE.DRACOLoader();draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
+            var loader=new THREE.GLTFLoader();loader.setDRACOLoader(draco);
+            loader.load('../models/overview-skeleton.glb',function(gltf){
+                _skeleton=gltf.scene;scene.add(_skeleton);
+                var box=new THREE.Box3();
+                _skeleton.traverse(function(node){if(!node.isMesh)return;if(isMine(node.name))box.expandByObject(node);else node.visible=false;});
+                var center=box.getCenter(new THREE.Vector3());var size=box.getSize(new THREE.Vector3());
+                controls.target.copy(center);
+                var maxDim=Math.max(size.x,size.y,size.z),fov=camera.fov*(Math.PI/180);
+                camera.position.set(center.x,center.y,center.z+Math.abs(maxDim/2/Math.tan(fov/2))*2.2);
+                camera.lookAt(center);controls.update();
+                window.reset3D();
+            });
+            function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera);}animate();
+            window.addEventListener('resize',function(){camera.aspect=container.clientWidth/container.clientHeight;camera.updateProjectionMatrix();renderer.setSize(container.clientWidth,container.clientHeight);});
+        });
+    </script>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useCallback } = React;
+
+        const GRAPH = {
+            'Radius':              ['Ulna','Scaphoid','Lunate'],
+            'Ulna':                ['Radius','Triquetrum','Pisiform'],
+            'Scaphoid':            ['Radius','Lunate','Trapezium','Trapezoid','Capitate'],
+            'Lunate':              ['Radius','Scaphoid','Triquetrum','Capitate','Hamate'],
+            'Triquetrum':          ['Ulna','Lunate','Pisiform','Hamate'],
+            'Pisiform':            ['Ulna','Triquetrum'],
+            'Trapezium':           ['Scaphoid','Trapezoid','Metacarpal I'],
+            'Trapezoid':           ['Scaphoid','Trapezium','Capitate','Metacarpal II'],
+            'Capitate':            ['Scaphoid','Lunate','Trapezoid','Hamate','Metacarpal II','Metacarpal III'],
+            'Hamate':              ['Lunate','Triquetrum','Capitate','Metacarpal IV','Metacarpal V'],
+            'Metacarpal I':        ['Trapezium','Proximal Phalanx I'],
+            'Metacarpal II':       ['Trapezoid','Capitate','Proximal Phalanx II'],
+            'Metacarpal III':      ['Capitate','Proximal Phalanx III'],
+            'Metacarpal IV':       ['Hamate','Proximal Phalanx IV'],
+            'Metacarpal V':        ['Hamate','Proximal Phalanx V'],
+            'Proximal Phalanx I':  ['Metacarpal I','Distal Phalanx I'],
+            'Distal Phalanx I':    ['Proximal Phalanx I'],
+            'Proximal Phalanx II': ['Metacarpal II','Middle Phalanx II'],
+            'Middle Phalanx II':   ['Proximal Phalanx II','Distal Phalanx II'],
+            'Distal Phalanx II':   ['Middle Phalanx II'],
+            'Proximal Phalanx III':['Metacarpal III','Middle Phalanx III'],
+            'Middle Phalanx III':  ['Proximal Phalanx III','Distal Phalanx III'],
+            'Distal Phalanx III':  ['Middle Phalanx III'],
+            'Proximal Phalanx IV': ['Metacarpal IV','Middle Phalanx IV'],
+            'Middle Phalanx IV':   ['Proximal Phalanx IV','Distal Phalanx IV'],
+            'Distal Phalanx IV':   ['Middle Phalanx IV'],
+            'Proximal Phalanx V':  ['Metacarpal V','Middle Phalanx V'],
+            'Middle Phalanx V':    ['Proximal Phalanx V','Distal Phalanx V'],
+            'Distal Phalanx V':    ['Middle Phalanx V'],
+        };
+
+        const GROUPS = [
+            { label: '🦴 Forearm',       bones: ['Radius','Ulna'] },
+            { label: '🤚 Carpals',        bones: ['Scaphoid','Lunate','Triquetrum','Pisiform','Trapezium','Trapezoid','Capitate','Hamate'] },
+            { label: '✋ Metacarpals',    bones: ['Metacarpal I','Metacarpal II','Metacarpal III','Metacarpal IV','Metacarpal V'] },
+            { label: '👍 Thumb (I)',      bones: ['Proximal Phalanx I','Distal Phalanx I'] },
+            { label: '☝️ Index (II)',     bones: ['Proximal Phalanx II','Middle Phalanx II','Distal Phalanx II'] },
+            { label: '🖕 Middle (III)',   bones: ['Proximal Phalanx III','Middle Phalanx III','Distal Phalanx III'] },
+            { label: '💍 Ring (IV)',      bones: ['Proximal Phalanx IV','Middle Phalanx IV','Distal Phalanx IV'] },
+            { label: '🤙 Pinky (V)',      bones: ['Proximal Phalanx V','Middle Phalanx V','Distal Phalanx V'] },
+        ];
+
+        const ALL = Object.keys(GRAPH);
+        const TOTAL = ALL.length; // 29 — Radius + Ulna + 27 hand bones
+
+        function App() {
+            const [guessed, setGuessed] = useState(new Set());
+            const [bad, setBad]         = useState([]);
+            const [left, setLeft]       = useState(0);
+            const [max, setMax]         = useState(0);
+            const [input, setInput]     = useState('');
+            const [state, setState]     = useState('playing');
+            const [reveal, setReveal]   = useState(false);
+
+            const START = 'Radius'; // Always start from Radius — makes anatomical sense
+
+            const init = useCallback(() => {
+                const total = (TOTAL - 1) + 5;
+                setGuessed(new Set([START]));
+                setBad([]); setLeft(total); setMax(total);
+                setInput(''); setState('playing'); setReveal(false);
+                if (window.reset3D) window.reset3D();
+            }, []);
+
+            useEffect(() => { init(); }, [init]);
+
+            const frontier = useMemo(() => {
+                const f = new Set();
+                guessed.forEach(b => { (GRAPH[b]||[]).forEach(n => { if(!guessed.has(n)) f.add(n); }); });
+                return f;
+            }, [guessed]);
+
+            useEffect(() => {
+                const h = [];
+                guessed.forEach(b => h.push({name:b, type: b===START ? 'start' : 'found'}));
+                if (reveal && state==='lost') ALL.forEach(b => { if(!guessed.has(b)) h.push({name:b,type:'reveal'}); });
+                bad.forEach(b => h.push({name:b,type:'bad'}));
+                if (window.update3D) window.update3D(h);
+            }, [guessed, bad, reveal, state]);
+
+            const submit = (g) => {
+                if (state!=='playing'||guessed.has(g)||!g) return;
+                const nl = left - 1; setLeft(nl);
+                if (frontier.has(g)) {
+                    const ng = new Set(guessed); ng.add(g); setGuessed(ng);
+                    if (ng.size===TOTAL) { setState('won'); setInput(''); return; }
+                    if (nl<=0) setState('lost');
+                } else {
+                    setBad(p=>[...new Set([g,...p])]);
+                    if (nl<=0) setState('lost');
+                }
+                setInput('');
+            };
+
+            const suggestions = useMemo(() => {
+                if (!input) return [];
+                return ALL.filter(b=>b.toLowerCase().includes(input.toLowerCase())&&!guessed.has(b)&&!bad.includes(b)).slice(0,5);
+            }, [input, guessed, bad]);
+
+            const pct = Math.round((guessed.size/TOTAL)*100);
+
+            return (
+                <div className="sidebar p-5 flex flex-col h-screen">
+                    <header className="mb-3">
+                        <div className="mb-1"><a href="../index.html" className="text-slate-500 hover:text-white text-xs uppercase tracking-widest">← Menu</a></div>
+                        <h1 className="text-3xl font-black text-white tracking-tighter uppercase">Anatomle</h1>
+                        <div className="flex justify-between items-center border-b border-slate-700 pb-2">
+                            <span className="text-[9px] text-emerald-500/70 tracking-[0.3em] uppercase">✋ Hand · Flood Fill</span>
+                            <span className={`text-xs font-bold ${left < 5 ? 'text-red-400' : 'text-emerald-400'}`}>{left} guesses left</span>
+                        </div>
+                    </header>
+
+                    <div className="bg-slate-800/40 p-3 border border-slate-700 mb-3 rounded text-[9px] text-slate-400 leading-relaxed">
+                        Start: <span className="text-emerald-400 font-bold">Radius</span>. Name any bone <span className="text-blue-400 font-bold">physically touching</span> a found bone. Identify all <span className="text-white font-bold">{TOTAL}</span> bones to win.
+                    </div>
+
+                    <div className="mb-3">
+                        <div className="flex justify-between text-[8px] uppercase text-slate-500 mb-1">
+                            <span>Bones found</span><span className="text-white font-bold">{guessed.size} / {TOTAL}</span>
+                        </div>
+                        <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full transition-all duration-500" style={{width:`${pct}%`,background:pct===100?'#10b981':'#10b981'}} />
+                        </div>
+                    </div>
+
+                    {bad.length > 0 && (
+                        <div className="mb-2">
+                            <p className="text-[8px] text-red-400 uppercase font-bold mb-1 tracking-wider">❌ Not Adjacent</p>
+                            <div className="flex flex-wrap gap-1">
+                                {bad.map((g,i)=><div key={i} className="failure-item text-[8px] font-bold text-red-400 bg-red-900/30 px-2 py-0.5 border border-red-800/40 uppercase rounded">{g}</div>)}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex-1 overflow-y-auto custom-scrollbar mb-3 space-y-2">
+                        {GROUPS.map(group => (
+                            <div key={group.label}>
+                                <p className="text-[7px] text-slate-600 uppercase font-bold mb-1 tracking-wider">{group.label}</p>
+                                <div className="grid grid-cols-2 gap-1">
+                                    {group.bones.map(bone => {
+                                        const found=guessed.has(bone), isStart=bone===START;
+                                        const isReveal=reveal&&state==='lost'&&!found;
+                                        return (
+                                            <div key={bone} className={`p-1.5 border text-[7px] font-bold uppercase tracking-tight rounded transition-all ${
+                                                isStart?'bg-emerald-900/40 border-emerald-600/60 text-emerald-400'
+                                                :found?'bg-slate-800 border-slate-600 text-blue-400'
+                                                :isReveal?'bg-fuchsia-900/30 border-fuchsia-700/40 text-fuchsia-400'
+                                                :'border-dashed border-slate-700/30 text-slate-700 opacity-30'
+                                            }`}>
+                                                {found||isReveal?bone:'???'}{isStart&&' 📍'}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="mt-auto space-y-2">
+                        <div className="relative">
+                            <input
+                                className="w-full bg-slate-900 border border-slate-700 p-3 text-white outline-none focus:border-emerald-500 text-xs italic"
+                                placeholder="Name a touching hand bone..."
+                                value={input}
+                                onChange={e=>setInput(e.target.value)}
+                                onKeyDown={e=>{if(e.key==='Enter')submit(suggestions.length>0?suggestions[0]:input.trim());}}
+                                disabled={state!=='playing'}
+                            />
+                            {suggestions.length>0&&(
+                                <div className="absolute bottom-full left-0 w-full bg-slate-900 border border-slate-700 z-[60] shadow-2xl">
+                                    {suggestions.map(s=><div key={s} onClick={()=>submit(s)} className="suggestion-item p-3 text-[10px] uppercase font-black transition-all">{s}</div>)}
+                                </div>
+                            )}
+                        </div>
+                        <button onClick={init} className="w-full py-3 bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-emerald-400 hover:text-white transition-all">New Hand</button>
+                    </div>
+
+                    {state!=='playing'&&!reveal&&(
+                        <div className={`fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-xl ${state==='won'?'victory-bg':'loss-bg'}`}>
+                            <div className="text-center p-12 bg-slate-950/90 border border-white/10 rounded-3xl max-w-md">
+                                <h2 className="text-5xl font-black text-white mb-2 tracking-tighter uppercase">
+                                    {state==='won'?'✋ Complete!':'✗ Incomplete'}
+                                </h2>
+                                <p className="text-slate-400 text-sm mb-6">
+                                    {state==='won'?`All ${TOTAL} hand bones! ${max-left} guesses used.`:`Found ${guessed.size}/${TOTAL}. ${bad.length} non-adjacent guess${bad.length!==1?'es':''}.`}
+                                </p>
+                                {state==='lost'&&<div className="mb-6"><button onClick={()=>setReveal(true)} className="px-6 py-3 bg-fuchsia-500 text-white font-black text-xs uppercase hover:bg-fuchsia-400">👁️ Reveal Missing</button></div>}
+                                <div className="flex gap-3 justify-center">
+                                    <button onClick={init} className="px-8 py-4 bg-white text-black font-black text-xs uppercase hover:scale-105 transition-transform">Play Again</button>
+                                    <a href="../index.html" className="px-8 py-4 bg-slate-700 text-white font-black text-xs uppercase hover:bg-slate-600 flex items-center">Menu</a>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>

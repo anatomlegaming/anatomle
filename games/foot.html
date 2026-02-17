@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ANATOMLE | Foot</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;700&display=swap');
+        body { font-family: 'EB Garamond', serif; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #d6d3d1; margin: 0; overflow: hidden; }
+        #canvas-container { position: absolute; right: 0; top: 0; width: calc(100% - 420px); height: 100vh; z-index: 10; background: linear-gradient(135deg, #334155 0%, #1e293b 100%); }
+        .sidebar { width: 420px; height: 100vh; background: rgba(15,23,42,0.98); border-right: 1px solid #334155; position: relative; z-index: 50; display: flex; flex-direction: column; pointer-events: auto; box-shadow: 2px 0 20px rgba(0,0,0,0.5); }
+        .custom-scrollbar::-webkit-scrollbar { width: 2px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }
+        .suggestion-item:hover { background: #f97316; color: white; padding-left: 1rem; cursor: pointer; }
+        .victory-bg { background: radial-gradient(circle, rgba(16,185,129,0.3) 0%, rgba(0,0,0,1) 100%); }
+        .loss-bg { background: radial-gradient(circle, rgba(239,68,68,0.3) 0%, rgba(0,0,0,1) 100%); }
+        .failure-item { animation: shake 0.3s ease-in-out; }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    <div id="root"></div>
+    <script>
+        var _skeleton = null;
+        // Foot mesh substrings — the GLB uses these patterns for foot bones
+        var MESH_KEYS = ['Tibia','Fibula','Talus','Calcaneus','Navicular_boner','Cuboid_boner','Medial_cuneiform','Intermediate_cuneiform','Lateral_cuneiform','First_metatarsal','Second_metatarsal','Third_metatarsal','Fourth_metatarsal','Fifth_metatarsal','first_finger_of_foot','second_finger_of_foot','third_finger_of_foot','fourth_finger_of_foot','fifth_finger_of_foot'];
+        var BONE_TO_MESH = {
+            'Tibia':'Tibia','Fibula':'Fibula',
+            'Talus':'Talus','Calcaneus':'Calcaneus',
+            'Navicular':'Navicular_boner','Cuboid':'Cuboid_boner',
+            'Medial Cuneiform':'Medial_cuneiform','Intermediate Cuneiform':'Intermediate_cuneiform','Lateral Cuneiform':'Lateral_cuneiform',
+            'Metatarsal I':'First_metatarsal','Metatarsal II':'Second_metatarsal','Metatarsal III':'Third_metatarsal','Metatarsal IV':'Fourth_metatarsal','Metatarsal V':'Fifth_metatarsal',
+            'Proximal Phalanx I (Foot)':'first_finger_of_foot','Distal Phalanx I (Foot)':'first_finger_of_foot',
+            'Proximal Phalanx II (Foot)':'second_finger_of_foot','Middle Phalanx II (Foot)':'second_finger_of_foot','Distal Phalanx II (Foot)':'second_finger_of_foot',
+            'Proximal Phalanx III (Foot)':'third_finger_of_foot','Middle Phalanx III (Foot)':'third_finger_of_foot','Distal Phalanx III (Foot)':'third_finger_of_foot',
+            'Proximal Phalanx IV (Foot)':'fourth_finger_of_foot','Middle Phalanx IV (Foot)':'fourth_finger_of_foot','Distal Phalanx IV (Foot)':'fourth_finger_of_foot',
+            'Proximal Phalanx V (Foot)':'fifth_finger_of_foot','Middle Phalanx V (Foot)':'fifth_finger_of_foot','Distal Phalanx V (Foot)':'fifth_finger_of_foot'
+        };
+        function isMine(n){ for(var i=0;i<MESH_KEYS.length;i++) if(n.indexOf(MESH_KEYS[i])!==-1) return true; return false; }
+        window.update3D = function(bones){
+            if(!_skeleton) return;
+            _skeleton.traverse(function(node){
+                if(!node.isMesh) return;
+                if(!isMine(node.name)){node.visible=false;return;}
+                node.visible=true;
+                var m=null;
+                for(var i=0;i<bones.length;i++){var k=BONE_TO_MESH[bones[i].name];if(k&&node.name.indexOf(k)!==-1){m=bones[i];break;}}
+                if(m){
+                    var c=0x3b82f6,e=0.5;
+                    if(m.type==='start'){c=0x10b981;e=0.6;}
+                    if(m.type==='bad'){c=0xef4444;e=0.8;}
+                    if(m.type==='reveal'){c=0xd946ef;e=0.8;}
+                    node.material=new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:e,transparent:false,opacity:1});
+                } else {
+                    node.material=new THREE.MeshStandardMaterial({color:0x475569,transparent:true,opacity:0.25});
+                }
+            });
+        };
+        window.reset3D = function(){
+            if(!_skeleton) return;
+            _skeleton.traverse(function(node){
+                if(!node.isMesh) return;
+                if(isMine(node.name)){node.material=new THREE.MeshStandardMaterial({color:0x475569,transparent:true,opacity:0.25});node.visible=true;}
+                else node.visible=false;
+            });
+        };
+        window.addEventListener('DOMContentLoaded',function(){
+            var container=document.getElementById('canvas-container');
+            var scene=new THREE.Scene();
+            var camera=new THREE.PerspectiveCamera(45,container.clientWidth/container.clientHeight,0.1,1000);
+            var renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+            renderer.setSize(container.clientWidth,container.clientHeight);
+            container.appendChild(renderer.domElement);
+            var controls=new THREE.OrbitControls(camera,renderer.domElement);
+            controls.enableDamping=true;controls.dampingFactor=0.05;
+            controls.minDistance=0.05;controls.maxDistance=3;controls.maxPolarAngle=Math.PI;
+            controls.enableZoom=false;
+            renderer.domElement.addEventListener('wheel',function(e){
+                e.preventDefault();
+                var rect=renderer.domElement.getBoundingClientRect();
+                var mouse=new THREE.Vector2(((e.clientX-rect.left)/rect.width)*2-1,-((e.clientY-rect.top)/rect.height)*2+1);
+                var ray=new THREE.Raycaster();ray.setFromCamera(mouse,camera);
+                var t3d;
+                if(_skeleton){var hits=ray.intersectObjects([_skeleton],true);if(hits.length)t3d=hits[0].point.clone();}
+                if(!t3d)t3d=ray.ray.at(camera.position.distanceTo(controls.target),new THREE.Vector3());
+                var dir=new THREE.Vector3().subVectors(t3d,camera.position);
+                var dist=camera.position.distanceTo(controls.target);
+                var step=dir.length()*0.12;
+                if(e.deltaY<0&&dist>controls.minDistance)camera.position.addScaledVector(dir.normalize(),step);
+                else if(e.deltaY>0&&dist<controls.maxDistance)camera.position.addScaledVector(dir.normalize(),-step);
+                controls.update();
+            },{passive:false});
+            scene.add(new THREE.AmbientLight(0xffffff,0.7));
+            var dl=new THREE.DirectionalLight(0xffffff,0.8);dl.position.set(5,10,7.5);scene.add(dl);
+            var dl2=new THREE.DirectionalLight(0xffffff,0.3);dl2.position.set(-5,-5,-5);scene.add(dl2);
+            var draco=new THREE.DRACOLoader();draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
+            var loader=new THREE.GLTFLoader();loader.setDRACOLoader(draco);
+            loader.load('../models/overview-skeleton.glb',function(gltf){
+                _skeleton=gltf.scene;scene.add(_skeleton);
+                var box=new THREE.Box3();
+                _skeleton.traverse(function(node){if(!node.isMesh)return;if(isMine(node.name))box.expandByObject(node);else node.visible=false;});
+                var center=box.getCenter(new THREE.Vector3());var size=box.getSize(new THREE.Vector3());
+                controls.target.copy(center);
+                var maxDim=Math.max(size.x,size.y,size.z),fov=camera.fov*(Math.PI/180);
+                camera.position.set(center.x,center.y+size.y*0.3,center.z+Math.abs(maxDim/2/Math.tan(fov/2))*2.2);
+                camera.lookAt(center);controls.update();
+                window.reset3D();
+            });
+            function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera);}animate();
+            window.addEventListener('resize',function(){camera.aspect=container.clientWidth/container.clientHeight;camera.updateProjectionMatrix();renderer.setSize(container.clientWidth,container.clientHeight);});
+        });
+    </script>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useCallback } = React;
+
+        const GRAPH = {
+            'Tibia':                    ['Fibula','Talus'],
+            'Fibula':                   ['Tibia','Talus'],
+            'Talus':                    ['Tibia','Fibula','Calcaneus','Navicular'],
+            'Calcaneus':                ['Talus','Cuboid'],
+            'Navicular':                ['Talus','Medial Cuneiform','Intermediate Cuneiform','Lateral Cuneiform'],
+            'Cuboid':                   ['Calcaneus','Lateral Cuneiform','Metatarsal IV','Metatarsal V'],
+            'Medial Cuneiform':         ['Navicular','Intermediate Cuneiform','Metatarsal I','Metatarsal II'],
+            'Intermediate Cuneiform':   ['Navicular','Medial Cuneiform','Lateral Cuneiform','Metatarsal II'],
+            'Lateral Cuneiform':        ['Navicular','Intermediate Cuneiform','Cuboid','Metatarsal III','Metatarsal IV'],
+            'Metatarsal I':             ['Medial Cuneiform','Proximal Phalanx I (Foot)'],
+            'Metatarsal II':            ['Medial Cuneiform','Intermediate Cuneiform','Proximal Phalanx II (Foot)'],
+            'Metatarsal III':           ['Lateral Cuneiform','Proximal Phalanx III (Foot)'],
+            'Metatarsal IV':            ['Lateral Cuneiform','Cuboid','Proximal Phalanx IV (Foot)'],
+            'Metatarsal V':             ['Cuboid','Proximal Phalanx V (Foot)'],
+            'Proximal Phalanx I (Foot)':  ['Metatarsal I','Distal Phalanx I (Foot)'],
+            'Distal Phalanx I (Foot)':    ['Proximal Phalanx I (Foot)'],
+            'Proximal Phalanx II (Foot)': ['Metatarsal II','Middle Phalanx II (Foot)'],
+            'Middle Phalanx II (Foot)':   ['Proximal Phalanx II (Foot)','Distal Phalanx II (Foot)'],
+            'Distal Phalanx II (Foot)':   ['Middle Phalanx II (Foot)'],
+            'Proximal Phalanx III (Foot)':['Metatarsal III','Middle Phalanx III (Foot)'],
+            'Middle Phalanx III (Foot)':  ['Proximal Phalanx III (Foot)','Distal Phalanx III (Foot)'],
+            'Distal Phalanx III (Foot)':  ['Middle Phalanx III (Foot)'],
+            'Proximal Phalanx IV (Foot)': ['Metatarsal IV','Middle Phalanx IV (Foot)'],
+            'Middle Phalanx IV (Foot)':   ['Proximal Phalanx IV (Foot)','Distal Phalanx IV (Foot)'],
+            'Distal Phalanx IV (Foot)':   ['Middle Phalanx IV (Foot)'],
+            'Proximal Phalanx V (Foot)':  ['Metatarsal V','Middle Phalanx V (Foot)'],
+            'Middle Phalanx V (Foot)':    ['Proximal Phalanx V (Foot)','Distal Phalanx V (Foot)'],
+            'Distal Phalanx V (Foot)':    ['Middle Phalanx V (Foot)'],
+        };
+
+        const GROUPS = [
+            { label: '🦴 Lower Leg',         bones: ['Tibia','Fibula'] },
+            { label: '🦶 Tarsals',            bones: ['Talus','Calcaneus','Navicular','Cuboid','Medial Cuneiform','Intermediate Cuneiform','Lateral Cuneiform'] },
+            { label: '👟 Metatarsals',        bones: ['Metatarsal I','Metatarsal II','Metatarsal III','Metatarsal IV','Metatarsal V'] },
+            { label: '👍 Big Toe (I)',         bones: ['Proximal Phalanx I (Foot)','Distal Phalanx I (Foot)'] },
+            { label: '☝️ 2nd Toe (II)',       bones: ['Proximal Phalanx II (Foot)','Middle Phalanx II (Foot)','Distal Phalanx II (Foot)'] },
+            { label: '🖕 3rd Toe (III)',       bones: ['Proximal Phalanx III (Foot)','Middle Phalanx III (Foot)','Distal Phalanx III (Foot)'] },
+            { label: '💍 4th Toe (IV)',        bones: ['Proximal Phalanx IV (Foot)','Middle Phalanx IV (Foot)','Distal Phalanx IV (Foot)'] },
+            { label: '🤙 Little Toe (V)',      bones: ['Proximal Phalanx V (Foot)','Middle Phalanx V (Foot)','Distal Phalanx V (Foot)'] },
+        ];
+
+        const ALL = Object.keys(GRAPH);
+        const TOTAL = ALL.length; // 29 — Tibia + Fibula + 27 foot bones
+
+        function App() {
+            const [guessed, setGuessed] = useState(new Set());
+            const [bad, setBad]         = useState([]);
+            const [left, setLeft]       = useState(0);
+            const [max, setMax]         = useState(0);
+            const [input, setInput]     = useState('');
+            const [state, setState]     = useState('playing');
+            const [reveal, setReveal]   = useState(false);
+
+            const START = 'Tibia';
+
+            const init = useCallback(() => {
+                const total = (TOTAL - 1) + 5;
+                setGuessed(new Set([START]));
+                setBad([]); setLeft(total); setMax(total);
+                setInput(''); setState('playing'); setReveal(false);
+                if (window.reset3D) window.reset3D();
+            }, []);
+
+            useEffect(() => { init(); }, [init]);
+
+            const frontier = useMemo(() => {
+                const f = new Set();
+                guessed.forEach(b => { (GRAPH[b]||[]).forEach(n => { if(!guessed.has(n)) f.add(n); }); });
+                return f;
+            }, [guessed]);
+
+            useEffect(() => {
+                const h = [];
+                guessed.forEach(b => h.push({name:b, type: b===START ? 'start' : 'found'}));
+                if (reveal && state==='lost') ALL.forEach(b => { if(!guessed.has(b)) h.push({name:b,type:'reveal'}); });
+                bad.forEach(b => h.push({name:b,type:'bad'}));
+                if (window.update3D) window.update3D(h);
+            }, [guessed, bad, reveal, state]);
+
+            const submit = (g) => {
+                if (state!=='playing'||guessed.has(g)||!g) return;
+                const nl = left - 1; setLeft(nl);
+                if (frontier.has(g)) {
+                    const ng = new Set(guessed); ng.add(g); setGuessed(ng);
+                    if (ng.size===TOTAL) { setState('won'); setInput(''); return; }
+                    if (nl<=0) setState('lost');
+                } else {
+                    setBad(p=>[...new Set([g,...p])]);
+                    if (nl<=0) setState('lost');
+                }
+                setInput('');
+            };
+
+            const suggestions = useMemo(() => {
+                if (!input) return [];
+                return ALL.filter(b=>b.toLowerCase().includes(input.toLowerCase())&&!guessed.has(b)&&!bad.includes(b)).slice(0,5);
+            }, [input, guessed, bad]);
+
+            const pct = Math.round((guessed.size/TOTAL)*100);
+
+            return (
+                <div className="sidebar p-5 flex flex-col h-screen">
+                    <header className="mb-3">
+                        <div className="mb-1"><a href="../index.html" className="text-slate-500 hover:text-white text-xs uppercase tracking-widest">← Menu</a></div>
+                        <h1 className="text-3xl font-black text-white tracking-tighter uppercase">Anatomle</h1>
+                        <div className="flex justify-between items-center border-b border-slate-700 pb-2">
+                            <span className="text-[9px] text-orange-500/70 tracking-[0.3em] uppercase">🦶 Foot · Flood Fill</span>
+                            <span className={`text-xs font-bold ${left < 5 ? 'text-red-400' : 'text-emerald-400'}`}>{left} guesses left</span>
+                        </div>
+                    </header>
+
+                    <div className="bg-slate-800/40 p-3 border border-slate-700 mb-3 rounded text-[9px] text-slate-400 leading-relaxed">
+                        Start: <span className="text-emerald-400 font-bold">Tibia</span>. Name any bone <span className="text-blue-400 font-bold">physically touching</span> a found bone. Identify all <span className="text-white font-bold">{TOTAL}</span> bones to win.
+                    </div>
+
+                    <div className="mb-3">
+                        <div className="flex justify-between text-[8px] uppercase text-slate-500 mb-1">
+                            <span>Bones found</span><span className="text-white font-bold">{guessed.size} / {TOTAL}</span>
+                        </div>
+                        <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full transition-all duration-500" style={{width:`${pct}%`,background:pct===100?'#10b981':'#f97316'}} />
+                        </div>
+                    </div>
+
+                    {bad.length > 0 && (
+                        <div className="mb-2">
+                            <p className="text-[8px] text-red-400 uppercase font-bold mb-1 tracking-wider">❌ Not Adjacent</p>
+                            <div className="flex flex-wrap gap-1">
+                                {bad.map((g,i)=><div key={i} className="failure-item text-[8px] font-bold text-red-400 bg-red-900/30 px-2 py-0.5 border border-red-800/40 uppercase rounded">{g}</div>)}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex-1 overflow-y-auto custom-scrollbar mb-3 space-y-2">
+                        {GROUPS.map(group => (
+                            <div key={group.label}>
+                                <p className="text-[7px] text-slate-600 uppercase font-bold mb-1 tracking-wider">{group.label}</p>
+                                <div className="grid grid-cols-2 gap-1">
+                                    {group.bones.map(bone => {
+                                        const found=guessed.has(bone), isStart=bone===START;
+                                        const isReveal=reveal&&state==='lost'&&!found;
+                                        return (
+                                            <div key={bone} className={`p-1.5 border text-[7px] font-bold uppercase tracking-tight rounded transition-all ${
+                                                isStart?'bg-emerald-900/40 border-emerald-600/60 text-emerald-400'
+                                                :found?'bg-slate-800 border-slate-600 text-blue-400'
+                                                :isReveal?'bg-fuchsia-900/30 border-fuchsia-700/40 text-fuchsia-400'
+                                                :'border-dashed border-slate-700/30 text-slate-700 opacity-30'
+                                            }`}>
+                                                {found||isReveal?bone:'???'}{isStart&&' 📍'}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="mt-auto space-y-2">
+                        <div className="relative">
+                            <input
+                                className="w-full bg-slate-900 border border-slate-700 p-3 text-white outline-none focus:border-orange-500 text-xs italic"
+                                placeholder="Name a touching foot bone..."
+                                value={input}
+                                onChange={e=>setInput(e.target.value)}
+                                onKeyDown={e=>{if(e.key==='Enter')submit(suggestions.length>0?suggestions[0]:input.trim());}}
+                                disabled={state!=='playing'}
+                            />
+                            {suggestions.length>0&&(
+                                <div className="absolute bottom-full left-0 w-full bg-slate-900 border border-slate-700 z-[60] shadow-2xl">
+                                    {suggestions.map(s=><div key={s} onClick={()=>submit(s)} className="suggestion-item p-3 text-[10px] uppercase font-black transition-all">{s}</div>)}
+                                </div>
+                            )}
+                        </div>
+                        <button onClick={init} className="w-full py-3 bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-orange-400 hover:text-white transition-all">New Foot</button>
+                    </div>
+
+                    {state!=='playing'&&!reveal&&(
+                        <div className={`fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-xl ${state==='won'?'victory-bg':'loss-bg'}`}>
+                            <div className="text-center p-12 bg-slate-950/90 border border-white/10 rounded-3xl max-w-md">
+                                <h2 className="text-5xl font-black text-white mb-2 tracking-tighter uppercase">
+                                    {state==='won'?'🦶 Complete!':'✗ Incomplete'}
+                                </h2>
+                                <p className="text-slate-400 text-sm mb-6">
+                                    {state==='won'?`All ${TOTAL} foot bones! ${max-left} guesses used.`:`Found ${guessed.size}/${TOTAL}. ${bad.length} non-adjacent guess${bad.length!==1?'es':''}.`}
+                                </p>
+                                {state==='lost'&&<div className="mb-6"><button onClick={()=>setReveal(true)} className="px-6 py-3 bg-fuchsia-500 text-white font-black text-xs uppercase hover:bg-fuchsia-400">👁️ Reveal Missing</button></div>}
+                                <div className="flex gap-3 justify-center">
+                                    <button onClick={init} className="px-8 py-4 bg-white text-black font-black text-xs uppercase hover:scale-105 transition-transform">Play Again</button>
+                                    <a href="../index.html" className="px-8 py-4 bg-slate-700 text-white font-black text-xs uppercase hover:bg-slate-600 flex items-center">Menu</a>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
