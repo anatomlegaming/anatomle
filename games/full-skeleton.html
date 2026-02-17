@@ -3,207 +3,536 @@
 <head>
     <meta charset="UTF-8">
     <title>ANATOMLE | Full Skeleton</title>
-    
+
     <!-- Three.js and dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    
-    <!-- React -->
+
+    <!-- React + Babel must come BEFORE any text/babel scripts -->
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
+
     <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- YOUR MODULAR FILES -->
+
+    <!-- Modular JS files -->
     <script src="../js/data/skeletonGraph.js"></script>
     <script src="../js/data/boneMappings.js"></script>
     <script src="../js/core/pathfinding.js"></script>
     <script src="../js/core/gameLogic.js"></script>
     <script src="../js/3d/modelLoader.js"></script>
     <script src="../js/3d/boneHighlighter.js"></script>
-    
+
     <style>
-        body { 
-            font-family: 'EB Garamond', serif; 
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@900&family=EB+Garamond:wght@400;700&display=swap');
+        body {
+            font-family: 'EB Garamond', serif;
             background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            margin: 0; 
-            overflow: hidden; 
+            color: #d6d3d1;
+            margin: 0;
+            overflow: hidden;
         }
-        #canvas-container { 
-            position: absolute; 
-            right: 0; 
-            top: 0; 
-            width: calc(100% - 400px); 
-            height: 100vh; 
+        #canvas-container {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: calc(100% - 400px);
+            height: 100vh;
+            z-index: 10;
             background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
         }
-        .sidebar { 
-            width: 400px; 
-            height: 100vh; 
-            background: rgba(15, 23, 42, 0.98); 
-            border-right: 1px solid #334155; 
-            position: relative; 
-            z-index: 50; 
+        .sidebar {
+            width: 400px;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.98);
+            border-right: 1px solid #334155;
+            position: relative;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            pointer-events: auto;
+            box-shadow: 2px 0 20px rgba(0,0,0,0.5);
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 2px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }
+        .suggestion-item:hover { background: #3b82f6; color: white; padding-left: 1rem; cursor: pointer; }
+        .victory-bg { background: radial-gradient(circle, rgba(16,185,129,0.3) 0%, rgba(0,0,0,1) 100%); }
+        .loss-bg { background: radial-gradient(circle, rgba(239,68,68,0.3) 0%, rgba(0,0,0,1) 100%); }
+        .failure-item { animation: shake 0.3s ease-in-out; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
         }
     </style>
 </head>
 <body>
-    <div id="root"></div>
     <div id="canvas-container"></div>
-    
+    <div id="root"></div>
+
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
-        
+        const { useState, useEffect, useMemo, useCallback } = React;
+
         function App() {
             const [target, setTarget] = useState({ start: '', end: '', path: [] });
             const [chain, setChain] = useState([]);
             const [guessesLeft, setGuessesLeft] = useState(10);
-            const [detours, setDetours] = useState([]);
+            const [maxGuesses, setMaxGuesses] = useState(10);
             const [badGuesses, setBadGuesses] = useState([]);
-            const [gameState, setGameState] = useState('playing');
+            const [detours, setDetours] = useState([]);
             const [inputValue, setInputValue] = useState('');
-            
-            // Initialize game using modular function
-            const initGame = () => {
-                const gameData = initializeGame(SKELETON_GRAPH, {
-                    minLength: 4,
-                    maxLength: 8
-                });
-                
+            const [gameState, setGameState] = useState('playing');
+            const [showReveal, setShowReveal] = useState(false);
+
+            const initGame = useCallback(() => {
+                const gameData = initializeGame(SKELETON_GRAPH, { minLength: 4, maxLength: 8 });
+
                 setTarget(gameData);
-                setChain(gameData.path.map((bone, idx) => ({
+                const initialChain = gameData.path.map((bone, idx) => ({
                     bone,
                     type: idx === 0 ? 'start' : 'path',
                     guessed: idx === 0
-                })));
-                
+                }));
+                setChain(initialChain);
+
                 const totalGuesses = calculateGuessCount(gameData.path.length);
                 setGuessesLeft(totalGuesses);
-                setDetours([]);
+                setMaxGuesses(totalGuesses);
                 setBadGuesses([]);
-                setGameState('playing');
+                setDetours([]);
                 setInputValue('');
-                resetBoneColors();
-            };
-            
-            // Submit guess using modular validation
+                setGameState('playing');
+                setShowReveal(false);
+                if (window.reset3D) window.reset3D();
+            }, []);
+
+            useEffect(() => { initGame(); }, [initGame]);
+
+            // Sync 3D model highlighting with game state
+            useEffect(() => {
+                const highlights = [];
+
+                if (showReveal && gameState === 'lost') {
+                    // Reveal mode: show full correct path, missing bones in magenta
+                    chain.forEach((item, idx) => {
+                        const isLastBone = idx === chain.length - 1;
+                        if (item.guessed && !isLastBone) {
+                            highlights.push({ name: item.bone, type: item.type });
+                        } else if (!item.guessed && !isLastBone) {
+                            highlights.push({ name: item.bone, type: 'reveal' });
+                        } else if (isLastBone) {
+                            highlights.push({ name: item.bone, type: 'end' });
+                        }
+                    });
+                } else {
+                    // Normal game: guessed bones + detours + bad guesses
+                    chain.forEach((item, idx) => {
+                        const isLastBone = idx === chain.length - 1;
+                        if (item.guessed && !isLastBone) {
+                            highlights.push({ name: item.bone, type: item.type });
+                        } else if (isLastBone) {
+                            highlights.push({ name: item.bone, type: 'end' });
+                        }
+                    });
+                    detours.forEach(g => highlights.push({ name: g, type: 'detour' }));
+                    badGuesses.forEach(g => highlights.push({ name: g, type: 'bad' }));
+                }
+
+                if (window.update3D) window.update3D(highlights);
+            }, [chain, badGuesses, detours, showReveal, gameState]);
+
             const submitGuess = (guess) => {
                 if (gameState !== 'playing') return;
-                
-                const validation = validateGuess(
-                    guess,
-                    target.path,
-                    target.start,
-                    target.end,
-                    SKELETON_GRAPH
-                );
-                
-                if (validation.type === 'optimal') {
-                    // Update chain
-                    const updatedChain = chain.map(item => 
+
+                const isOnOptimalPath = target.path.includes(guess);
+
+                let updatedChain = chain;
+                let updatedDetours = detours;
+                let isValidGuess = false;
+
+                if (isOnOptimalPath) {
+                    updatedChain = chain.map(item =>
                         item.bone === guess ? { ...item, guessed: true } : item
                     );
-                    setChain(updatedChain);
-                    
-                    // Check win
-                    const guessedBones = updatedChain.filter(c => c.guessed).map(c => c.bone);
-                    if (canReachTargetWithGuessed(target.start, target.end, guessedBones, detours, SKELETON_GRAPH)) {
-                        setGameState('won');
-                    }
-                } else if (validation.type === 'detour') {
-                    const newDetours = [...detours, guess];
-                    setDetours(newDetours);
-                    
-                    // Check win with detours
-                    const guessedBones = chain.filter(c => c.guessed).map(c => c.bone);
-                    if (canReachTargetWithGuessed(target.start, target.end, guessedBones, newDetours, SKELETON_GRAPH)) {
-                        setGameState('won');
-                    }
+                    isValidGuess = true;
                 } else {
-                    setBadGuesses([...badGuesses, guess]);
+                    const isValidDetour = isOnValidPath(guess, target.start, target.end, SKELETON_GRAPH);
+                    if (isValidDetour) {
+                        updatedDetours = [...new Set([guess, ...detours])];
+                        isValidGuess = true;
+                    } else {
+                        setBadGuesses(prev => [...new Set([guess, ...prev])]);
+                    }
                 }
-                
-                // Fix Bug #3: avoid stale closure by computing new value first
+
+                // Fix: compute new count first to avoid stale closure
                 const newGuessesLeft = guessesLeft - 1;
                 setGuessesLeft(newGuessesLeft);
+
+                if (isValidGuess) {
+                    if (isOnOptimalPath) setChain(updatedChain);
+                    else setDetours(updatedDetours);
+
+                    // Fix: use freshly computed updated state for win check
+                    const guessedOptimal = updatedChain.filter(c => c.guessed).map(c => c.bone);
+                    if (canReachTargetWithGuessed(target.start, target.end, guessedOptimal, updatedDetours, SKELETON_GRAPH)) {
+                        setGameState('won');
+                        setInputValue('');
+                        return;
+                    }
+                }
+
                 if (newGuessesLeft <= 0) setGameState('lost');
                 setInputValue('');
             };
-            
-            // Initialize 3D and game on mount
-            useEffect(() => {
-                initScene('canvas-container');
-                loadSkeletonModel('../models/overview-skeleton.glb', () => {
-                    console.log('Model loaded!');
-                });
-                initGame();
-            }, []);
-            
-            // Update 3D highlighting
-            useEffect(() => {
-                const highlights = [];
-                
-                chain.forEach((item, idx) => {
-                    if (item.guessed && idx < chain.length - 1) {
-                        highlights.push({ name: item.bone, type: item.type });
-                    } else if (idx === chain.length - 1) {
-                        highlights.push({ name: item.bone, type: 'end' });
-                    }
-                });
-                
-                detours.forEach(d => highlights.push({ name: d, type: 'detour' }));
-                badGuesses.forEach(b => highlights.push({ name: b, type: 'bad' }));
-                
-                updateBoneColors(highlights, BONE_TO_3D_MODEL);
-            }, [chain, detours, badGuesses]);
-            
+
+            const suggestions = useMemo(() => {
+                if (!inputValue) return [];
+                const guessedBones = chain.filter(c => c.guessed).map(c => c.bone);
+                return Object.keys(SKELETON_GRAPH)
+                    .filter(b =>
+                        b.toLowerCase().includes(inputValue.toLowerCase()) &&
+                        !guessedBones.includes(b) &&
+                        b !== target.end &&
+                        !badGuesses.includes(b) &&
+                        !detours.includes(b)
+                    ).slice(0, 5);
+            }, [inputValue, chain, target, badGuesses, detours]);
+
             return (
                 <div className="sidebar p-6">
-                    <h1 className="text-3xl font-black text-white">ANATOMLE</h1>
-                    
-                    {/* Your UI here */}
-                    <div className="mt-4">
-                        <p className="text-white">
-                            {target.start} → {target.end}
-                        </p>
-                        <p className="text-slate-400">
-                            Guesses: {guessesLeft}
-                        </p>
+                    <header className="mb-4">
+                        <h1 className="text-3xl font-black text-white tracking-tighter uppercase">Anatomle</h1>
+                        <div className="flex justify-between items-center border-b border-slate-700 pb-2">
+                            <span className="text-[9px] text-slate-500 tracking-[0.3em] uppercase">Clinical Pro v18.7</span>
+                            <span className={`text-xs font-bold ${guessesLeft < 4 ? 'text-red-400' : 'text-emerald-400'}`}>
+                                {guessesLeft} Guesses
+                            </span>
+                        </div>
+                    </header>
+
+                    {/* Start / Target display */}
+                    <div className="bg-slate-800/40 p-3 border border-slate-700 mb-4 rounded flex justify-between">
+                        <div>
+                            <p className="text-[8px] text-slate-500 uppercase font-bold">Start</p>
+                            <p className="text-[10px] font-bold uppercase text-emerald-400">{target.start}</p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-[8px] text-slate-500 uppercase font-bold">Target</p>
+                            <p className="text-[10px] font-bold uppercase text-amber-400">{target.end}</p>
+                        </div>
                     </div>
-                    
-                    <input
-                        type="text"
-                        value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && submitGuess(inputValue)}
-                        className="w-full p-2 mt-4 bg-slate-800 text-white"
-                        placeholder="Type bone name..."
-                    />
-                    
-                    {gameState !== 'playing' && (
-                        <div className="mt-4">
-                            <h2 className="text-2xl font-bold text-white">
-                                {gameState === 'won' 
-                                    ? (detours.length === 0 ? '✓ Perfect Path!' : '✓ Path Complete!')
-                                    : '✗ Failed'}
-                            </h2>
-                            <button 
-                                onClick={initGame}
-                                className="mt-4 px-6 py-2 bg-white text-black font-bold"
-                            >
-                                Play Again
-                            </button>
+
+                    {/* Detours */}
+                    {detours.length > 0 && (
+                        <div className="mb-4">
+                            <p className="text-[8px] text-amber-400 uppercase font-bold mb-2 tracking-wider">⚠️ Longer Routes</p>
+                            <div className="flex flex-wrap gap-1.5">
+                                {detours.map((g, i) => (
+                                    <div key={i} className="text-[9px] font-bold text-amber-400 bg-amber-900/30 px-2.5 py-1 border border-amber-800/40 uppercase tracking-tight rounded">
+                                        {g}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Failed guesses */}
+                    {badGuesses.length > 0 && (
+                        <div className="mb-4">
+                            <p className="text-[8px] text-red-400 uppercase font-bold mb-2 tracking-wider">❌ Failed Attempts</p>
+                            <div className="flex flex-wrap gap-1.5">
+                                {badGuesses.map((g, i) => (
+                                    <div key={i} className="failure-item text-[9px] font-bold text-red-400 bg-red-900/30 px-2.5 py-1 border border-red-800/40 uppercase tracking-tight rounded">
+                                        {g}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Path chain with twin bone logic */}
+                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-1 mb-4">
+                        <p className="text-[8px] text-slate-500 uppercase font-bold mb-2 tracking-wider">🧬 Your Path</p>
+                        {chain.map((item, idx) => {
+                            const isLastBone = idx === chain.length - 1;
+
+                            const twinName = TWIN_BONES[item.bone];
+                            const hasTwin = !!twinName;
+                            const nextItem = chain[idx + 1];
+                            const isTwinWithNext = nextItem && areTwins(item.bone, nextItem.bone);
+                            const prevItem = chain[idx - 1];
+                            const isTwinWithPrev = prevItem && areTwins(item.bone, prevItem.bone);
+                            if (isTwinWithPrev) return null; // Already rendered as part of previous twin pair
+
+                            let twinItem = null;
+                            if (hasTwin && !isTwinWithNext) {
+                                const twinInChain = chain.find(c => c.bone === twinName);
+                                const twinIsDetour = detours.includes(twinName);
+                                if (twinInChain) {
+                                    twinItem = twinInChain;
+                                } else if (twinIsDetour) {
+                                    twinItem = { bone: twinName, type: 'detour', guessed: true };
+                                }
+                            }
+
+                            const renderBone = (boneItem, isOptimalPath = true, isInPair = false) => {
+                                const boneIsLastBone = boneItem.bone === target.end;
+                                const boneIsMissing = showReveal && gameState === 'lost' && !boneItem.guessed && !boneIsLastBone;
+                                const isDetourBone = boneItem.type === 'detour' || detours.includes(boneItem.bone);
+
+                                return (
+                                    <div className={`p-2 border transition-all ${isInPair ? 'flex-1' : ''} ${
+                                        !boneItem.guessed && !boneIsLastBone && !showReveal
+                                            ? 'border-dashed border-slate-700/40 opacity-20'
+                                            : boneIsMissing
+                                                ? 'bg-fuchsia-900/20 border-fuchsia-700/40 shadow-sm'
+                                                : isDetourBone && boneItem.guessed
+                                                    ? 'bg-orange-900/20 border-orange-700/40 shadow-sm'
+                                                : boneIsLastBone
+                                                    ? 'bg-amber-900/20 border-amber-700/40 shadow-sm'
+                                                    : 'bg-slate-800 border-slate-600 shadow-sm'
+                                    }`}>
+                                        <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest">
+                                            <span className={
+                                                boneItem.type === 'start' ? 'text-emerald-400' :
+                                                boneIsLastBone ? 'text-amber-400' :
+                                                boneIsMissing ? 'text-fuchsia-400' :
+                                                isDetourBone && boneItem.guessed ? 'text-orange-400' :
+                                                'text-blue-400'
+                                            }>
+                                                {showReveal && gameState === 'lost' ? boneItem.bone :
+                                                 !boneItem.guessed && !boneIsLastBone ? '???' : boneItem.bone}
+                                            </span>
+                                            <span>
+                                                {boneItem.type === 'start' ? '📍' :
+                                                 boneIsLastBone ? '🎯' :
+                                                 boneIsMissing ? '🔗' :
+                                                 isDetourBone && boneItem.guessed ? '⚠️' : '🧬'}
+                                            </span>
+                                        </div>
+                                        {boneIsMissing && (
+                                            <p className="text-[7px] text-fuchsia-400 mt-1 tracking-wider">MISSING LINK</p>
+                                        )}
+                                    </div>
+                                );
+                            };
+
+                            if (isTwinWithNext) {
+                                return (
+                                    <div key={idx} className="flex gap-1">
+                                        {renderBone(item, true, true)}
+                                        {renderBone(nextItem, true, true)}
+                                    </div>
+                                );
+                            } else if (twinItem) {
+                                return (
+                                    <div key={idx} className="flex gap-1">
+                                        {renderBone(item, true, true)}
+                                        {renderBone(twinItem, false, true)}
+                                    </div>
+                                );
+                            }
+
+                            return <div key={idx}>{renderBone(item, true, false)}</div>;
+                        })}
+                    </div>
+
+                    {/* Input + autocomplete */}
+                    <div className="mt-auto space-y-3">
+                        <div className="relative">
+                            <input
+                                className="w-full bg-slate-900 border border-slate-700 p-3 text-white outline-none focus:border-blue-500 text-xs italic"
+                                placeholder="Identify next structure..."
+                                value={inputValue}
+                                onChange={e => setInputValue(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && inputValue && submitGuess(inputValue)}
+                                disabled={gameState !== 'playing'}
+                            />
+                            {suggestions.length > 0 && (
+                                <div className="absolute bottom-full left-0 w-full bg-slate-900 border border-slate-700 z-[60] shadow-2xl">
+                                    {suggestions.map(s => (
+                                        <div
+                                            key={s}
+                                            onClick={() => submitGuess(s)}
+                                            className="suggestion-item p-3 text-[10px] uppercase font-black transition-all"
+                                        >
+                                            {s}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <button
+                            onClick={initGame}
+                            className="w-full py-3 bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-emerald-400 hover:text-white transition-all"
+                        >
+                            Next Case
+                        </button>
+                    </div>
+
+                    {/* End game overlay */}
+                    {gameState !== 'playing' && !showReveal && (
+                        <div className={`fixed inset-0 z-[100] flex flex-col items-center justify-center backdrop-blur-xl ${gameState === 'won' ? 'victory-bg' : 'loss-bg'}`}>
+                            <div className="text-center p-12 bg-slate-950/90 border border-white/10 rounded-3xl max-w-md">
+                                <h2 className="text-5xl font-black text-white mb-2 tracking-tighter uppercase">
+                                    {gameState === 'won'
+                                        ? (detours.length === 0 ? '✓ Perfect Path' : '✓ Path Complete')
+                                        : '✗ Flatline'}
+                                </h2>
+                                <p className="text-slate-400 text-sm mb-6">
+                                    {gameState === 'won'
+                                        ? (detours.length === 0
+                                            ? `Optimal route! ${maxGuesses - guessesLeft}/${maxGuesses} guesses used.`
+                                            : `Valid path found with ${detours.length} detour${detours.length !== 1 ? 's' : ''}. ${maxGuesses - guessesLeft}/${maxGuesses} guesses used.`)
+                                        : `Path not found. ${badGuesses.length} failed attempt${badGuesses.length !== 1 ? 's' : ''}.`
+                                    }
+                                </p>
+
+                                {gameState === 'lost' && (
+                                    <div className="mb-6">
+                                        <button
+                                            onClick={() => setShowReveal(!showReveal)}
+                                            className="px-6 py-3 bg-fuchsia-500 text-white font-black text-xs uppercase hover:bg-fuchsia-400 transition-all"
+                                        >
+                                            {showReveal ? '✗ Hide' : '👁️ Reveal'} Correct Path
+                                        </button>
+                                        <p className="text-[10px] text-slate-500 mt-2">
+                                            {showReveal ? 'Missing links shown in magenta' : 'See what you missed'}
+                                        </p>
+                                    </div>
+                                )}
+
+                                <button
+                                    onClick={initGame}
+                                    className="px-12 py-4 bg-white text-black font-black text-xs uppercase hover:scale-105 transition-transform"
+                                >
+                                    Restart Diagnostic
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
             );
         }
-        
-        ReactDOM.render(<App />, document.getElementById('root'));
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+
+        // 3D scene — kept inline so it can directly use BONE_TO_3D_MODEL from boneMappings.js
+        const init3D = () => {
+            const container = document.getElementById('canvas-container');
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.screenSpacePanning = false;
+            controls.minDistance = 1;
+            controls.maxDistance = 10;
+            controls.maxPolarAngle = Math.PI;
+
+            camera.position.set(0, 1.2, 5);
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 10, 7.5);
+            scene.add(dirLight);
+
+            const draco = new THREE.DRACOLoader();
+            draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
+            const loader = new THREE.GLTFLoader();
+            loader.setDRACOLoader(draco);
+
+            let skeleton;
+            loader.load('../models/overview-skeleton.glb', (gltf) => {
+                skeleton = gltf.scene;
+                scene.add(skeleton);
+
+                const box = new THREE.Box3().setFromObject(skeleton);
+                const center = box.getCenter(new THREE.Vector3());
+                const size = box.getSize(new THREE.Vector3());
+
+                controls.target.copy(center);
+                controls.update();
+
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const fov = camera.fov * (Math.PI / 180);
+                const cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.5;
+                camera.position.set(center.x, center.y, center.z + cameraZ);
+                camera.lookAt(center);
+                controls.update();
+
+                window.reset3D();
+            });
+
+            window.reset3D = () => {
+                if (!skeleton) return;
+                skeleton.traverse(node => {
+                    if (node.isMesh) {
+                        node.material = new THREE.MeshStandardMaterial({
+                            color: 0x475569, transparent: true, opacity: 0.25, wireframe: false
+                        });
+                    }
+                });
+            };
+
+            window.update3D = (bones) => {
+                if (!skeleton) return;
+                skeleton.traverse(node => {
+                    if (node.isMesh) {
+                        const match = bones.find(b => {
+                            const key = BONE_TO_3D_MODEL[b.name];
+                            if (!key) return false;
+                            if (b.name === "Ilium" || b.name === "Ischium" || b.name === "Pubis") {
+                                return ["Ilium", "Ischium", "Pubis"].some(part => node.name.includes(part));
+                            }
+                            return node.name.includes(key);
+                        });
+
+                        if (match) {
+                            let col = 0x3b82f6, emissiveInt = 0.5;
+                            if (match.type === 'start')  { col = 0x10b981; }
+                            if (match.type === 'end')    { col = 0xf59e0b; }
+                            if (match.type === 'detour') { col = 0xf97316; emissiveInt = 0.6; }
+                            if (match.type === 'bad')    { col = 0xef4444; emissiveInt = 0.8; }
+                            if (match.type === 'reveal') { col = 0xd946ef; emissiveInt = 0.8; }
+                            node.material = new THREE.MeshStandardMaterial({
+                                color: col, emissive: col, emissiveIntensity: emissiveInt,
+                                transparent: false, opacity: 1
+                            });
+                        } else {
+                            node.material = new THREE.MeshStandardMaterial({
+                                color: 0x475569, transparent: true, opacity: 0.25, wireframe: false
+                            });
+                        }
+                    }
+                });
+            };
+
+            const animate = () => {
+                requestAnimationFrame(animate);
+                controls.update();
+                renderer.render(scene, camera);
+            };
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+        };
+
+        init3D();
     </script>
 </body>
 </html>
