@@ -64,37 +64,136 @@
         const { useState, useEffect, useMemo, useCallback } = React;
 
         const SKELETON_GRAPH = {
-            'Frontal Bone': ['Parietal Bone', 'Ethmoid', 'Sphenoid', 'Nasal Bone', 'Maxilla', 'Zygomatic Bone'],
-            'Parietal Bone': ['Frontal Bone', 'Temporal Bone', 'Occipital Bone', 'Sphenoid'],
+            // ===== SKULL BONES =====
+            'Frontal Bone': ['Parietal Bone', 'Ethmoid Bone', 'Sphenoid Bone', 'Nasal Bone', 'Maxilla', 'Zygomatic Bone'],
+            'Parietal Bone': ['Frontal Bone', 'Temporal Bone', 'Occipital Bone', 'Sphenoid Bone'],
             'Occipital Bone': ['Parietal Bone', 'Temporal Bone', 'Atlas (C1)'],
+            'Temporal Bone': ['Parietal Bone', 'Occipital Bone', 'Sphenoid Bone', 'Zygomatic Bone', 'Mandible'],
+            'Sphenoid Bone': ['Frontal Bone', 'Parietal Bone', 'Temporal Bone', 'Ethmoid Bone', 'Zygomatic Bone', 'Palatine Bone'],
+            'Ethmoid Bone': ['Frontal Bone', 'Sphenoid Bone', 'Nasal Bone', 'Lacrimal Bone'],
+            'Nasal Bone': ['Frontal Bone', 'Ethmoid Bone', 'Maxilla'],
+            'Lacrimal Bone': ['Ethmoid Bone', 'Maxilla'],
+            'Zygomatic Bone': ['Frontal Bone', 'Temporal Bone', 'Sphenoid Bone', 'Maxilla'],
+            'Maxilla': ['Frontal Bone', 'Nasal Bone', 'Zygomatic Bone', 'Lacrimal Bone', 'Palatine Bone', 'Mandible'],
+            'Palatine Bone': ['Sphenoid Bone', 'Maxilla'],
+            'Vomer': ['Sphenoid Bone', 'Ethmoid Bone', 'Maxilla'],
+            'Inferior Nasal Concha': ['Ethmoid Bone', 'Maxilla'],
+            'Mandible': ['Temporal Bone', 'Maxilla'],
+            
+            // ===== SPINE =====
             'Atlas (C1)': ['Occipital Bone', 'Axis (C2)'],
-            'Axis (C2)': ['Atlas (C1)', 'Cervical Vertebrae'],
-            'Cervical Vertebrae': ['Axis (C2)', 'Thoracic Vertebrae'],
-            'Thoracic Vertebrae': ['Cervical Vertebrae', 'Lumbar Vertebrae', 'Ribs'], // Removed direct Sternum - ribs are the bridge
-            'Sternum': ['Clavicle', 'Ribs'], // Removed direct Thoracic - connected via ribs
-            'Ribs': ['Thoracic Vertebrae', 'Sternum'], // Ribs bridge spine to sternum
+            'Axis (C2)': ['Atlas (C1)', 'C3 Vertebra'],
+            'C3 Vertebra': ['Axis (C2)', 'C4 Vertebra'],
+            'C4 Vertebra': ['C3 Vertebra', 'C5 Vertebra'],
+            'C5 Vertebra': ['C4 Vertebra', 'C6 Vertebra'],
+            'C6 Vertebra': ['C5 Vertebra', 'C7 Vertebra'],
+            'C7 Vertebra': ['C6 Vertebra', 'T1 Vertebra'],
+            'T1 Vertebra': ['C7 Vertebra', 'T2 Vertebra', 'True Ribs'],
+            'T2 Vertebra': ['T1 Vertebra', 'T3 Vertebra', 'True Ribs'],
+            'T3 Vertebra': ['T2 Vertebra', 'T4 Vertebra', 'True Ribs'],
+            'T4 Vertebra': ['T3 Vertebra', 'T5 Vertebra', 'True Ribs'],
+            'T5 Vertebra': ['T4 Vertebra', 'T6 Vertebra', 'True Ribs'],
+            'T6 Vertebra': ['T5 Vertebra', 'T7 Vertebra', 'True Ribs'],
+            'T7 Vertebra': ['T6 Vertebra', 'T8 Vertebra', 'True Ribs'],
+            'T8 Vertebra': ['T7 Vertebra', 'T9 Vertebra', 'False Ribs'],
+            'T9 Vertebra': ['T8 Vertebra', 'T10 Vertebra', 'False Ribs'],
+            'T10 Vertebra': ['T9 Vertebra', 'T11 Vertebra', 'False Ribs'],
+            'T11 Vertebra': ['T10 Vertebra', 'T12 Vertebra', 'False Ribs'],
+            'T12 Vertebra': ['T11 Vertebra', 'L1 Vertebra', 'False Ribs'],
+            'L1 Vertebra': ['T12 Vertebra', 'L2 Vertebra'],
+            'L2 Vertebra': ['L1 Vertebra', 'L3 Vertebra'],
+            'L3 Vertebra': ['L2 Vertebra', 'L4 Vertebra'],
+            'L4 Vertebra': ['L3 Vertebra', 'L5 Vertebra'],
+            'L5 Vertebra': ['L4 Vertebra', 'Sacrum'],
+            'Sacrum': ['L5 Vertebra', 'Ilium', 'Ischium'],
+            
+            // ===== RIBS & STERNUM =====
+            'True Ribs': ['T1 Vertebra', 'T2 Vertebra', 'T3 Vertebra', 'T4 Vertebra', 'T5 Vertebra', 'T6 Vertebra', 'T7 Vertebra', 'Sternum'],
+            'False Ribs': ['T8 Vertebra', 'T9 Vertebra', 'T10 Vertebra', 'T11 Vertebra', 'T12 Vertebra'],
+            'Sternum': ['True Ribs', 'Clavicle'],
+            
+            // ===== SHOULDER & ARM =====
             'Clavicle': ['Sternum', 'Scapula'],
             'Scapula': ['Clavicle', 'Humerus'],
             'Humerus': ['Scapula', 'Radius', 'Ulna'],
-            'Radius': ['Humerus', 'Ulna', 'Carpals'],
-            'Ulna': ['Humerus', 'Radius', 'Carpals'],
-            'Carpals': ['Radius', 'Ulna', 'Metacarpals'],
-            'Metacarpals': ['Carpals', 'Phalanges (Hand)'],
-            'Phalanges (Hand)': ['Metacarpals'],
-            'Lumbar Vertebrae': ['Thoracic Vertebrae', 'Sacrum'],
-            'Sacrum': ['Lumbar Vertebrae', 'Hip Bone'],
-            'Hip Bone': ['Sacrum', 'Femur'], // Represents fused Ilium + Ischium + Pubis (os coxae/innominate)
-            'Femur': ['Hip Bone', 'Tibia', 'Patella'],
+            'Radius': ['Humerus', 'Ulna', 'Scaphoid', 'Lunate'],
+            'Ulna': ['Humerus', 'Radius', 'Triquetrum', 'Pisiform'],
+            
+            // ===== HAND - CARPALS =====
+            'Scaphoid': ['Radius', 'Lunate', 'Capitate', 'Trapezium', 'Trapezoid'],
+            'Lunate': ['Radius', 'Scaphoid', 'Triquetrum', 'Capitate', 'Hamate'],
+            'Triquetrum': ['Ulna', 'Lunate', 'Pisiform', 'Hamate'],
+            'Pisiform': ['Ulna', 'Triquetrum'],
+            'Trapezium': ['Scaphoid', 'Trapezoid', 'Metacarpal I'],
+            'Trapezoid': ['Scaphoid', 'Trapezium', 'Capitate', 'Metacarpal II'],
+            'Capitate': ['Scaphoid', 'Lunate', 'Trapezoid', 'Hamate', 'Metacarpal II', 'Metacarpal III'],
+            'Hamate': ['Lunate', 'Triquetrum', 'Capitate', 'Metacarpal IV', 'Metacarpal V'],
+            
+            // ===== HAND - METACARPALS =====
+            'Metacarpal I': ['Trapezium', 'Proximal Phalanx I'],
+            'Metacarpal II': ['Trapezoid', 'Capitate', 'Proximal Phalanx II'],
+            'Metacarpal III': ['Capitate', 'Proximal Phalanx III'],
+            'Metacarpal IV': ['Hamate', 'Proximal Phalanx IV'],
+            'Metacarpal V': ['Hamate', 'Proximal Phalanx V'],
+            
+            // ===== HAND - PHALANGES (Thumb has 2, Fingers have 3 each) =====
+            'Proximal Phalanx I': ['Metacarpal I', 'Distal Phalanx I'],
+            'Distal Phalanx I': ['Proximal Phalanx I'],
+            'Proximal Phalanx II': ['Metacarpal II', 'Middle Phalanx II'],
+            'Middle Phalanx II': ['Proximal Phalanx II', 'Distal Phalanx II'],
+            'Distal Phalanx II': ['Middle Phalanx II'],
+            'Proximal Phalanx III': ['Metacarpal III', 'Middle Phalanx III'],
+            'Middle Phalanx III': ['Proximal Phalanx III', 'Distal Phalanx III'],
+            'Distal Phalanx III': ['Middle Phalanx III'],
+            'Proximal Phalanx IV': ['Metacarpal IV', 'Middle Phalanx IV'],
+            'Middle Phalanx IV': ['Proximal Phalanx IV', 'Distal Phalanx IV'],
+            'Distal Phalanx IV': ['Middle Phalanx IV'],
+            'Proximal Phalanx V': ['Metacarpal V', 'Middle Phalanx V'],
+            'Middle Phalanx V': ['Proximal Phalanx V', 'Distal Phalanx V'],
+            'Distal Phalanx V': ['Middle Phalanx V'],
+            
+            // ===== PELVIS =====
+            'Ilium': ['Sacrum', 'Ischium', 'Pubis', 'Femur'],
+            'Ischium': ['Sacrum', 'Ilium', 'Pubis', 'Femur'],
+            'Pubis': ['Ilium', 'Ischium'],
+            
+            // ===== LEG =====
+            'Femur': ['Ilium', 'Ischium', 'Patella', 'Tibia'],
             'Patella': ['Femur', 'Tibia'],
             'Tibia': ['Femur', 'Patella', 'Fibula', 'Talus'],
             'Fibula': ['Tibia', 'Talus'],
+            
+            // ===== FOOT - TARSALS =====
             'Talus': ['Tibia', 'Fibula', 'Calcaneus', 'Navicular'],
             'Calcaneus': ['Talus', 'Cuboid'],
-            'Navicular': ['Talus', 'Cuneiforms'],
-            'Cuboid': ['Calcaneus', 'Metatarsals'],
-            'Cuneiforms': ['Navicular', 'Metatarsals'],
-            'Metatarsals': ['Cuboid', 'Cuneiforms', 'Phalanges (Foot)'],
-            'Phalanges (Foot)': ['Metatarsals']
+            'Navicular': ['Talus', 'Medial Cuneiform', 'Intermediate Cuneiform', 'Lateral Cuneiform'],
+            'Medial Cuneiform': ['Navicular', 'Intermediate Cuneiform', 'Metatarsal I', 'Metatarsal II'],
+            'Intermediate Cuneiform': ['Navicular', 'Medial Cuneiform', 'Lateral Cuneiform', 'Metatarsal II'],
+            'Lateral Cuneiform': ['Navicular', 'Intermediate Cuneiform', 'Cuboid', 'Metatarsal III', 'Metatarsal IV'],
+            'Cuboid': ['Calcaneus', 'Lateral Cuneiform', 'Metatarsal IV', 'Metatarsal V'],
+            
+            // ===== FOOT - METATARSALS =====
+            'Metatarsal I': ['Medial Cuneiform', 'Proximal Phalanx I (Foot)'],
+            'Metatarsal II': ['Medial Cuneiform', 'Intermediate Cuneiform', 'Proximal Phalanx II (Foot)'],
+            'Metatarsal III': ['Lateral Cuneiform', 'Proximal Phalanx III (Foot)'],
+            'Metatarsal IV': ['Lateral Cuneiform', 'Cuboid', 'Proximal Phalanx IV (Foot)'],
+            'Metatarsal V': ['Cuboid', 'Proximal Phalanx V (Foot)'],
+            
+            // ===== FOOT - PHALANGES (Big toe has 2, other toes have 3 each) =====
+            'Proximal Phalanx I (Foot)': ['Metatarsal I', 'Distal Phalanx I (Foot)'],
+            'Distal Phalanx I (Foot)': ['Proximal Phalanx I (Foot)'],
+            'Proximal Phalanx II (Foot)': ['Metatarsal II', 'Middle Phalanx II (Foot)'],
+            'Middle Phalanx II (Foot)': ['Proximal Phalanx II (Foot)', 'Distal Phalanx II (Foot)'],
+            'Distal Phalanx II (Foot)': ['Middle Phalanx II (Foot)'],
+            'Proximal Phalanx III (Foot)': ['Metatarsal III', 'Middle Phalanx III (Foot)'],
+            'Middle Phalanx III (Foot)': ['Proximal Phalanx III (Foot)', 'Distal Phalanx III (Foot)'],
+            'Distal Phalanx III (Foot)': ['Middle Phalanx III (Foot)'],
+            'Proximal Phalanx IV (Foot)': ['Metatarsal IV', 'Middle Phalanx IV (Foot)'],
+            'Middle Phalanx IV (Foot)': ['Proximal Phalanx IV (Foot)', 'Distal Phalanx IV (Foot)'],
+            'Distal Phalanx IV (Foot)': ['Middle Phalanx IV (Foot)'],
+            'Proximal Phalanx V (Foot)': ['Metatarsal V', 'Middle Phalanx V (Foot)'],
+            'Middle Phalanx V (Foot)': ['Proximal Phalanx V (Foot)', 'Distal Phalanx V (Foot)'],
+            'Distal Phalanx V (Foot)': ['Middle Phalanx V (Foot)']
         };
 
         // Define anatomically paired bones that should display side by side
@@ -104,7 +203,9 @@
             'Tibia': 'Fibula',
             'Fibula': 'Tibia',
             'Talus': 'Calcaneus',
-            'Calcaneus': 'Talus'
+            'Calcaneus': 'Talus',
+            'Ilium': 'Ischium',
+            'Ischium': 'Ilium'
         };
 
         // Helper to check if two bones are twins
@@ -113,26 +214,74 @@
         };
 
         const MAPPING_3D = {
+            // Skull bones
             "Frontal Bone": "Frontal", "Parietal Bone": "Parietal", "Occipital Bone": "Occipital",
-            "Atlas (C1)": "Atlas", "Axis (C2)": "Axis", "Cervical Vertebrae": "Cervical",
-            "Thoracic Vertebrae": "Thoracic", "Lumbar Vertebrae": "Lumbar", "Sacrum": "Sacrum",
-            "Sternum": "sternum", "Clavicle": "Clavicl", "Scapula": "Scapula",
+            "Temporal Bone": "Temporal", "Sphenoid Bone": "Sphenoid", "Ethmoid Bone": "Ethmoid",
+            "Nasal Bone": "Nasal", "Lacrimal Bone": "Lacrimal", "Zygomatic Bone": "Zygomatic",
+            "Maxilla": "Maxilla", "Palatine Bone": "Palatine", "Vomer": "Vomer",
+            "Inferior Nasal Concha": "Concha", "Mandible": "Mandible",
+            
+            // Spine - individual vertebrae map to their specific names
+            "Atlas (C1)": "Atlas", "Axis (C2)": "Axis",
+            "C3 Vertebra": "Cervical", "C4 Vertebra": "Cervical", "C5 Vertebra": "Cervical",
+            "C6 Vertebra": "Cervical", "C7 Vertebra": "Cervical",
+            "T1 Vertebra": "Thoracic", "T2 Vertebra": "Thoracic", "T3 Vertebra": "Thoracic",
+            "T4 Vertebra": "Thoracic", "T5 Vertebra": "Thoracic", "T6 Vertebra": "Thoracic",
+            "T7 Vertebra": "Thoracic", "T8 Vertebra": "Thoracic", "T9 Vertebra": "Thoracic",
+            "T10 Vertebra": "Thoracic", "T11 Vertebra": "Thoracic", "T12 Vertebra": "Thoracic",
+            "L1 Vertebra": "Lumbar", "L2 Vertebra": "Lumbar", "L3 Vertebra": "Lumbar",
+            "L4 Vertebra": "Lumbar", "L5 Vertebra": "Lumbar",
+            "Sacrum": "Sacrum",
+            
+            // Ribs & sternum
+            "True Ribs": "Rib_", "False Ribs": "Rib_",
+            "Sternum": "sternum",
+            
+            // Upper limb
+            "Clavicle": "Clavicl", "Scapula": "Scapula",
             "Humerus": "Humerus", "Radius": "Radius", "Ulna": "Ulna",
-            "Hip Bone": "Ilium", // Represents the os coxae (also matches Ischium, Pubis in model)
-            "Femur": "Femur", "Tibia": "Tibia", "Fibula": "Fibula", 
-            "Ribs": "Rib_", "Patella": "Patellar",
-            // Hand bones - matching actual GLB patterns
-            "Carpals": "Capitate", // Representative carpal bone (could also match Hamate, Lunate, Trapezium, etc.)
-            "Metacarpals": "metacarpal_boner", // Matches all 5 metacarpal bones
-            "Phalanges (Hand)": "d_finger", // Matches hand phalanges with digit format (2d_finger, 3d_finger)
-            // Foot bones - matching actual GLB patterns
-            "Talus": "Talus",
-            "Calcaneus": "Calcaneus",
-            "Navicular": "Navicular_boner",
+            
+            // Hand - carpals (individual bones)
+            "Scaphoid": "Scaphoid", "Lunate": "Lunate", "Triquetrum": "Triquetrum",
+            "Pisiform": "Pisiform", "Trapezium": "Trapezium", "Trapezoid": "Trapezoid",
+            "Capitate": "Capitate", "Hamate": "Hamate",
+            
+            // Hand - metacarpals
+            "Metacarpal I": "1st_metacarpal", "Metacarpal II": "2nd_metacarpal",
+            "Metacarpal III": "3rd_metacarpal", "Metacarpal IV": "4th_metacarpal",
+            "Metacarpal V": "5th_metacarpal",
+            
+            // Hand - phalanges (will need special handling for specific digits)
+            "Proximal Phalanx I": "phalanx_of_1st_finger", "Distal Phalanx I": "phalanx_of_1st_finger",
+            "Proximal Phalanx II": "phalanx_of_2d_finger", "Middle Phalanx II": "phalanx_of_2d_finger", "Distal Phalanx II": "phalanx_of_2d_finger",
+            "Proximal Phalanx III": "phalanx_of_3d_finger", "Middle Phalanx III": "phalanx_of_3d_finger", "Distal Phalanx III": "phalanx_of_3d_finger",
+            "Proximal Phalanx IV": "phalanx_of_4th_finger", "Middle Phalanx IV": "phalanx_of_4th_finger", "Distal Phalanx IV": "phalanx_of_4th_finger",
+            "Proximal Phalanx V": "phalanx_of_5th_finger", "Middle Phalanx V": "phalanx_of_5th_finger", "Distal Phalanx V": "phalanx_of_5th_finger",
+            
+            // Pelvis - all three map to same model parts
+            "Ilium": "Ilium", "Ischium": "Ischium", "Pubis": "Pubis",
+            
+            // Lower limb
+            "Femur": "Femur", "Patella": "Patellar",
+            "Tibia": "Tibia", "Fibula": "Fibula",
+            
+            // Foot - tarsals
+            "Talus": "Talus", "Calcaneus": "Calcaneus", "Navicular": "Navicular_boner",
             "Cuboid": "Cuboid_boner",
-            "Cuneiforms": "cuneiform_boner", // Matches Lateral, Medial, Intermediate cuneiform
-            "Metatarsals": "metatarsal_boner", // Matches all 5 metatarsal bones
-            "Phalanges (Foot)": "_of_foot" // Matches all toe phalanges (have _of_footr suffix)
+            "Medial Cuneiform": "Medial_cuneiform", "Intermediate Cuneiform": "Intermediate_cuneiform",
+            "Lateral Cuneiform": "Lateral_cuneiform",
+            
+            // Foot - metatarsals
+            "Metatarsal I": "First_metatarsal", "Metatarsal II": "Second_metatarsal",
+            "Metatarsal III": "Third_metatarsal", "Metatarsal IV": "Fourth_metatarsal",
+            "Metatarsal V": "Fifth_metatarsal",
+            
+            // Foot - phalanges
+            "Proximal Phalanx I (Foot)": "first_finger_of_foot", "Distal Phalanx I (Foot)": "first_finger_of_foot",
+            "Proximal Phalanx II (Foot)": "second_finger_of_foot", "Middle Phalanx II (Foot)": "second_finger_of_foot", "Distal Phalanx II (Foot)": "second_finger_of_foot",
+            "Proximal Phalanx III (Foot)": "third_finger_of_foot", "Middle Phalanx III (Foot)": "third_finger_of_foot", "Distal Phalanx III (Foot)": "third_finger_of_foot",
+            "Proximal Phalanx IV (Foot)": "fourth_finger_of_foot", "Middle Phalanx IV (Foot)": "fourth_finger_of_foot", "Distal Phalanx IV (Foot)": "fourth_finger_of_foot",
+            "Proximal Phalanx V (Foot)": "fifth_finger_of_foot", "Middle Phalanx V (Foot)": "fifth_finger_of_foot", "Distal Phalanx V (Foot)": "fifth_finger_of_foot"
         };
 
         const findShortestPath = (start, end) => {
@@ -158,6 +307,31 @@
             if (!pathFromGuess) return false;
             
             return true; // Valid path exists through this bone
+        };
+
+        // Check if we can reach target from start using only guessed bones
+        const canReachTargetWithGuessed = (start, target, guessedBones, detourBones) => {
+            const allGuessed = new Set([...guessedBones, ...detourBones, start]); // Include start as "guessed"
+            
+            // BFS using only guessed bones
+            const queue = [start];
+            const visited = new Set([start]);
+            
+            while (queue.length > 0) {
+                const current = queue.shift();
+                
+                if (current === target) return true; // Reached target!
+                
+                // Explore neighbors that have been guessed
+                for (const neighbor of (SKELETON_GRAPH[current] || [])) {
+                    if (!visited.has(neighbor) && allGuessed.has(neighbor)) {
+                        visited.add(neighbor);
+                        queue.push(neighbor);
+                    }
+                }
+            }
+            
+            return false; // Can't reach target with guessed bones
         };
 
         function App() {
@@ -252,15 +426,13 @@
                         item.bone === guess ? { ...item, guessed: true } : item
                     ));
                     
-                    // Check win condition: all bones guessed except the last one (target.end)
+                    // Check win condition: can we reach target with guessed bones?
                     const updatedChain = chain.map(item => 
                         item.bone === guess ? { ...item, guessed: true } : item
                     );
-                    const allPathBonesGuessed = updatedChain
-                        .slice(0, -1) // Exclude target.end
-                        .every(item => item.guessed);
+                    const guessedOptimal = updatedChain.filter(c => c.guessed).map(c => c.bone);
                     
-                    if (allPathBonesGuessed) {
+                    if (canReachTargetWithGuessed(target.start, target.end, guessedOptimal, detours)) {
                         setGameState('won');
                         return;
                     }
@@ -270,8 +442,16 @@
                     
                     if (isValidDetour) {
                         // SUBOPTIMAL PATH: Valid but longer route ⚠
-                        setDetours(prev => [...new Set([guess, ...prev])]);
+                        const newDetours = [...new Set([guess, ...detours])];
+                        setDetours(newDetours);
                         setGuessesLeft(prev => prev - 1);
+                        
+                        // Check win condition with detours too!
+                        const guessedOptimal = chain.filter(c => c.guessed).map(c => c.bone);
+                        if (canReachTargetWithGuessed(target.start, target.end, guessedOptimal, newDetours)) {
+                            setGameState('won');
+                            return;
+                        }
                     } else {
                         // FAILURE: Not on any valid path ✗
                         setBadGuesses(prev => [...new Set([guess, ...prev])]);
@@ -480,11 +660,15 @@
                         <div className={`fixed inset-0 z-[100] flex flex-col items-center justify-center backdrop-blur-xl ${gameState === 'won' ? 'victory-bg' : 'loss-bg'}`}>
                             <div className="text-center p-12 bg-slate-950/90 border border-white/10 rounded-3xl max-w-md">
                                 <h2 className="text-5xl font-black text-white mb-2 tracking-tighter uppercase">
-                                    {gameState === 'won' ? '✓ Synchronized' : '✗ Flatline'}
+                                    {gameState === 'won' 
+                                        ? (detours.length === 0 ? '✓ Perfect Path' : '✓ Path Complete')
+                                        : '✗ Flatline'}
                                 </h2>
                                 <p className="text-slate-400 text-sm mb-6">
                                     {gameState === 'won' 
-                                        ? `Correct path completed with ${maxGuesses - guessesLeft}/${maxGuesses} guesses!` 
+                                        ? (detours.length === 0 
+                                            ? `Optimal route! ${maxGuesses - guessesLeft}/${maxGuesses} guesses used.`
+                                            : `Valid path found with ${detours.length} detour${detours.length !== 1 ? 's' : ''}. ${maxGuesses - guessesLeft}/${maxGuesses} guesses used.`)
                                         : `Path not found. ${badGuesses.length} failed attempt${badGuesses.length !== 1 ? 's' : ''}.`
                                     }
                                 </p>
@@ -603,16 +787,10 @@
                                 return node.name.includes("phalanx") && node.name.includes("footr");
                             }
                             
-                            // Special case: match all carpal bones
-                            if (b.name === "Carpals") {
-                                const carpalBones = ["Hamate", "Lunate", "Capitate", "Trapezium", "Trapezoid", "Scaphoid", "Pisiform", "Triquetrum"];
-                                return carpalBones.some(carpal => node.name.includes(carpal));
-                            }
-                            
-                            // Special case: Hip Bone matches all three fused parts (Ilium, Ischium, Pubis)
-                            if (b.name === "Hip Bone") {
-                                const hipBones = ["Ilium", "Ischium", "Pubis", "Hip", "Pelvis", "Coxae", "Innominate"];
-                                return hipBones.some(hip => node.name.includes(hip));
+                            // Special case: Hip bones all light up together (fused in 3D model)
+                            if (b.name === "Ilium" || b.name === "Ischium" || b.name === "Pubis") {
+                                const hipParts = ["Ilium", "Ischium", "Pubis"];
+                                return hipParts.some(part => node.name.includes(part));
                             }
                             
                             // Default: standard includes check
