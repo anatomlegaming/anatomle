@@ -82,9 +82,9 @@
             'Metacarpals': ['Carpals', 'Phalanges (Hand)'],
             'Phalanges (Hand)': ['Metacarpals'],
             'Lumbar Vertebrae': ['Thoracic Vertebrae', 'Sacrum'],
-            'Sacrum': ['Lumbar Vertebrae', 'Ilium'],
-            'Ilium': ['Sacrum', 'Pubis', 'Ischium', 'Femur'],
-            'Femur': ['Ilium', 'Tibia', 'Patella'],
+            'Sacrum': ['Lumbar Vertebrae', 'Hip Bone'],
+            'Hip Bone': ['Sacrum', 'Femur'], // Represents fused Ilium + Ischium + Pubis (os coxae/innominate)
+            'Femur': ['Hip Bone', 'Tibia', 'Patella'],
             'Patella': ['Femur', 'Tibia'],
             'Tibia': ['Femur', 'Patella', 'Fibula', 'Talus'],
             'Fibula': ['Tibia', 'Talus'],
@@ -118,7 +118,8 @@
             "Thoracic Vertebrae": "Thoracic", "Lumbar Vertebrae": "Lumbar", "Sacrum": "Sacrum",
             "Sternum": "sternum", "Clavicle": "Clavicl", "Scapula": "Scapula",
             "Humerus": "Humerus", "Radius": "Radius", "Ulna": "Ulna",
-            "Ilium": "Ilium", "Femur": "Femur", "Tibia": "Tibia", "Fibula": "Fibula", 
+            "Hip Bone": "Ilium", // Represents the os coxae (also matches Ischium, Pubis in model)
+            "Femur": "Femur", "Tibia": "Tibia", "Fibula": "Fibula", 
             "Ribs": "Rib_", "Patella": "Patellar",
             // Hand bones - matching actual GLB patterns
             "Carpals": "Capitate", // Representative carpal bone (could also match Hamate, Lunate, Trapezium, etc.)
@@ -348,29 +349,49 @@
                     <div className="flex-1 overflow-y-auto custom-scrollbar space-y-1 mb-4">
                         <p className="text-[8px] text-slate-500 uppercase font-bold mb-2 tracking-wider">🧬 Your Path</p>
                         {chain.map((item, idx) => {
-                            const isLastBone = idx === chain.length - 1; // This is the target
+                            const isLastBone = idx === chain.length - 1;
                             const isMissing = showReveal && gameState === 'lost' && !item.guessed && !isLastBone;
                             
-                            // Check if this bone is a twin with the next bone
+                            // Check if this bone has a twin
+                            const twinName = TWIN_BONES[item.bone];
+                            const hasTwin = !!twinName;
+                            
+                            // Check if next item is also a twin pair member (skip duplicate rendering)
                             const nextItem = chain[idx + 1];
                             const isTwinWithNext = nextItem && areTwins(item.bone, nextItem.bone);
-                            
-                            // Skip rendering if this is the second twin (it will be rendered with the first)
                             const prevItem = chain[idx - 1];
                             const isTwinWithPrev = prevItem && areTwins(item.bone, prevItem.bone);
-                            if (isTwinWithPrev) return null;
+                            if (isTwinWithPrev) return null; // Skip if we already rendered this as part of previous twin
                             
-                            // Single bone render
-                            const renderBone = (boneItem, boneIdx, isInPair = false) => {
-                                const boneIsLastBone = boneIdx === chain.length - 1;
+                            // Find twin bone status (might be in chain, detours, or not guessed)
+                            let twinItem = null;
+                            if (hasTwin && !isTwinWithNext) {
+                                // Twin is not next to us in chain, check if it exists elsewhere
+                                const twinInChain = chain.find(c => c.bone === twinName);
+                                const twinIsDetour = detours.includes(twinName);
+                                
+                                if (twinInChain) {
+                                    twinItem = twinInChain;
+                                } else if (twinIsDetour) {
+                                    // Twin was guessed as a detour - show it
+                                    twinItem = { bone: twinName, type: 'detour', guessed: true };
+                                }
+                            }
+                            
+                            // Single bone render function
+                            const renderBone = (boneItem, isOptimalPath = true, isInPair = false) => {
+                                const boneIsLastBone = boneItem.bone === target.end;
                                 const boneIsMissing = showReveal && gameState === 'lost' && !boneItem.guessed && !boneIsLastBone;
+                                const isDetourBone = boneItem.type === 'detour' || detours.includes(boneItem.bone);
                                 
                                 return (
                                     <div className={`p-2 border transition-all ${isInPair ? 'flex-1' : ''} ${
                                         !boneItem.guessed && !boneIsLastBone && !showReveal
                                             ? 'border-dashed border-slate-700/40 opacity-20' 
                                             : boneIsMissing 
-                                                ? 'bg-fuchsia-900/20 border-fuchsia-700/40 shadow-sm' 
+                                                ? 'bg-fuchsia-900/20 border-fuchsia-700/40 shadow-sm'
+                                                : isDetourBone && boneItem.guessed
+                                                    ? 'bg-orange-900/20 border-orange-700/40 shadow-sm'
                                                 : boneIsLastBone
                                                     ? 'bg-amber-900/20 border-amber-700/40 shadow-sm'
                                                     : 'bg-slate-800 border-slate-600 shadow-sm'
@@ -379,7 +400,8 @@
                                             <span className={
                                                 boneItem.type === 'start' ? 'text-emerald-400' : 
                                                 boneIsLastBone ? 'text-amber-400' :
-                                                boneIsMissing ? 'text-fuchsia-400' : 
+                                                boneIsMissing ? 'text-fuchsia-400' :
+                                                isDetourBone && boneItem.guessed ? 'text-orange-400' :
                                                 'text-blue-400'
                                             }>
                                                 {showReveal && gameState === 'lost' ? boneItem.bone : 
@@ -388,7 +410,8 @@
                                             <span>
                                                 {boneItem.type === 'start' ? '📍' : 
                                                  boneIsLastBone ? '🎯' :
-                                                 boneIsMissing ? '🔗' : '🧬'}
+                                                 boneIsMissing ? '🔗' :
+                                                 isDetourBone && boneItem.guessed ? '⚠️' : '🧬'}
                                             </span>
                                         </div>
                                         {boneIsMissing && (
@@ -398,22 +421,26 @@
                                 );
                             };
                             
-                            // Render twin bones side by side
+                            // Render twin bones side by side if twin exists
                             if (isTwinWithNext) {
                                 return (
                                     <div key={idx} className="flex gap-1">
-                                        {renderBone(item, idx, true)}
-                                        {renderBone(nextItem, idx + 1, true)}
+                                        {renderBone(item, true, true)}
+                                        {renderBone(nextItem, true, true)}
+                                    </div>
+                                );
+                            } else if (twinItem) {
+                                // Twin exists elsewhere - render together
+                                return (
+                                    <div key={idx} className="flex gap-1">
+                                        {renderBone(item, true, true)}
+                                        {renderBone(twinItem, false, true)}
                                     </div>
                                 );
                             }
                             
                             // Render single bone
-                            return (
-                                <div key={idx}>
-                                    {renderBone(item, idx)}
-                                </div>
-                            );
+                            return <div key={idx}>{renderBone(item, true, false)}</div>;
                         })}
                     </div>
 
@@ -580,6 +607,12 @@
                             if (b.name === "Carpals") {
                                 const carpalBones = ["Hamate", "Lunate", "Capitate", "Trapezium", "Trapezoid", "Scaphoid", "Pisiform", "Triquetrum"];
                                 return carpalBones.some(carpal => node.name.includes(carpal));
+                            }
+                            
+                            // Special case: Hip Bone matches all three fused parts (Ilium, Ischium, Pubis)
+                            if (b.name === "Hip Bone") {
+                                const hipBones = ["Ilium", "Ischium", "Pubis", "Hip", "Pelvis", "Coxae", "Innominate"];
+                                return hipBones.some(hip => node.name.includes(hip));
                             }
                             
                             // Default: standard includes check
