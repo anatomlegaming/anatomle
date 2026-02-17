@@ -207,7 +207,7 @@
                     <header className="mb-4">
                         <h1 className="text-3xl font-black text-white tracking-tighter uppercase">Anatomle</h1>
                         <div className="flex justify-between items-center border-b border-slate-700 pb-2">
-                            <span className="text-[9px] text-slate-500 tracking-[0.3em] uppercase">Clinical Pro v18.7</span>
+                            <span className="text-[9px] text-slate-500 tracking-[0.3em] uppercase">Hips & Ribs v1</span>
                             <span className={`text-xs font-bold ${guessesLeft < 4 ? 'text-red-400' : 'text-emerald-400'}`}>
                                 {guessesLeft} Guesses
                             </span>
@@ -489,15 +489,12 @@
                 skeleton.traverse(node => {
                     if (node.isMesh) {
                         const match = bones.find(b => {
-                            const key = BONE_TO_3D_MODEL[b.name];
-                            if (!key) return false;
-
                             // True Ribs: ribs 1-7 and their costal cartilages
                             if (b.name === "True Ribs") {
                                 const trueRibNums = ['1st','2nd','3rd','4th','5th','6th','7th'];
                                 return trueRibNums.some(n =>
-                                    node.name.includes(`Rib (${n})`) ||
-                                    node.name.includes(`Costal cart of ${n}`)
+                                    node.name === `Rib (${n}).r` ||
+                                    node.name === `Costal cart of ${n} rib.r`
                                 );
                             }
 
@@ -505,8 +502,8 @@
                             if (b.name === "False Ribs") {
                                 const falseRibNums = ['8th','9th','10th','11th','12th'];
                                 return falseRibNums.some(n =>
-                                    node.name.includes(`Rib (${n})`) ||
-                                    node.name.includes(`Costal cart of ${n}`)
+                                    node.name === `Rib (${n}).r` ||
+                                    node.name === `Costal cart of ${n} rib.r`
                                 );
                             }
 
@@ -515,6 +512,8 @@
                                 return node.name.includes("Hip bone");
                             }
 
+                            const key = BONE_TO_3D_MODEL[b.name];
+                            if (!key) return false;
                             return node.name.includes(key);
                         });
 
