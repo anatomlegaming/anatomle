@@ -349,7 +349,6 @@
                                 placeholder="Identify next structure..."
                                 value={inputValue}
                                 onChange={e => setInputValue(e.target.value)}
-                                onKeyDown={e => e.key === 'Enter' && inputValue && submitGuess(inputValue)}
                                 disabled={gameState !== 'playing'}
                             />
                             {suggestions.length > 0 && (
