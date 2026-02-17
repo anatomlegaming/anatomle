@@ -1,5 +1,5 @@
 // ====================================
-// ANATOMLE - Full Skeleton Graph
+// ANATOMLE - Full Skeleton Grapha
 // ====================================
 // Complete human skeleton connections (~90 bones)
 
