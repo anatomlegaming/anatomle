@@ -11,122 +11,33 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- UI Template -->
+    <script src="../js/ui/floodFillUI.js"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;700&display=swap');
         * { box-sizing: border-box; }
         body { font-family: 'EB Garamond', serif; background: #0f172a; color: #d6d3d1; margin: 0; overflow: hidden; }
-        /* Canvas sits below the React UI layers */
-        #canvas-container {
-            position: fixed;
-            top: 100px;   /* nav(56) + challenge bar(44) */
-            left: 0;
-            right: 280px; /* right panel */
-            bottom: 60px; /* search bar */
-            z-index: 10;
-            background: linear-gradient(160deg, #1e293b 0%, #0f172a 100%);
-        }
-        .custom-scrollbar::-webkit-scrollbar { width: 3px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
-        .failure-item { animation: shake 0.3s ease-in-out; }
+        #cv { position: fixed; top: 104px; left: 0; right: 280px; bottom: 64px; z-index: 10; background: linear-gradient(160deg, #1e293b 0%, #0f172a 100%); }
+        .scr::-webkit-scrollbar { width: 3px; }
+        .scr::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+        .shake { animation: shake .3s ease-in-out; }
         @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
-        .victory-bg { background: radial-gradient(circle, rgba(16,185,129,0.25) 0%, rgba(0,0,0,0.97) 100%); }
-        .loss-bg    { background: radial-gradient(circle, rgba(239,68,68,0.25) 0%, rgba(0,0,0,0.97) 100%); }
-        .sugg-item:hover { background: #1d4ed8; }
+        .win-bg  { background: radial-gradient(circle, rgba(16,185,129,.2) 0%, rgba(5,10,20,.97) 100%); }
+        .loss-bg { background: radial-gradient(circle, rgba(239,68,68,.2) 0%, rgba(5,10,20,.97) 100%); }
     </style>
 </head>
 <body>
-<div id="canvas-container"></div>
+<div id="cv"></div>
 <div id="root"></div>
 
-<!-- ── 3D ENGINE ─────────────────────────────────────────────── -->
+<!-- ══════════════════════════════════════════════════════════════════════════
+     GAME CONFIGURATION
+     ══════════════════════════════════════════════════════════════════════════ -->
 <script>
-var _sk = null;
-var MK = ['Frontal','Parietal','Occipital','Temporal','Sphenoid','Ethmoid',
-          'Nasal_boner','Lacrimal_boner','Zygomatic','Maxilla','Palatine',
-          'Vomer','Inferior_nasal_concha_boner','Mandible'];
-var B2M = {
-    'Frontal Bone':'Frontal','Parietal Bone':'Parietal','Occipital Bone':'Occipital',
-    'Temporal Bone':'Temporal','Sphenoid Bone':'Sphenoid','Ethmoid Bone':'Ethmoid',
-    'Nasal Bone':'Nasal_boner','Lacrimal Bone':'Lacrimal_boner','Zygomatic Bone':'Zygomatic',
-    'Maxilla':'Maxilla','Palatine Bone':'Palatine','Vomer':'Vomer',
-    'Inferior Nasal Concha':'Inferior_nasal_concha_boner','Mandible':'Mandible'
-};
-function isMine(n){ for(var i=0;i<MK.length;i++) if(n.indexOf(MK[i])!==-1) return true; return false; }
-window.update3D=function(bones){
-    if(!_sk) return;
-    _sk.traverse(function(node){
-        if(!node.isMesh) return;
-        if(!isMine(node.name)){node.visible=false;return;}
-        node.visible=true;
-        var m=null;
-        for(var i=0;i<bones.length;i++){var k=B2M[bones[i].name];if(k&&node.name.indexOf(k)!==-1){m=bones[i];break;}}
-        if(m){
-            var c=0x3b82f6,e=0.5;
-            if(m.type==='start'){c=0x10b981;e=0.6;} if(m.type==='bad'){c=0xef4444;e=0.8;} if(m.type==='reveal'){c=0xd946ef;e=0.8;}
-            node.material=new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:e,transparent:false,opacity:1});
-        } else {
-            node.material=new THREE.MeshStandardMaterial({color:0x334155,transparent:true,opacity:0.3});
-        }
-    });
-};
-window.reset3D=function(){
-    if(!_sk) return;
-    _sk.traverse(function(node){
-        if(!node.isMesh) return;
-        if(isMine(node.name)){node.material=new THREE.MeshStandardMaterial({color:0x334155,transparent:true,opacity:0.3});node.visible=true;}
-        else node.visible=false;
-    });
-};
-window.addEventListener('DOMContentLoaded',function(){
-    var cont=document.getElementById('canvas-container');
-    var scene=new THREE.Scene();
-    var cam=new THREE.PerspectiveCamera(45,cont.clientWidth/cont.clientHeight,0.1,1000);
-    var renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
-    renderer.setSize(cont.clientWidth,cont.clientHeight);
-    cont.appendChild(renderer.domElement);
-    var ctrl=new THREE.OrbitControls(cam,renderer.domElement);
-    ctrl.enableDamping=true;ctrl.dampingFactor=0.05;ctrl.minDistance=0.3;ctrl.maxDistance=6;ctrl.maxPolarAngle=Math.PI;ctrl.enableZoom=false;
-    renderer.domElement.addEventListener('wheel',function(e){
-        e.preventDefault();
-        var rect=renderer.domElement.getBoundingClientRect();
-        var mouse=new THREE.Vector2(((e.clientX-rect.left)/rect.width)*2-1,-((e.clientY-rect.top)/rect.height)*2+1);
-        var ray=new THREE.Raycaster();ray.setFromCamera(mouse,cam);
-        var t3d; if(_sk){var h=ray.intersectObjects([_sk],true);if(h.length)t3d=h[0].point.clone();}
-        if(!t3d)t3d=ray.ray.at(cam.position.distanceTo(ctrl.target),new THREE.Vector3());
-        var dir=new THREE.Vector3().subVectors(t3d,cam.position);
-        var dist=cam.position.distanceTo(ctrl.target);
-        var step=dir.length()*0.12;
-        if(e.deltaY<0&&dist>ctrl.minDistance)cam.position.addScaledVector(dir.normalize(),step);
-        else if(e.deltaY>0&&dist<ctrl.maxDistance)cam.position.addScaledVector(dir.normalize(),-step);
-        ctrl.update();
-    },{passive:false});
-    scene.add(new THREE.AmbientLight(0xffffff,0.7));
-    var dl=new THREE.DirectionalLight(0xffffff,0.8);dl.position.set(5,10,7.5);scene.add(dl);
-    var dl2=new THREE.DirectionalLight(0xffffff,0.3);dl2.position.set(-5,-5,-5);scene.add(dl2);
-    var draco=new THREE.DRACOLoader();draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
-    var loader=new THREE.GLTFLoader();loader.setDRACOLoader(draco);
-    loader.load('../models/overview-skeleton.glb',function(gltf){
-        _sk=gltf.scene;scene.add(_sk);
-        var box=new THREE.Box3();
-        _sk.traverse(function(n){if(!n.isMesh)return;if(isMine(n.name))box.expandByObject(n);else n.visible=false;});
-        var center=box.getCenter(new THREE.Vector3());var size=box.getSize(new THREE.Vector3());
-        ctrl.target.copy(center);
-        var fov=cam.fov*(Math.PI/180);var maxDim=Math.max(size.x,size.y,size.z);
-        cam.position.set(center.x,center.y,center.z+Math.abs(maxDim/2/Math.tan(fov/2))*1.8);
-        cam.lookAt(center);ctrl.update();window.reset3D();
-    });
-    function animate(){requestAnimationFrame(animate);ctrl.update();renderer.render(scene,cam);}animate();
-    var ro=new ResizeObserver(function(){
-        cam.aspect=cont.clientWidth/cont.clientHeight;cam.updateProjectionMatrix();renderer.setSize(cont.clientWidth,cont.clientHeight);
-    });ro.observe(cont);
-});
-</script>
-
-<!-- ── REACT UI ───────────────────────────────────────────────── -->
-<script type="text/babel">
-const { useState, useEffect, useMemo, useCallback, useRef } = React;
-
-const GRAPH = {
+// ── SKULL GRAPH ─────────────────────────────────────────────────────────────
+const SKULL_GRAPH = {
     'Frontal Bone':          ['Parietal Bone','Sphenoid Bone','Ethmoid Bone','Nasal Bone','Lacrimal Bone','Zygomatic Bone','Maxilla'],
     'Parietal Bone':         ['Frontal Bone','Occipital Bone','Temporal Bone','Sphenoid Bone'],
     'Occipital Bone':        ['Parietal Bone','Temporal Bone','Sphenoid Bone'],
@@ -142,61 +53,169 @@ const GRAPH = {
     'Inferior Nasal Concha': ['Ethmoid Bone','Maxilla'],
     'Mandible':              ['Temporal Bone','Maxilla'],
 };
-const ALL = Object.keys(GRAPH);
-const TOTAL = ALL.length;
 
-function App() {
-    const [guessed, setGuessed] = useState(new Set());
+const SKULL_MESH_MAP = {
+    'Frontal Bone':'Frontal','Parietal Bone':'Parietal','Occipital Bone':'Occipital',
+    'Temporal Bone':'Temporal','Sphenoid Bone':'Sphenoid','Ethmoid Bone':'Ethmoid',
+    'Nasal Bone':'Nasal_boner','Lacrimal Bone':'Lacrimal_boner','Zygomatic Bone':'Zygomatic',
+    'Maxilla':'Maxilla','Palatine Bone':'Palatine','Vomer':'Vomer',
+    'Inferior Nasal Concha':'Inferior_nasal_concha_boner','Mandible':'Mandible'
+};
+
+const SKULL_MESH_KEYS = Object.values(SKULL_MESH_MAP);
+const ALL_BONES = Object.keys(SKULL_GRAPH);
+const TOTAL = ALL_BONES.length; // 14
+</script>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     3D ENGINE
+     ══════════════════════════════════════════════════════════════════════════ -->
+<script src="../js/3d/skullEngine.js"></script>
+<!-- OR inline if preferred: -->
+<script>
+var _sk = null;
+
+function isSkull(n) { for(var i=0;i<SKULL_MESH_KEYS.length;i++) if(n.indexOf(SKULL_MESH_KEYS[i])!==-1) return true; return false; }
+
+window.update3D = function(bones) {
+    if (!_sk) return;
+    _sk.traverse(function(node) {
+        if (!node.isMesh || !isSkull(node.name)) { node.visible = false; return; }
+        node.visible = true;
+        var m = null;
+        for (var i=0;i<bones.length;i++) {
+            var k = SKULL_MESH_MAP[bones[i].name];
+            if (k && node.name.indexOf(k)!==-1) { m = bones[i]; break; }
+        }
+        if (m) {
+            var c=0x3b82f6, e=0.5;
+            if (m.type==='start') { c=0x10b981; e=0.6; }
+            if (m.type==='bad')   { c=0xef4444; e=0.8; }
+            if (m.type==='reveal'){ c=0xd946ef; e=0.8; }
+            node.material = new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:e});
+        } else {
+            node.material = new THREE.MeshStandardMaterial({color:0x334155,transparent:true,opacity:0.3});
+        }
+    });
+};
+
+window.reset3D = function() {
+    if (!_sk) return;
+    _sk.traverse(function(n) {
+        if (!n.isMesh) return;
+        if (isSkull(n.name)) { n.material=new THREE.MeshStandardMaterial({color:0x334155,transparent:true,opacity:0.3}); n.visible=true; }
+        else n.visible=false;
+    });
+};
+
+window.addEventListener('DOMContentLoaded', function() {
+    var cont=document.getElementById('cv');
+    var scene=new THREE.Scene();
+    var cam=new THREE.PerspectiveCamera(45,cont.clientWidth/cont.clientHeight,0.1,1000);
+    var renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+    renderer.setSize(cont.clientWidth,cont.clientHeight);
+    cont.appendChild(renderer.domElement);
+
+    var ctrl=new THREE.OrbitControls(cam,renderer.domElement);
+    ctrl.enableDamping=true; ctrl.dampingFactor=0.05; ctrl.minDistance=0.3; ctrl.maxDistance=6; ctrl.maxPolarAngle=Math.PI; ctrl.enableZoom=false;
+
+    // Cursor zoom
+    renderer.domElement.addEventListener('wheel',function(e){
+        e.preventDefault();
+        var rect=renderer.domElement.getBoundingClientRect();
+        var mouse=new THREE.Vector2(((e.clientX-rect.left)/rect.width)*2-1,-((e.clientY-rect.top)/rect.height)*2+1);
+        var ray=new THREE.Raycaster(); ray.setFromCamera(mouse,cam);
+        var t3d; if(_sk){var h=ray.intersectObjects([_sk],true);if(h.length)t3d=h[0].point.clone();}
+        if(!t3d)t3d=ray.ray.at(cam.position.distanceTo(ctrl.target),new THREE.Vector3());
+        var dir=new THREE.Vector3().subVectors(t3d,cam.position);
+        var dist=cam.position.distanceTo(ctrl.target);
+        var step=dir.length()*0.12;
+        if(e.deltaY<0&&dist>ctrl.minDistance)cam.position.addScaledVector(dir.normalize(),step);
+        else if(e.deltaY>0&&dist<ctrl.maxDistance)cam.position.addScaledVector(dir.normalize(),-step);
+        ctrl.update();
+    },{passive:false});
+
+    scene.add(new THREE.AmbientLight(0xffffff,0.7));
+    var dl=new THREE.DirectionalLight(0xffffff,0.8); dl.position.set(5,10,7.5); scene.add(dl);
+
+    var draco=new THREE.DRACOLoader(); draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
+    var loader=new THREE.GLTFLoader(); loader.setDRACOLoader(draco);
+    loader.load('../models/overview-skeleton.glb', function(gltf){
+        _sk=gltf.scene; scene.add(_sk);
+        var box=new THREE.Box3();
+        _sk.traverse(function(n){if(n.isMesh&&isSkull(n.name))box.expandByObject(n);else if(n.isMesh)n.visible=false;});
+        var center=box.getCenter(new THREE.Vector3());
+        ctrl.target.copy(center);
+        var fov=cam.fov*(Math.PI/180); var size=box.getSize(new THREE.Vector3()); var maxDim=Math.max(size.x,size.y,size.z);
+        cam.position.set(center.x,center.y,center.z+Math.abs(maxDim/2/Math.tan(fov/2))*1.8);
+        cam.lookAt(center); ctrl.update();
+        window.reset3D();
+    });
+    function animate(){ requestAnimationFrame(animate); ctrl.update(); renderer.render(scene,cam); } animate();
+    var ro=new ResizeObserver(function(){ cam.aspect=cont.clientWidth/cont.clientHeight; cam.updateProjectionMatrix(); renderer.setSize(cont.clientWidth,cont.clientHeight); }); ro.observe(cont);
+});
+</script>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     GAME LOGIC
+     ══════════════════════════════════════════════════════════════════════════ -->
+<script type="text/babel">
+const { useState, useEffect, useMemo, useCallback } = React;
+
+function SkullGame() {
+    // ── STATE ───────────────────────────────────────────────────────────────
+    const [guessed, setGuessed] = useState(() => new Set());
     const [start,   setStart]   = useState('');
     const [bad,     setBad]     = useState([]);
     const [left,    setLeft]    = useState(0);
     const [max,     setMax]     = useState(0);
     const [input,   setInput]   = useState('');
     const [selIdx,  setSelIdx]  = useState(-1);
-    const [phase,   setPhase]   = useState('playing'); // playing | won | lost
+    const [phase,   setPhase]   = useState('playing');
     const [reveal,  setReveal]  = useState(false);
-    const inputRef = useRef(null);
 
-    const startNew = () => {
-        const s = ALL[Math.floor(Math.random() * ALL.length)];
+    // ── GAME LOGIC ──────────────────────────────────────────────────────────
+    const startNew = useCallback(() => {
+        const s = ALL_BONES[Math.floor(Math.random() * ALL_BONES.length)];
         const total = (TOTAL - 1) + 4;
         setStart(s); setGuessed(new Set([s]));
         setBad([]); setLeft(total); setMax(total);
         setInput(''); setSelIdx(-1); setPhase('playing'); setReveal(false);
         try { window.reset3D && window.reset3D(); } catch(e) {}
-    };
+    }, []);
 
     useEffect(() => { startNew(); }, []);
 
+    // Bones adjacent to any guessed bone
     const frontier = useMemo(() => {
         const f = new Set();
-        guessed.forEach(b => { (GRAPH[b]||[]).forEach(n => { if(!guessed.has(n)) f.add(n); }); });
+        guessed.forEach(b => { (SKULL_GRAPH[b]||[]).forEach(n => { if (!guessed.has(n)) f.add(n); }); });
         return f;
     }, [guessed]);
 
+    // Sync 3D
     useEffect(() => {
         const h = [];
         guessed.forEach(b => h.push({name:b, type: b===start ? 'start' : 'found'}));
-        if (reveal && phase==='lost') ALL.forEach(b => { if(!guessed.has(b)) h.push({name:b,type:'reveal'}); });
+        if (reveal && phase==='lost') ALL_BONES.forEach(b => { if (!guessed.has(b)) h.push({name:b,type:'reveal'}); });
         bad.forEach(b => h.push({name:b,type:'bad'}));
         try { window.update3D && window.update3D(h); } catch(e) {}
     }, [guessed, bad, start, reveal, phase]);
 
+    // Suggestions
     const suggestions = useMemo(() => {
         if (!input.trim()) return [];
-        return ALL.filter(b =>
+        return ALL_BONES.filter(b =>
             b.toLowerCase().includes(input.toLowerCase()) &&
             !guessed.has(b) && !bad.includes(b)
-        ).slice(0, 6);
+        ).slice(0, 7);
     }, [input, guessed, bad]);
 
-    // Reset selection when suggestions change
     useEffect(() => { setSelIdx(-1); }, [suggestions.length]);
 
     const submit = useCallback((g) => {
-        if (phase !== 'playing' || !g || guessed.has(g)) return;
-        const nl = left - 1;
-        setLeft(nl);
+        if (phase !== 'playing' || !g || !ALL_BONES.includes(g) || guessed.has(g)) return;
+        const nl = left - 1; setLeft(nl);
         if (frontier.has(g)) {
             const ng = new Set(guessed); ng.add(g); setGuessed(ng);
             if (ng.size === TOTAL) { setPhase('won'); setInput(''); return; }
@@ -205,160 +224,45 @@ function App() {
             setBad(p => [...new Set([g, ...p])]);
             if (nl <= 0) { setPhase('lost'); setInput(''); return; }
         }
-        setInput('');
-        setSelIdx(-1);
-        inputRef.current?.focus();
-    }, [phase, guessed, bad, frontier, left]);
+        setInput(''); setSelIdx(-1);
+    }, [phase, guessed, frontier, left, bad]);
 
+    // ── UI HANDLERS ─────────────────────────────────────────────────────────
     const handleKey = (e) => {
-        if (suggestions.length === 0) { e.key === 'Escape' && setInput(''); return; }
-        if (e.key === 'ArrowDown')  { e.preventDefault(); setSelIdx(i => Math.min(i+1, suggestions.length-1)); }
+        if (e.key === 'ArrowDown') { e.preventDefault(); setSelIdx(i => Math.min(i+1, suggestions.length-1)); }
         else if (e.key === 'ArrowUp') { e.preventDefault(); setSelIdx(i => Math.max(i-1, 0)); }
         else if (e.key === 'Enter') {
-            const pick = selIdx >= 0 ? suggestions[selIdx] : suggestions[0];
-            if (pick) submit(pick);
+            if (selIdx >= 0 && suggestions[selIdx]) submit(suggestions[selIdx]);
+            else if (suggestions.length === 1) submit(suggestions[0]);
         }
         else if (e.key === 'Escape') { setInput(''); setSelIdx(-1); }
     };
 
-    const pct = Math.round((guessed.size / TOTAL) * 100);
-    const foundList  = [...guessed].filter(b => b !== start);
-    const startBone  = start;
+    // ── RENDER ──────────────────────────────────────────────────────────────
+    const uiState = {
+        start, total: TOTAL, guessed, bad, left, max,
+        input, selIdx, phase, reveal, suggestions
+    };
+
+    const uiHandlers = {
+        onInputChange: e => setInput(e.target.value),
+        onKeyDown: handleKey,
+        onSubmit: submit,
+        onNewGame: startNew,
+        onReveal: () => setReveal(true)
+    };
 
     return (
-        <>
-        {/* ── TOP NAVBAR ─────────────────────────────────────────── */}
-        <div style={{position:'fixed',top:0,left:0,right:0,height:56,zIndex:200,background:'rgba(15,23,42,0.98)',borderBottom:'1px solid #1e293b',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 20px'}}>
-            <div style={{display:'flex',alignItems:'center',gap:16}}>
-                <h1 style={{fontSize:22,fontWeight:900,color:'white',margin:0,letterSpacing:'-0.05em',textTransform:'uppercase'}}>Anatomle</h1>
-                <span style={{fontSize:9,color:'#f59e0b',letterSpacing:'0.3em',textTransform:'uppercase',opacity:0.8}}>💀 Skull · Flood Fill</span>
-            </div>
-            <div style={{display:'flex',alignItems:'center',gap:20}}>
-                <span style={{fontSize:11,fontWeight:700,color: left < 4 ? '#f87171' : '#34d399'}}>{left} guesses left</span>
-                <a href="../index.html" style={{fontSize:9,color:'#64748b',textDecoration:'none',textTransform:'uppercase',letterSpacing:'0.2em'}}>← Menu</a>
-            </div>
-        </div>
-
-        {/* ── CHALLENGE BAR ──────────────────────────────────────── */}
-        <div style={{position:'fixed',top:56,left:0,right:280,height:44,zIndex:100,background:'rgba(15,23,42,0.9)',borderBottom:'1px solid #1e293b',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 16px'}}>
-            <span style={{fontSize:10,color:'#94a3b8'}}>
-                Start: <span style={{color:'#34d399',fontWeight:700}}>{startBone}</span>
-                &nbsp;&nbsp;·&nbsp;&nbsp;Name any bone <span style={{color:'#60a5fa'}}>touching</span> a found bone
-            </span>
-            <div style={{display:'flex',alignItems:'center',gap:8}}>
-                <div style={{width:80,height:4,background:'#1e293b',borderRadius:2,overflow:'hidden'}}>
-                    <div style={{width:`${pct}%`,height:'100%',background: pct===100?'#10b981':'#3b82f6',transition:'width 0.4s'}} />
-                </div>
-                <span style={{fontSize:9,color:'#94a3b8',whiteSpace:'nowrap'}}>{guessed.size}/{TOTAL}</span>
-            </div>
-        </div>
-
-        {/* ── RIGHT PANEL ────────────────────────────────────────── */}
-        <div style={{position:'fixed',top:56,right:0,width:280,bottom:0,zIndex:100,background:'rgba(15,23,42,0.98)',borderLeft:'1px solid #1e293b',display:'flex',flexDirection:'column'}}>
-            {/* Found bones */}
-            <div style={{flex:'1 1 0',overflow:'hidden',display:'flex',flexDirection:'column',borderBottom:'1px solid #1e293b'}}>
-                <div style={{padding:'10px 14px 6px',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
-                    <span style={{fontSize:8,color:'#34d399',textTransform:'uppercase',letterSpacing:'0.25em',fontWeight:700}}>✓ Found</span>
-                    <span style={{fontSize:9,color:'#34d399',fontWeight:700}}>{guessed.size}</span>
-                </div>
-                <div className="custom-scrollbar" style={{overflowY:'auto',flex:1,padding:'0 14px 10px'}}>
-                    {/* Start bone */}
-                    <div style={{padding:'4px 8px',marginBottom:3,background:'rgba(16,185,129,0.15)',border:'1px solid rgba(16,185,129,0.3)',borderRadius:3,fontSize:9,color:'#34d399',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.05em',display:'flex',justifyContent:'space-between'}}>
-                        <span>{startBone}</span><span>📍</span>
-                    </div>
-                    {foundList.map(b => (
-                        <div key={b} style={{padding:'4px 8px',marginBottom:3,background:'rgba(59,130,246,0.1)',border:'1px solid rgba(59,130,246,0.25)',borderRadius:3,fontSize:9,color:'#93c5fd',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.05em'}}>
-                            {b}
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Bad guesses */}
-            <div style={{flex:'0 0 auto',maxHeight:'35%',overflow:'hidden',display:'flex',flexDirection:'column'}}>
-                <div style={{padding:'10px 14px 6px',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
-                    <span style={{fontSize:8,color:'#f87171',textTransform:'uppercase',letterSpacing:'0.25em',fontWeight:700}}>❌ Not Adjacent</span>
-                    <span style={{fontSize:9,color:'#f87171',fontWeight:700}}>{bad.length}</span>
-                </div>
-                <div className="custom-scrollbar" style={{overflowY:'auto',flex:1,padding:'0 14px 10px'}}>
-                    {bad.length === 0 && <div style={{fontSize:9,color:'#334155',textAlign:'center',marginTop:4}}>None yet</div>}
-                    {bad.map(b => (
-                        <div key={b} className="failure-item" style={{padding:'4px 8px',marginBottom:3,background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.25)',borderRadius:3,fontSize:9,color:'#fca5a5',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.05em'}}>
-                            {b}
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* New game button */}
-            <div style={{padding:12,borderTop:'1px solid #1e293b',flexShrink:0}}>
-                <button onClick={startNew} style={{width:'100%',padding:'10px 0',background:'white',color:'black',border:'none',fontFamily:'EB Garamond,serif',fontWeight:900,fontSize:10,textTransform:'uppercase',letterSpacing:'0.2em',cursor:'pointer'}}>
-                    New Skull
-                </button>
-            </div>
-        </div>
-
-        {/* ── SEARCH BAR ─────────────────────────────────────────── */}
-        <div style={{position:'fixed',bottom:0,left:0,right:280,height:60,zIndex:150,background:'rgba(15,23,42,0.98)',borderTop:'1px solid #1e293b',padding:'8px 12px',display:'flex',alignItems:'center',gap:8}}>
-            <div style={{flex:1,position:'relative'}}>
-                {/* Suggestions — appear ABOVE the input */}
-                {suggestions.length > 0 && (
-                    <div style={{position:'absolute',bottom:'100%',left:0,right:0,background:'#0f172a',border:'1px solid #334155',borderBottom:'none',zIndex:300}}>
-                        {suggestions.map((s,i) => (
-                            <div key={s} onClick={() => submit(s)}
-                                className="sugg-item"
-                                style={{padding:'10px 14px',fontSize:10,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',cursor:'pointer',color:'white',background: i===selIdx?'#1d4ed8':'transparent',borderBottom:'1px solid #1e293b'}}>
-                                {s}
-                            </div>
-                        ))}
-                    </div>
-                )}
-                <input
-                    ref={inputRef}
-                    value={input}
-                    onChange={e => setInput(e.target.value)}
-                    onKeyDown={handleKey}
-                    disabled={phase !== 'playing'}
-                    placeholder={phase==='playing' ? "Type a skull bone name... (select from list)" : "Game over"}
-                    style={{width:'100%',background:'#1e293b',border:'1px solid #334155',padding:'10px 14px',color:'white',fontFamily:'EB Garamond,serif',fontSize:11,fontStyle:'italic',outline:'none'}}
-                />
-            </div>
-        </div>
-
-        {/* ── END SCREEN ─────────────────────────────────────────── */}
-        {phase !== 'playing' && !reveal && (
-            <div style={{position:'fixed',inset:0,zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(16px)'}} className={phase==='won'?'victory-bg':'loss-bg'}>
-                <div style={{textAlign:'center',padding:48,background:'rgba(15,23,42,0.95)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:24,maxWidth:420}}>
-                    <h2 style={{fontSize:48,fontWeight:900,color:'white',margin:'0 0 8px',letterSpacing:'-0.05em',textTransform:'uppercase'}}>
-                        {phase==='won' ? '💀 Complete!' : '✗ Incomplete'}
-                    </h2>
-                    <p style={{color:'#94a3b8',fontSize:14,marginBottom:24}}>
-                        {phase==='won'
-                            ? `All ${TOTAL} skull bones identified! ${max-left} guesses used.`
-                            : `Found ${guessed.size}/${TOTAL} bones. ${bad.length} non-adjacent guess${bad.length!==1?'es':''}.`}
-                    </p>
-                    {phase==='lost' && (
-                        <div style={{marginBottom:20}}>
-                            <button onClick={() => setReveal(true)} style={{padding:'10px 20px',background:'#a855f7',color:'white',border:'none',fontWeight:900,fontSize:10,textTransform:'uppercase',cursor:'pointer',letterSpacing:'0.15em'}}>
-                                👁️ Reveal Missing Bones
-                            </button>
-                        </div>
-                    )}
-                    <div style={{display:'flex',gap:12,justifyContent:'center'}}>
-                        <button onClick={startNew} style={{padding:'14px 32px',background:'white',color:'black',border:'none',fontWeight:900,fontSize:10,textTransform:'uppercase',letterSpacing:'0.15em',cursor:'pointer'}}>
-                            Play Again
-                        </button>
-                        <a href="../index.html" style={{padding:'14px 32px',background:'#1e293b',color:'white',fontWeight:900,fontSize:10,textTransform:'uppercase',letterSpacing:'0.15em',textDecoration:'none',display:'flex',alignItems:'center'}}>
-                            Menu
-                        </a>
-                    </div>
-                </div>
-            </div>
-        )}
-        </>
+        <window.FloodFillUI
+            gameTitle="💀 Skull"
+            accentColor="#f59e0b"
+            state={uiState}
+            handlers={uiHandlers}
+        />
     );
 }
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+
+ReactDOM.createRoot(document.getElementById('root')).render(<SkullGame />);
 </script>
 </body>
 </html>
