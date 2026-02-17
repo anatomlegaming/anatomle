@@ -92,7 +92,7 @@
             
             // Submit guess using modular validation
             const submitGuess = (guess) => {
-                if (gameState !== 'playing' || guess === target.end) return;
+                if (gameState !== 'playing') return;
                 
                 const validation = validateGuess(
                     guess,
@@ -127,8 +127,10 @@
                     setBadGuesses([...badGuesses, guess]);
                 }
                 
-                setGuessesLeft(prev => prev - 1);
-                if (guessesLeft <= 1) setGameState('lost');
+                // Fix Bug #3: avoid stale closure by computing new value first
+                const newGuessesLeft = guessesLeft - 1;
+                setGuessesLeft(newGuessesLeft);
+                if (newGuessesLeft <= 0) setGameState('lost');
                 setInputValue('');
             };
             
@@ -205,5 +207,3 @@
     </script>
 </body>
 </html>
-
-
