@@ -61,7 +61,7 @@ function isOnValidPath(bone, start, target, graph) {
  * @returns {boolean} - True if target is reachable
  */
 function canReachTargetWithGuessed(start, target, guessedBones, detourBones, graph) {
-    const allGuessed = new Set([...guessedBones, ...detourBones, start]);
+    const allGuessed = new Set([...guessedBones, ...detourBones, start, target]);
     
     // BFS using only guessed bones
     const queue = [start];
