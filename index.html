@@ -3,32 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <title>ANATOMLE | Medical Training Game</title>
+
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@900&family=EB+Garamond:wght@400;700&display=swap');
-        body { 
-            font-family: 'EB Garamond', serif; 
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            margin: 0; 
-            overflow: hidden; 
-        }
-        .pulse-bone {
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        .mode-card {
-            transition: all 0.3s ease;
-        }
-        .mode-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-        }
+        @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;700&display=swap');
+        body { font-family: 'EB Garamond', serif; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); margin: 0; overflow: hidden; }
+        .mode-card { transition: all 0.3s ease; }
+        .mode-card:hover:not(.disabled) { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
@@ -41,23 +26,13 @@
             return (
                 <div className="fixed inset-0 flex flex-col items-center justify-center">
                     <div className="text-center">
-                        <h1 className="text-8xl font-black text-white mb-6 tracking-tighter uppercase">
-                            Anatomle
-                        </h1>
-                        <p className="text-slate-400 text-lg mb-8 tracking-wider uppercase">
-                            Medical Training Game
-                        </p>
-                        
-                        {/* Loading dots */}
-                        <div className="flex gap-3 justify-center mb-8">
-                            <div className="w-4 h-4 bg-emerald-500 rounded-full animate-bounce" style={{animationDelay: '0s'}}></div>
-                            <div className="w-4 h-4 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                            <div className="w-4 h-4 bg-fuchsia-500 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
+                        <h1 className="text-8xl font-black text-white mb-6 tracking-tighter uppercase">Anatomle</h1>
+                        <p className="text-slate-400 text-lg mb-8 tracking-wider uppercase">Medical Training Game</p>
+                        <div className="flex gap-3 justify-center">
+                            <div className="w-4 h-4 bg-emerald-500 rounded-full animate-bounce" style={{animationDelay:'0s'}}></div>
+                            <div className="w-4 h-4 bg-blue-500 rounded-full animate-bounce" style={{animationDelay:'0.15s'}}></div>
+                            <div className="w-4 h-4 bg-amber-500 rounded-full animate-bounce" style={{animationDelay:'0.3s'}}></div>
                         </div>
-                        
-                        <p className="text-slate-500 text-sm uppercase tracking-widest pulse-bone">
-                            Initializing...
-                        </p>
                     </div>
                 </div>
             );
@@ -68,97 +43,96 @@
                 {
                     id: 'full-skeleton',
                     name: 'Full Skeleton',
-                    description: 'Navigate the complete human skeletal system',
+                    description: 'Navigate the complete human skeletal system — all 90 bones.',
                     difficulty: 'Medium',
                     color: 'blue',
-                    file: 'games/full-skeleton.html'
+                    icon: '🦴',
+                    file: 'games/full-skeleton.html',
+                    disabled: false
                 },
                 {
                     id: 'skull',
                     name: 'Skull Bones',
-                    description: 'Master cranial and facial anatomy',
+                    description: 'Master the 14 cranial and facial bones and their articulations.',
                     difficulty: 'Hard',
                     color: 'amber',
-                    file: 'skull-mode.html',
-                    disabled: true
+                    icon: '💀',
+                    file: 'games/skull.html',
+                    disabled: false
                 },
                 {
                     id: 'hands',
                     name: 'Hand Bones',
-                    description: 'Learn carpals, metacarpals, and phalanges',
+                    description: 'Learn carpals, metacarpals, and phalanges.',
                     difficulty: 'Easy',
                     color: 'emerald',
-                    file: 'hand-mode.html',
+                    icon: '✋',
+                    file: 'games/hand-mode.html',
                     disabled: true
                 },
                 {
                     id: 'challenge',
                     name: 'Challenge Mode',
-                    description: 'Invisible skeleton - expert level',
+                    description: 'Invisible skeleton — expert level only.',
                     difficulty: 'Expert',
                     color: 'fuchsia',
-                    file: 'challenge-mode.html',
+                    icon: '⚡',
+                    file: 'games/challenge-mode.html',
                     disabled: true
                 }
             ];
 
+            const difficultyStyle = {
+                Easy:   'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
+                Medium: 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
+                Hard:   'bg-amber-500/20 text-amber-400 border border-amber-500/30',
+                Expert: 'bg-fuchsia-500/20 text-fuchsia-400 border border-fuchsia-500/30',
+            };
+
+            const borderStyle = {
+                blue:    'border-blue-500/40',
+                amber:   'border-amber-500/40',
+                emerald: 'border-emerald-500/40',
+                fuchsia: 'border-fuchsia-500/40',
+            };
+
             return (
                 <div className="fixed inset-0 flex flex-col items-center justify-center p-8">
-                    <div className="max-w-5xl w-full">
-                        <header className="text-center mb-12">
-                            <h1 className="text-7xl font-black text-white mb-4 tracking-tighter uppercase">
-                                Anatomle
-                            </h1>
-                            <p className="text-slate-400 text-sm uppercase tracking-[0.3em]">
-                                Clinical Pro v18.7
-                            </p>
+                    <div className="max-w-4xl w-full">
+                        <header className="text-center mb-10">
+                            <h1 className="text-7xl font-black text-white mb-3 tracking-tighter uppercase">Anatomle</h1>
+                            <p className="text-slate-500 text-xs uppercase tracking-[0.4em]">Clinical Training — Select a Mode</p>
                         </header>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
                             {modes.map(mode => (
                                 <div
                                     key={mode.id}
-                                    className={`mode-card bg-slate-800/60 border-2 ${
-                                        mode.disabled ? 'border-slate-700 opacity-50' : `border-${mode.color}-500/30`
-                                    } rounded-2xl p-6 cursor-pointer relative`}
                                     onClick={() => !mode.disabled && (window.location.href = mode.file)}
+                                    className={`mode-card ${mode.disabled ? 'disabled opacity-40 cursor-default' : 'cursor-pointer'} relative bg-slate-800/60 border-2 ${mode.disabled ? 'border-slate-700/50' : borderStyle[mode.color]} rounded-2xl p-6`}
                                 >
                                     {mode.disabled && (
-                                        <div className="absolute top-4 right-4 bg-slate-700 text-slate-400 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                                        <div className="absolute top-4 right-4 bg-slate-700 text-slate-400 text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
                                             Coming Soon
                                         </div>
                                     )}
-                                    
-                                    <h3 className={`text-2xl font-black text-white mb-2 uppercase tracking-tight`}>
-                                        {mode.name}
-                                    </h3>
-                                    
-                                    <p className="text-slate-400 text-sm mb-4">
-                                        {mode.description}
-                                    </p>
-                                    
+                                    <div className="text-4xl mb-3">{mode.icon}</div>
+                                    <h3 className="text-2xl font-black text-white mb-2 uppercase tracking-tight">{mode.name}</h3>
+                                    <p className="text-slate-400 text-sm mb-4 leading-relaxed">{mode.description}</p>
                                     <div className="flex items-center justify-between">
-                                        <span className={`text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full ${
-                                            mode.difficulty === 'Easy' ? 'bg-emerald-500/20 text-emerald-400' :
-                                            mode.difficulty === 'Medium' ? 'bg-blue-500/20 text-blue-400' :
-                                            mode.difficulty === 'Hard' ? 'bg-amber-500/20 text-amber-400' :
-                                            'bg-fuchsia-500/20 text-fuchsia-400'
-                                        }`}>
+                                        <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${difficultyStyle[mode.difficulty]}`}>
                                             {mode.difficulty}
                                         </span>
-                                        
                                         {!mode.disabled && (
-                                            <span className="text-slate-500 text-xs uppercase tracking-wider">
-                                                Click to play →
-                                            </span>
+                                            <span className="text-slate-500 text-xs uppercase tracking-wider">Play →</span>
                                         )}
                                     </div>
                                 </div>
                             ))}
                         </div>
 
-                        <footer className="text-center text-slate-500 text-xs uppercase tracking-widest">
-                            <p>A medical training game for anatomy students</p>
+                        <footer className="text-center text-slate-600 text-xs uppercase tracking-widest">
+                            A medical training game for anatomy students
                         </footer>
                     </div>
                 </div>
@@ -167,19 +141,11 @@
 
         function App() {
             const [loading, setLoading] = useState(true);
-
-            useEffect(() => {
-                // Simulate initial load time
-                const timer = setTimeout(() => setLoading(false), 1500);
-                return () => clearTimeout(timer);
-            }, []);
-
+            useEffect(() => { const t = setTimeout(() => setLoading(false), 1200); return () => clearTimeout(t); }, []);
             return loading ? <LoadingScreen /> : <MainMenu />;
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     </script>
-
 </body>
 </html>
