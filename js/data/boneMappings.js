@@ -28,9 +28,9 @@ const BONE_TO_3D_MODEL = {
     "Lumbar Vertebrae": "Lumbar",
     "Sacrum": "Sacrum",
     
-    // Ribs & sternum
-    "True Ribs": "Rib_",
-    "False Ribs": "Rib_",
+    // Ribs & sternum — True ribs 1-7, False ribs 8-12
+    "True Ribs": "TRUE_RIB",
+    "False Ribs": "FALSE_RIB",
     "Sternum": "sternum",
     
     // Upper limb
@@ -74,9 +74,7 @@ const BONE_TO_3D_MODEL = {
     "Distal Phalanx V": "phalanx_of_5th_finger",
     
     // Pelvis
-    "Ilium": "Ilium",
-    "Ischium": "Ischium",
-    "Pubis": "Pubis",
+    "Hip Bone": "Hip bone",
     
     // Lower limb
     "Femur": "Femur",
@@ -124,9 +122,7 @@ const TWIN_BONES = {
     'Tibia': 'Fibula',
     'Fibula': 'Tibia',
     'Talus': 'Calcaneus',
-    'Calcaneus': 'Talus',
-    'Ilium': 'Ischium',
-    'Ischium': 'Ilium'
+    'Calcaneus': 'Talus'
 };
 
 // Helper function to check if two bones are twins
