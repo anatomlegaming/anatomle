@@ -12,7 +12,6 @@
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
     <script src="https://cdn.tailwindcss.com"></script>
 
     <script src="../js/data/skeletonGraph.js"></script>
@@ -38,6 +37,145 @@
     <div id="canvas-container"></div>
     <div id="root"></div>
 
+    <!-- =====================================================
+         3D ENGINE — plain script, no Babel, no React
+         ===================================================== -->
+    <script>
+        // Exact node names from the GLB file
+        var TRUE_RIB_NODES = [
+            'Rib (1st).r','Rib (2nd).r','Rib (3rd).r','Rib (4th).r',
+            'Rib (5th).r','Rib (6th).r','Rib (7th).r',
+            'Costal cart of 1st rib.r','Costal cart of 2nd rib.r',
+            'Costal cart of 3rd rib.r','Costal cart of 4th rib.r',
+            'Costal cart of 5th rib.r','Costal cart of 6th rib.r',
+            'Costal cart of 7th rib.r'
+        ];
+        var FALSE_RIB_NODES = [
+            'Rib (8th).r','Rib (9th).r','Rib (10th).r',
+            'Rib (11th).r','Rib (12th).r',
+            'Costal cart of 8th rib.r','Costal cart of 9th rib.r',
+            'Costal cart of 10th rib.r'
+        ];
+
+        var skeleton = null;
+
+        function init3D() {
+            var container = document.getElementById('canvas-container');
+            var scene = new THREE.Scene();
+            var camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+
+            var controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.screenSpacePanning = false;
+            controls.minDistance = 1;
+            controls.maxDistance = 10;
+            controls.maxPolarAngle = Math.PI;
+            camera.position.set(0, 1.2, 5);
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+            var dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 10, 7.5);
+            scene.add(dirLight);
+
+            var draco = new THREE.DRACOLoader();
+            draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
+            var loader = new THREE.GLTFLoader();
+            loader.setDRACOLoader(draco);
+
+            loader.load('../models/overview-skeleton.glb', function(gltf) {
+                skeleton = gltf.scene;
+                scene.add(skeleton);
+
+                var box = new THREE.Box3().setFromObject(skeleton);
+                var center = box.getCenter(new THREE.Vector3());
+                var size = box.getSize(new THREE.Vector3());
+                controls.target.copy(center);
+                controls.update();
+                var maxDim = Math.max(size.x, size.y, size.z);
+                var fov = camera.fov * (Math.PI / 180);
+                var cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.5;
+                camera.position.set(center.x, center.y, center.z + cameraZ);
+                camera.lookAt(center);
+                controls.update();
+
+                window.reset3D();
+            });
+
+            function animate() {
+                requestAnimationFrame(animate);
+                controls.update();
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            window.addEventListener('resize', function() {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+        }
+
+        window.reset3D = function() {
+            if (!skeleton) return;
+            skeleton.traverse(function(node) {
+                if (node.isMesh) {
+                    node.material = new THREE.MeshStandardMaterial({ color: 0x475569, transparent: true, opacity: 0.25 });
+                }
+            });
+        };
+
+        window.update3D = function(bones) {
+            if (!skeleton) return;
+            skeleton.traverse(function(node) {
+                if (!node.isMesh) return;
+
+                var match = null;
+                for (var i = 0; i < bones.length; i++) {
+                    var b = bones[i];
+
+                    if (b.name === 'Hip Bone') {
+                        if (node.name === 'Hip bone.r') { match = b; break; }
+                        continue;
+                    }
+                    if (b.name === 'True Ribs') {
+                        if (TRUE_RIB_NODES.indexOf(node.name) !== -1) { match = b; break; }
+                        continue;
+                    }
+                    if (b.name === 'False Ribs') {
+                        if (FALSE_RIB_NODES.indexOf(node.name) !== -1) { match = b; break; }
+                        continue;
+                    }
+
+                    var key = BONE_TO_3D_MODEL[b.name];
+                    if (key && node.name.indexOf(key) !== -1) { match = b; break; }
+                }
+
+                if (match) {
+                    var col = 0x3b82f6, emissiveInt = 0.5;
+                    if (match.type === 'start')  { col = 0x10b981; }
+                    if (match.type === 'end')    { col = 0xf59e0b; }
+                    if (match.type === 'detour') { col = 0xf97316; emissiveInt = 0.6; }
+                    if (match.type === 'bad')    { col = 0xef4444; emissiveInt = 0.8; }
+                    if (match.type === 'reveal') { col = 0xd946ef; emissiveInt = 0.8; }
+                    node.material = new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: emissiveInt, transparent: false, opacity: 1 });
+                } else {
+                    node.material = new THREE.MeshStandardMaterial({ color: 0x475569, transparent: true, opacity: 0.25 });
+                }
+            });
+        };
+
+        window.addEventListener('DOMContentLoaded', function() {
+            init3D();
+        });
+    </script>
+
+    <!-- =====================================================
+         REACT GAME UI — Babel block
+         ===================================================== -->
     <script type="text/babel">
         const { useState, useEffect, useMemo, useCallback } = React;
 
@@ -149,7 +287,7 @@
                     <header className="mb-4">
                         <h1 className="text-3xl font-black text-white tracking-tighter uppercase">Anatomle</h1>
                         <div className="flex justify-between items-center border-b border-slate-700 pb-2">
-                            <span className="text-[9px] text-slate-500 tracking-[0.3em] uppercase">Hips &amp; Ribs v2</span>
+                            <span className="text-[9px] text-slate-500 tracking-[0.3em] uppercase">Hips &amp; Ribs v3</span>
                             <span className={`text-xs font-bold ${guessesLeft < 4 ? 'text-red-400' : 'text-emerald-400'}`}>{guessesLeft} Guesses</span>
                         </div>
                     </header>
@@ -227,8 +365,7 @@
                                                 : isDetourBone && boneItem.guessed ? 'text-orange-400'
                                                 : 'text-blue-400'
                                             }>
-                                                {showReveal && gameState === 'lost' ? boneItem.bone
-                                                 : !boneItem.guessed && !boneIsLast ? '???' : boneItem.bone}
+                                                {showReveal && gameState === 'lost' ? boneItem.bone : !boneItem.guessed && !boneIsLast ? '???' : boneItem.bone}
                                             </span>
                                             <span>
                                                 {boneItem.type === 'start' ? '📍' : boneIsLast ? '🎯' : boneIsMissing ? '🔗' : isDetourBone && boneItem.guessed ? '⚠️' : '🧬'}
@@ -298,112 +435,7 @@
             );
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-
-        const init3D = () => {
-            const container = document.getElementById('canvas-container');
-            const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
-            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(container.clientWidth, container.clientHeight);
-            container.appendChild(renderer.domElement);
-
-            const controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-            controls.screenSpacePanning = false;
-            controls.minDistance = 1;
-            controls.maxDistance = 10;
-            controls.maxPolarAngle = Math.PI;
-            camera.position.set(0, 1.2, 5);
-
-            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            dirLight.position.set(5, 10, 7.5);
-            scene.add(dirLight);
-
-            const draco = new THREE.DRACOLoader();
-            draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
-            const loader = new THREE.GLTFLoader();
-            loader.setDRACOLoader(draco);
-
-            let skeleton;
-            loader.load('../models/overview-skeleton.glb', (gltf) => {
-                skeleton = gltf.scene;
-                scene.add(skeleton);
-                const box = new THREE.Box3().setFromObject(skeleton);
-                const center = box.getCenter(new THREE.Vector3());
-                const size = box.getSize(new THREE.Vector3());
-                controls.target.copy(center);
-                controls.update();
-                const maxDim = Math.max(size.x, size.y, size.z);
-                const fov = camera.fov * (Math.PI / 180);
-                const cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.5;
-                camera.position.set(center.x, center.y, center.z + cameraZ);
-                camera.lookAt(center);
-                controls.update();
-                window.reset3D();
-            });
-
-            window.reset3D = () => {
-                if (!skeleton) return;
-                skeleton.traverse(node => {
-                    if (node.isMesh) node.material = new THREE.MeshStandardMaterial({ color: 0x475569, transparent: true, opacity: 0.25 });
-                });
-            };
-
-            // True ribs  = ribs 1-7  + costal cartilages 1-7
-            // False ribs = ribs 8-12 + costal cartilages 8-10 (11,12 are floating, no cartilage)
-            const TRUE_RIB_NODES  = ['Rib (1st).r','Rib (2nd).r','Rib (3rd).r','Rib (4th).r','Rib (5th).r','Rib (6th).r','Rib (7th).r','Costal cart of 1st rib.r','Costal cart of 2nd rib.r','Costal cart of 3rd rib.r','Costal cart of 4th rib.r','Costal cart of 5th rib.r','Costal cart of 6th rib.r','Costal cart of 7th rib.r'];
-            const FALSE_RIB_NODES = ['Rib (8th).r','Rib (9th).r','Rib (10th).r','Rib (11th).r','Rib (12th).r','Costal cart of 8th rib.r','Costal cart of 9th rib.r','Costal cart of 10th rib.r'];
-
-            window.update3D = (bones) => {
-                if (!skeleton) return;
-                skeleton.traverse(node => {
-                    if (!node.isMesh) return;
-
-                    const match = bones.find(b => {
-                        // Hip Bone — node is "Hip bone.r"
-                        if (b.name === 'Hip Bone') return node.name.includes('Hip bone');
-
-                        // True Ribs
-                        if (b.name === 'True Ribs') return TRUE_RIB_NODES.includes(node.name);
-
-                        // False Ribs
-                        if (b.name === 'False Ribs') return FALSE_RIB_NODES.includes(node.name);
-
-                        // Everything else — look up key in mapping
-                        const key = BONE_TO_3D_MODEL[b.name];
-                        if (!key) return false;
-                        return node.name.includes(key);
-                    });
-
-                    if (match) {
-                        let col = 0x3b82f6, emissiveInt = 0.5;
-                        if (match.type === 'start')  { col = 0x10b981; }
-                        if (match.type === 'end')    { col = 0xf59e0b; }
-                        if (match.type === 'detour') { col = 0xf97316; emissiveInt = 0.6; }
-                        if (match.type === 'bad')    { col = 0xef4444; emissiveInt = 0.8; }
-                        if (match.type === 'reveal') { col = 0xd946ef; emissiveInt = 0.8; }
-                        node.material = new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: emissiveInt, transparent: false, opacity: 1 });
-                    } else {
-                        node.material = new THREE.MeshStandardMaterial({ color: 0x475569, transparent: true, opacity: 0.25 });
-                    }
-                });
-            };
-
-            const animate = () => { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); };
-            animate();
-
-            window.addEventListener('resize', () => {
-                camera.aspect = container.clientWidth / container.clientHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(container.clientWidth, container.clientHeight);
-            });
-        };
-
-        init3D();
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     </script>
 </body>
 </html>
