@@ -26,7 +26,7 @@ const SKELETON_GRAPH = {
     'Cervical Vertebrae': ['Axis (C2)', 'Thoracic Vertebrae'],
     'Thoracic Vertebrae': ['Cervical Vertebrae', 'Lumbar Vertebrae', 'True Ribs', 'False Ribs'],
     'Lumbar Vertebrae': ['Thoracic Vertebrae', 'Sacrum'],
-    'Sacrum': ['Lumbar Vertebrae', 'Ilium', 'Ischium'],
+    'Sacrum': ['Lumbar Vertebrae', 'Hip Bone'],
     
     // ===== RIBS & STERNUM =====
     'True Ribs': ['Thoracic Vertebrae', 'Sternum'],
@@ -74,12 +74,10 @@ const SKELETON_GRAPH = {
     'Distal Phalanx V': ['Middle Phalanx V'],
     
     // ===== PELVIS =====
-    'Ilium': ['Sacrum', 'Ischium', 'Pubis', 'Femur'],
-    'Ischium': ['Sacrum', 'Ilium', 'Pubis', 'Femur'],
-    'Pubis': ['Ilium', 'Ischium'],
+    'Hip Bone': ['Sacrum', 'Femur'],
     
     // ===== LEG =====
-    'Femur': ['Ilium', 'Ischium', 'Patella', 'Tibia'],
+    'Femur': ['Hip Bone', 'Patella', 'Tibia'],
     'Patella': ['Femur', 'Tibia'],
     'Tibia': ['Femur', 'Patella', 'Fibula', 'Talus'],
     'Fibula': ['Tibia', 'Talus'],
