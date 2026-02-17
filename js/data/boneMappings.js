@@ -19,27 +19,27 @@ const BONE_TO_3D_MODEL = {
     "Vomer": "Vomer",
     "Inferior Nasal Concha": "Concha",
     "Mandible": "Mandible",
-    
-    // Spine - grouped vertebrae
+
+    // Spine
     "Atlas (C1)": "Atlas",
     "Axis (C2)": "Axis",
     "Cervical Vertebrae": "Cervical",
     "Thoracic Vertebrae": "Thoracic",
     "Lumbar Vertebrae": "Lumbar",
     "Sacrum": "Sacrum",
-    
-    // Ribs & sternum — True ribs 1-7, False ribs 8-12
-    "True Ribs": "TRUE_RIB",
-    "False Ribs": "FALSE_RIB",
+
+    // Ribs & sternum — handled by special-case logic in update3D, keys unused
+    "True Ribs": "__true_ribs__",
+    "False Ribs": "__false_ribs__",
     "Sternum": "sternum",
-    
+
     // Upper limb
     "Clavicle": "Clavicl",
     "Scapula": "Scapula",
     "Humerus": "Humerus",
     "Radius": "Radius",
     "Ulna": "Ulna",
-    
+
     // Hand - carpals
     "Scaphoid": "Scaphoid",
     "Lunate": "Lunate",
@@ -49,14 +49,14 @@ const BONE_TO_3D_MODEL = {
     "Trapezoid": "Trapezoid",
     "Capitate": "Capitate",
     "Hamate": "Hamate",
-    
+
     // Hand - metacarpals
     "Metacarpal I": "1st_metacarpal",
     "Metacarpal II": "2nd_metacarpal",
     "Metacarpal III": "3rd_metacarpal",
     "Metacarpal IV": "4th_metacarpal",
     "Metacarpal V": "5th_metacarpal",
-    
+
     // Hand - phalanges
     "Proximal Phalanx I": "phalanx_of_1st_finger",
     "Distal Phalanx I": "phalanx_of_1st_finger",
@@ -72,16 +72,16 @@ const BONE_TO_3D_MODEL = {
     "Proximal Phalanx V": "phalanx_of_5th_finger",
     "Middle Phalanx V": "phalanx_of_5th_finger",
     "Distal Phalanx V": "phalanx_of_5th_finger",
-    
-    // Pelvis
-    "Hip Bone": "Hip bone",
-    
+
+    // Pelvis — handled by special-case logic in update3D, key unused
+    "Hip Bone": "__hip_bone__",
+
     // Lower limb
     "Femur": "Femur",
     "Patella": "Patellar",
     "Tibia": "Tibia",
     "Fibula": "Fibula",
-    
+
     // Foot - tarsals
     "Talus": "Talus",
     "Calcaneus": "Calcaneus",
@@ -90,14 +90,14 @@ const BONE_TO_3D_MODEL = {
     "Medial Cuneiform": "Medial_cuneiform",
     "Intermediate Cuneiform": "Intermediate_cuneiform",
     "Lateral Cuneiform": "Lateral_cuneiform",
-    
+
     // Foot - metatarsals
     "Metatarsal I": "First_metatarsal",
     "Metatarsal II": "Second_metatarsal",
     "Metatarsal III": "Third_metatarsal",
     "Metatarsal IV": "Fourth_metatarsal",
     "Metatarsal V": "Fifth_metatarsal",
-    
+
     // Foot - phalanges
     "Proximal Phalanx I (Foot)": "first_finger_of_foot",
     "Distal Phalanx I (Foot)": "first_finger_of_foot",
@@ -115,7 +115,7 @@ const BONE_TO_3D_MODEL = {
     "Distal Phalanx V (Foot)": "fifth_finger_of_foot"
 };
 
-// Twin bones that should display side by side in UI
+// Anatomically paired bones that display side by side in UI
 const TWIN_BONES = {
     'Radius': 'Ulna',
     'Ulna': 'Radius',
@@ -125,7 +125,6 @@ const TWIN_BONES = {
     'Calcaneus': 'Talus'
 };
 
-// Helper function to check if two bones are twins
 function areTwins(bone1, bone2) {
     return TWIN_BONES[bone1] === bone2 || TWIN_BONES[bone2] === bone1;
 }
