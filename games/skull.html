@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ANATOMLE | Skull</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script src="../js/data/skullGraph.js"></script>
+    <script src="../js/core/pathfinding.js"></script>
+    <script src="../js/core/gameLogic.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;700&display=swap');
+        body { font-family: 'EB Garamond', serif; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #d6d3d1; margin: 0; overflow: hidden; }
+        #canvas-container { position: absolute; right: 0; top: 0; width: calc(100% - 400px); height: 100vh; z-index: 10; background: linear-gradient(135deg, #334155 0%, #1e293b 100%); }
+        .sidebar { width: 400px; height: 100vh; background: rgba(15,23,42,0.98); border-right: 1px solid #334155; position: relative; z-index: 50; display: flex; flex-direction: column; pointer-events: auto; box-shadow: 2px 0 20px rgba(0,0,0,0.5); }
+        .custom-scrollbar::-webkit-scrollbar { width: 2px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }
+        .suggestion-item:hover { background: #3b82f6; color: white; padding-left: 1rem; cursor: pointer; }
+        .victory-bg { background: radial-gradient(circle, rgba(16,185,129,0.3) 0%, rgba(0,0,0,1) 100%); }
+        .loss-bg { background: radial-gradient(circle, rgba(239,68,68,0.3) 0%, rgba(0,0,0,1) 100%); }
+        .failure-item { animation: shake 0.3s ease-in-out; }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    <div id="root"></div>
+
+    <!-- 3D engine — plain script, no Babel -->
+    <script>
+        var _skeleton = null;
+
+        // Skull mesh name substrings (matched via includes against node.name in Three.js)
+        var SKULL_MESH_KEYS = [
+            'Frontal', 'Parietal', 'Occipital', 'Temporal', 'Sphenoid', 'Ethmoid',
+            'Nasal_boner', 'Lacrimal_boner', 'Zygomatic', 'Maxilla', 'Palatine',
+            'Vomer', 'Inferior_nasal_concha_boner', 'Mandible'
+        ];
+
+        // Map game bone name -> mesh substring
+        var SKULL_BONE_TO_MESH = {
+            'Frontal Bone':          'Frontal',
+            'Parietal Bone':         'Parietal',
+            'Occipital Bone':        'Occipital',
+            'Temporal Bone':         'Temporal',
+            'Sphenoid Bone':         'Sphenoid',
+            'Ethmoid Bone':          'Ethmoid',
+            'Nasal Bone':            'Nasal_boner',
+            'Lacrimal Bone':         'Lacrimal_boner',
+            'Zygomatic Bone':        'Zygomatic',
+            'Maxilla':               'Maxilla',
+            'Palatine Bone':         'Palatine',
+            'Vomer':                 'Vomer',
+            'Inferior Nasal Concha': 'Inferior_nasal_concha_boner',
+            'Mandible':              'Mandible'
+        };
+
+        function isSkullMesh(nodeName) {
+            for (var i = 0; i < SKULL_MESH_KEYS.length; i++) {
+                if (nodeName.indexOf(SKULL_MESH_KEYS[i]) !== -1) return true;
+            }
+            return false;
+        }
+
+        window.reset3D = function() {
+            if (!_skeleton) return;
+            _skeleton.traverse(function(node) {
+                if (!node.isMesh) return;
+                if (isSkullMesh(node.name)) {
+                    // Skull bones: visible but dim
+                    node.material = new THREE.MeshStandardMaterial({ color: 0x475569, transparent: true, opacity: 0.25 });
+                    node.visible = true;
+                } else {
+                    // Everything else: completely hidden
+                    node.visible = false;
+                }
+            });
+        };
+
+        window.update3D = function(bones) {
+            if (!_skeleton) return;
+            _skeleton.traverse(function(node) {
+                if (!node.isMesh) return;
+
+                // Hide all non-skull meshes
+                if (!isSkullMesh(node.name)) {
+                    node.visible = false;
+                    return;
+                }
+
+                // Find if this skull node matches any highlighted bone
+                var matched = null;
+                for (var i = 0; i < bones.length; i++) {
+                    var b = bones[i];
+                    var key = SKULL_BONE_TO_MESH[b.name];
+                    if (key && node.name.indexOf(key) !== -1) { matched = b; break; }
+                }
+
+                node.visible = true;
+                if (matched) {
+                    var col = 0x3b82f6, em = 0.5;
+                    if (matched.type === 'start')  { col = 0x10b981; em = 0.5; }
+                    if (matched.type === 'end')    { col = 0xf59e0b; em = 0.5; }
+                    if (matched.type === 'detour') { col = 0xf97316; em = 0.6; }
+                    if (matched.type === 'bad')    { col = 0xef4444; em = 0.8; }
+                    if (matched.type === 'reveal') { col = 0xd946ef; em = 0.8; }
+                    node.material = new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: em, transparent: false, opacity: 1 });
+                } else {
+                    node.material = new THREE.MeshStandardMaterial({ color: 0x475569, transparent: true, opacity: 0.25 });
+                }
+            });
+        };
+
+        window.addEventListener('DOMContentLoaded', function() {
+            var container = document.getElementById('canvas-container');
+            var scene = new THREE.Scene();
+            var camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+
+            var controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.minDistance = 0.5;
+            controls.maxDistance = 8;
+            controls.maxPolarAngle = Math.PI;
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+            var dl = new THREE.DirectionalLight(0xffffff, 0.8);
+            dl.position.set(5, 10, 7.5);
+            scene.add(dl);
+            var dl2 = new THREE.DirectionalLight(0xffffff, 0.3);
+            dl2.position.set(-5, -5, -5);
+            scene.add(dl2);
+
+            var draco = new THREE.DRACOLoader();
+            draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
+            var loader = new THREE.GLTFLoader();
+            loader.setDRACOLoader(draco);
+
+            loader.load('../models/overview-skeleton.glb', function(gltf) {
+                _skeleton = gltf.scene;
+                scene.add(_skeleton);
+
+                // Hide everything first, then fit camera to skull only
+                var skullBox = new THREE.Box3();
+                _skeleton.traverse(function(node) {
+                    if (!node.isMesh) return;
+                    if (isSkullMesh(node.name)) {
+                        skullBox.expandByObject(node);
+                    } else {
+                        node.visible = false;
+                    }
+                });
+
+                var center = skullBox.getCenter(new THREE.Vector3());
+                var size = skullBox.getSize(new THREE.Vector3());
+                controls.target.copy(center);
+                var maxDim = Math.max(size.x, size.y, size.z);
+                var fov = camera.fov * (Math.PI / 180);
+                var cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.8;
+                camera.position.set(center.x, center.y, center.z + cameraZ);
+                camera.lookAt(center);
+                controls.update();
+
+                window.reset3D();
+            });
+
+            function animate() { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }
+            animate();
+
+            window.addEventListener('resize', function() {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+        });
+    </script>
+
+    <!-- React game UI -->
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useCallback } = React;
+
+        function App() {
+            const [target, setTarget] = useState({ start: '', end: '', path: [] });
+            const [chain, setChain] = useState([]);
+            const [guessesLeft, setGuessesLeft] = useState(8);
+            const [maxGuesses, setMaxGuesses] = useState(8);
+            const [badGuesses, setBadGuesses] = useState([]);
+            const [detours, setDetours] = useState([]);
+            const [inputValue, setInputValue] = useState('');
+            const [gameState, setGameState] = useState('playing');
+            const [showReveal, setShowReveal] = useState(false);
+
+            const initGame = useCallback(() => {
+                const gameData = initializeGame(SKULL_GRAPH, { minLength: 3, maxLength: 6 });
+                setTarget(gameData);
+                setChain(gameData.path.map((bone, idx) => ({ bone, type: idx === 0 ? 'start' : 'path', guessed: idx === 0 })));
+                const total = calculateGuessCount(gameData.path.length);
+                setGuessesLeft(total);
+                setMaxGuesses(total);
+                setBadGuesses([]);
+                setDetours([]);
+                setInputValue('');
+                setGameState('playing');
+                setShowReveal(false);
+                if (window.reset3D) window.reset3D();
+            }, []);
+
+            useEffect(() => { initGame(); }, [initGame]);
+
+            useEffect(() => {
+                const highlights = [];
+                if (showReveal && gameState === 'lost') {
+                    chain.forEach((item, idx) => {
+                        const isLast = idx === chain.length - 1;
+                        if (item.guessed && !isLast) highlights.push({ name: item.bone, type: item.type });
+                        else if (!item.guessed && !isLast) highlights.push({ name: item.bone, type: 'reveal' });
+                        else if (isLast) highlights.push({ name: item.bone, type: 'end' });
+                    });
+                } else {
+                    chain.forEach((item, idx) => {
+                        const isLast = idx === chain.length - 1;
+                        if (item.guessed && !isLast) highlights.push({ name: item.bone, type: item.type });
+                        else if (isLast) highlights.push({ name: item.bone, type: 'end' });
+                    });
+                    detours.forEach(g => highlights.push({ name: g, type: 'detour' }));
+                    badGuesses.forEach(g => highlights.push({ name: g, type: 'bad' }));
+                }
+                if (window.update3D) window.update3D(highlights);
+            }, [chain, badGuesses, detours, showReveal, gameState]);
+
+            const submitGuess = (guess) => {
+                if (gameState !== 'playing') return;
+                const isOnPath = target.path.includes(guess);
+                let updatedChain = chain, updatedDetours = detours, valid = false;
+
+                if (isOnPath) {
+                    updatedChain = chain.map(item => item.bone === guess ? { ...item, guessed: true } : item);
+                    valid = true;
+                } else if (isOnValidPath(guess, target.start, target.end, SKULL_GRAPH)) {
+                    updatedDetours = [...new Set([guess, ...detours])];
+                    valid = true;
+                } else {
+                    setBadGuesses(prev => [...new Set([guess, ...prev])]);
+                }
+
+                const newLeft = guessesLeft - 1;
+                setGuessesLeft(newLeft);
+
+                if (valid) {
+                    if (isOnPath) setChain(updatedChain); else setDetours(updatedDetours);
+                    const guessedOptimal = updatedChain.filter(c => c.guessed).map(c => c.bone);
+                    if (canReachTargetWithGuessed(target.start, target.end, guessedOptimal, updatedDetours, SKULL_GRAPH)) {
+                        setGameState('won'); setInputValue(''); return;
+                    }
+                }
+
+                if (newLeft <= 0) setGameState('lost');
+                setInputValue('');
+            };
+
+            const suggestions = useMemo(() => {
+                if (!inputValue) return [];
+                const guessed = chain.filter(c => c.guessed).map(c => c.bone);
+                return Object.keys(SKULL_GRAPH).filter(b =>
+                    b.toLowerCase().includes(inputValue.toLowerCase()) &&
+                    !guessed.includes(b) && b !== target.end &&
+                    !badGuesses.includes(b) && !detours.includes(b)
+                ).slice(0, 5);
+            }, [inputValue, chain, target, badGuesses, detours]);
+
+            return (
+                <div className="sidebar p-6">
+                    <header className="mb-4">
+                        <div className="flex items-center gap-3 mb-1">
+                            <a href="../index.html" className="text-slate-500 hover:text-white text-xs uppercase tracking-widest transition-colors">← Menu</a>
+                        </div>
+                        <h1 className="text-3xl font-black text-white tracking-tighter uppercase">Anatomle</h1>
+                        <div className="flex justify-between items-center border-b border-slate-700 pb-2">
+                            <span className="text-[9px] text-amber-500/70 tracking-[0.3em] uppercase">Skull Mode v1</span>
+                            <span className={`text-xs font-bold ${guessesLeft < 3 ? 'text-red-400' : 'text-emerald-400'}`}>{guessesLeft} Guesses</span>
+                        </div>
+                    </header>
+
+                    <div className="bg-slate-800/40 p-3 border border-slate-700 mb-4 rounded flex justify-between">
+                        <div><p className="text-[8px] text-slate-500 uppercase font-bold">Start</p><p className="text-[10px] font-bold uppercase text-emerald-400">{target.start}</p></div>
+                        <div className="text-right"><p className="text-[8px] text-slate-500 uppercase font-bold">Target</p><p className="text-[10px] font-bold uppercase text-amber-400">{target.end}</p></div>
+                    </div>
+
+                    {detours.length > 0 && (
+                        <div className="mb-4">
+                            <p className="text-[8px] text-amber-400 uppercase font-bold mb-2 tracking-wider">⚠️ Longer Routes</p>
+                            <div className="flex flex-wrap gap-1.5">
+                                {detours.map((g,i) => <div key={i} className="text-[9px] font-bold text-amber-400 bg-amber-900/30 px-2.5 py-1 border border-amber-800/40 uppercase tracking-tight rounded">{g}</div>)}
+                            </div>
+                        </div>
+                    )}
+                    {badGuesses.length > 0 && (
+                        <div className="mb-4">
+                            <p className="text-[8px] text-red-400 uppercase font-bold mb-2 tracking-wider">❌ Failed Attempts</p>
+                            <div className="flex flex-wrap gap-1.5">
+                                {badGuesses.map((g,i) => <div key={i} className="failure-item text-[9px] font-bold text-red-400 bg-red-900/30 px-2.5 py-1 border border-red-800/40 uppercase tracking-tight rounded">{g}</div>)}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-1 mb-4">
+                        <p className="text-[8px] text-slate-500 uppercase font-bold mb-2 tracking-wider">🧬 Your Path</p>
+                        {chain.map((item, idx) => {
+                            const isLastBone = idx === chain.length - 1;
+                            const boneIsLast = item.bone === target.end;
+                            const boneIsMissing = showReveal && gameState === 'lost' && !item.guessed && !boneIsLast;
+                            const isDetour = item.type === 'detour' || detours.includes(item.bone);
+                            return (
+                                <div key={idx} className={`p-2 border transition-all ${
+                                    !item.guessed && !boneIsLast && !showReveal ? 'border-dashed border-slate-700/40 opacity-20'
+                                    : boneIsMissing ? 'bg-fuchsia-900/20 border-fuchsia-700/40'
+                                    : isDetour && item.guessed ? 'bg-orange-900/20 border-orange-700/40'
+                                    : boneIsLast ? 'bg-amber-900/20 border-amber-700/40'
+                                    : 'bg-slate-800 border-slate-600'}`}>
+                                    <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest">
+                                        <span className={item.type==='start'?'text-emerald-400':boneIsLast?'text-amber-400':boneIsMissing?'text-fuchsia-400':isDetour&&item.guessed?'text-orange-400':'text-blue-400'}>
+                                            {showReveal && gameState==='lost' ? item.bone : !item.guessed && !boneIsLast ? '???' : item.bone}
+                                        </span>
+                                        <span>{item.type==='start'?'📍':boneIsLast?'🎯':boneIsMissing?'🔗':isDetour&&item.guessed?'⚠️':'🧬'}</span>
+                                    </div>
+                                    {boneIsMissing && <p className="text-[7px] text-fuchsia-400 mt-1">MISSING LINK</p>}
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    <div className="mt-auto space-y-3">
+                        <div className="relative">
+                            <input className="w-full bg-slate-900 border border-slate-700 p-3 text-white outline-none focus:border-amber-500 text-xs italic"
+                                placeholder="Name a skull bone..."
+                                value={inputValue}
+                                onChange={e => setInputValue(e.target.value)}
+                                disabled={gameState !== 'playing'} />
+                            {suggestions.length > 0 && (
+                                <div className="absolute bottom-full left-0 w-full bg-slate-900 border border-slate-700 z-[60] shadow-2xl">
+                                    {suggestions.map(s => <div key={s} onClick={() => submitGuess(s)} className="suggestion-item p-3 text-[10px] uppercase font-black transition-all">{s}</div>)}
+                                </div>
+                            )}
+                        </div>
+                        <button onClick={initGame} className="w-full py-3 bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-amber-400 hover:text-white transition-all">
+                            Next Case
+                        </button>
+                    </div>
+
+                    {gameState !== 'playing' && !showReveal && (
+                        <div className={`fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-xl ${gameState==='won'?'victory-bg':'loss-bg'}`}>
+                            <div className="text-center p-12 bg-slate-950/90 border border-white/10 rounded-3xl max-w-md">
+                                <h2 className="text-5xl font-black text-white mb-2 tracking-tighter uppercase">
+                                    {gameState==='won'?(detours.length===0?'✓ Perfect Path':'✓ Path Complete'):'✗ Flatline'}
+                                </h2>
+                                <p className="text-slate-400 text-sm mb-6">
+                                    {gameState==='won'
+                                        ?(detours.length===0?`Optimal route! ${maxGuesses-guessesLeft}/${maxGuesses} guesses used.`:`Valid path with ${detours.length} detour${detours.length!==1?'s':''}. ${maxGuesses-guessesLeft}/${maxGuesses} used.`)
+                                        :`Path not found. ${badGuesses.length} failed attempt${badGuesses.length!==1?'s':''}.`}
+                                </p>
+                                {gameState==='lost' && (
+                                    <div className="mb-6">
+                                        <button onClick={()=>setShowReveal(true)} className="px-6 py-3 bg-fuchsia-500 text-white font-black text-xs uppercase hover:bg-fuchsia-400 transition-all">
+                                            👁️ Reveal Correct Path
+                                        </button>
+                                    </div>
+                                )}
+                                <div className="flex gap-3 justify-center">
+                                    <button onClick={initGame} className="px-8 py-4 bg-white text-black font-black text-xs uppercase hover:scale-105 transition-transform">
+                                        Play Again
+                                    </button>
+                                    <a href="../index.html" className="px-8 py-4 bg-slate-700 text-white font-black text-xs uppercase hover:bg-slate-600 transition-colors flex items-center">
+                                        Menu
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
