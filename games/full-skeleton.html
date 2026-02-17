@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ANATOMLE | Full Skeleton</title>
+    
+    <!-- Three.js and dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- React -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- YOUR MODULAR FILES -->
+    <script src="../js/data/skeletonGraph.js"></script>
+    <script src="../js/data/boneMappings.js"></script>
+    <script src="../js/core/pathfinding.js"></script>
+    <script src="../js/core/gameLogic.js"></script>
+    <script src="../js/3d/modelLoader.js"></script>
+    <script src="../js/3d/boneHighlighter.js"></script>
+    
+    <style>
+        body { 
+            font-family: 'EB Garamond', serif; 
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            margin: 0; 
+            overflow: hidden; 
+        }
+        #canvas-container { 
+            position: absolute; 
+            right: 0; 
+            top: 0; 
+            width: calc(100% - 400px); 
+            height: 100vh; 
+            background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+        }
+        .sidebar { 
+            width: 400px; 
+            height: 100vh; 
+            background: rgba(15, 23, 42, 0.98); 
+            border-right: 1px solid #334155; 
+            position: relative; 
+            z-index: 50; 
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <div id="canvas-container"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+        
+        function App() {
+            const [target, setTarget] = useState({ start: '', end: '', path: [] });
+            const [chain, setChain] = useState([]);
+            const [guessesLeft, setGuessesLeft] = useState(10);
+            const [detours, setDetours] = useState([]);
+            const [badGuesses, setBadGuesses] = useState([]);
+            const [gameState, setGameState] = useState('playing');
+            const [inputValue, setInputValue] = useState('');
+            
+            // Initialize game using modular function
+            const initGame = () => {
+                const gameData = initializeGame(SKELETON_GRAPH, {
+                    minLength: 4,
+                    maxLength: 8
+                });
+                
+                setTarget(gameData);
+                setChain(gameData.path.map((bone, idx) => ({
+                    bone,
+                    type: idx === 0 ? 'start' : 'path',
+                    guessed: idx === 0
+                })));
+                
+                const totalGuesses = calculateGuessCount(gameData.path.length);
+                setGuessesLeft(totalGuesses);
+                setDetours([]);
+                setBadGuesses([]);
+                setGameState('playing');
+                setInputValue('');
+                resetBoneColors();
+            };
+            
+            // Submit guess using modular validation
+            const submitGuess = (guess) => {
+                if (gameState !== 'playing' || guess === target.end) return;
+                
+                const validation = validateGuess(
+                    guess,
+                    target.path,
+                    target.start,
+                    target.end,
+                    SKELETON_GRAPH
+                );
+                
+                if (validation.type === 'optimal') {
+                    // Update chain
+                    const updatedChain = chain.map(item => 
+                        item.bone === guess ? { ...item, guessed: true } : item
+                    );
+                    setChain(updatedChain);
+                    
+                    // Check win
+                    const guessedBones = updatedChain.filter(c => c.guessed).map(c => c.bone);
+                    if (canReachTargetWithGuessed(target.start, target.end, guessedBones, detours, SKELETON_GRAPH)) {
+                        setGameState('won');
+                    }
+                } else if (validation.type === 'detour') {
+                    const newDetours = [...detours, guess];
+                    setDetours(newDetours);
+                    
+                    // Check win with detours
+                    const guessedBones = chain.filter(c => c.guessed).map(c => c.bone);
+                    if (canReachTargetWithGuessed(target.start, target.end, guessedBones, newDetours, SKELETON_GRAPH)) {
+                        setGameState('won');
+                    }
+                } else {
+                    setBadGuesses([...badGuesses, guess]);
+                }
+                
+                setGuessesLeft(prev => prev - 1);
+                if (guessesLeft <= 1) setGameState('lost');
+                setInputValue('');
+            };
+            
+            // Initialize 3D and game on mount
+            useEffect(() => {
+                initScene('canvas-container');
+                loadSkeletonModel('../models/overview-skeleton.glb', () => {
+                    console.log('Model loaded!');
+                });
+                initGame();
+            }, []);
+            
+            // Update 3D highlighting
+            useEffect(() => {
+                const highlights = [];
+                
+                chain.forEach((item, idx) => {
+                    if (item.guessed && idx < chain.length - 1) {
+                        highlights.push({ name: item.bone, type: item.type });
+                    } else if (idx === chain.length - 1) {
+                        highlights.push({ name: item.bone, type: 'end' });
+                    }
+                });
+                
+                detours.forEach(d => highlights.push({ name: d, type: 'detour' }));
+                badGuesses.forEach(b => highlights.push({ name: b, type: 'bad' }));
+                
+                updateBoneColors(highlights, BONE_TO_3D_MODEL);
+            }, [chain, detours, badGuesses]);
+            
+            return (
+                <div className="sidebar p-6">
+                    <h1 className="text-3xl font-black text-white">ANATOMLE</h1>
+                    
+                    {/* Your UI here */}
+                    <div className="mt-4">
+                        <p className="text-white">
+                            {target.start} → {target.end}
+                        </p>
+                        <p className="text-slate-400">
+                            Guesses: {guessesLeft}
+                        </p>
+                    </div>
+                    
+                    <input
+                        type="text"
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && submitGuess(inputValue)}
+                        className="w-full p-2 mt-4 bg-slate-800 text-white"
+                        placeholder="Type bone name..."
+                    />
+                    
+                    {gameState !== 'playing' && (
+                        <div className="mt-4">
+                            <h2 className="text-2xl font-bold text-white">
+                                {gameState === 'won' 
+                                    ? (detours.length === 0 ? '✓ Perfect Path!' : '✓ Path Complete!')
+                                    : '✗ Failed'}
+                            </h2>
+                            <button 
+                                onClick={initGame}
+                                className="mt-4 px-6 py-2 bg-white text-black font-bold"
+                            >
+                                Play Again
+                            </button>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+        
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
