@@ -37,6 +37,32 @@ function initScene(containerId) {
     controls.dampingFactor = 0.05;
     controls.minDistance = 1;
     controls.maxDistance = 10;
+    controls.enableZoom = false; // replaced by cursor-based zoom below
+
+    // Zoom toward wherever the mouse is, not the orbit center
+    renderer.domElement.addEventListener('wheel', function(e) {
+        e.preventDefault();
+        var rect = renderer.domElement.getBoundingClientRect();
+        var mouse = new THREE.Vector2(
+            ((e.clientX - rect.left) / rect.width) * 2 - 1,
+            -((e.clientY - rect.top) / rect.height) * 2 + 1
+        );
+        var ray = new THREE.Raycaster();
+        ray.setFromCamera(mouse, camera);
+        var target3d;
+        var model = getSkeletonModel();
+        if (model) {
+            var hits = ray.intersectObjects([model], true);
+            if (hits.length) target3d = hits[0].point.clone();
+        }
+        if (!target3d) target3d = ray.ray.at(camera.position.distanceTo(controls.target), new THREE.Vector3());
+        var dir = new THREE.Vector3().subVectors(target3d, camera.position);
+        var dist = camera.position.distanceTo(controls.target);
+        var step = dir.length() * 0.12;
+        if (e.deltaY < 0 && dist > controls.minDistance) camera.position.addScaledVector(dir.normalize(), step);
+        else if (e.deltaY > 0 && dist < controls.maxDistance) camera.position.addScaledVector(dir.normalize(), -step);
+        controls.update();
+    }, { passive: false });
     
     // Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
