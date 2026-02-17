@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ANATOMLE | Foot</title>
+    <title>ANATOMLE | Foot Bones</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
@@ -13,313 +13,389 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;700&display=swap');
-        body { font-family: 'EB Garamond', serif; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #d6d3d1; margin: 0; overflow: hidden; }
-        #canvas-container { position: absolute; right: 0; top: 0; width: calc(100% - 420px); height: 100vh; z-index: 10; background: linear-gradient(135deg, #334155 0%, #1e293b 100%); }
-        .sidebar { width: 420px; height: 100vh; background: rgba(15,23,42,0.98); border-right: 1px solid #334155; position: relative; z-index: 50; display: flex; flex-direction: column; pointer-events: auto; box-shadow: 2px 0 20px rgba(0,0,0,0.5); }
-        .custom-scrollbar::-webkit-scrollbar { width: 2px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }
-        .suggestion-item:hover { background: #f97316; color: white; padding-left: 1rem; cursor: pointer; }
-        .victory-bg { background: radial-gradient(circle, rgba(16,185,129,0.3) 0%, rgba(0,0,0,1) 100%); }
-        .loss-bg { background: radial-gradient(circle, rgba(239,68,68,0.3) 0%, rgba(0,0,0,1) 100%); }
-        .failure-item { animation: shake 0.3s ease-in-out; }
-        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+        * { box-sizing: border-box; }
+        body { font-family: 'EB Garamond', serif; background: #0f172a; color: #d6d3d1; margin: 0; overflow: hidden; }
+        #cv { position: fixed; top: 104px; left: 0; right: 280px; bottom: 64px; z-index: 10; background: linear-gradient(160deg, #1e293b 0%, #0f172a 100%); }
+        .scr::-webkit-scrollbar { width: 3px; }
+        .scr::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+        .shake { animation: shake .3s ease-in-out; }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+        .win-bg  { background: radial-gradient(circle, rgba(16,185,129,.2) 0%, rgba(5,10,20,.97) 100%); }
+        .loss-bg { background: radial-gradient(circle, rgba(239,68,68,.2) 0%, rgba(5,10,20,.97) 100%); }
     </style>
 </head>
 <body>
-    <div id="canvas-container"></div>
-    <div id="root"></div>
-    <script>
-        var _skeleton = null;
-        // Foot mesh substrings — the GLB uses these patterns for foot bones
-        var MESH_KEYS = ['Tibia','Fibula','Talus','Calcaneus','Navicular_boner','Cuboid_boner','Medial_cuneiform','Intermediate_cuneiform','Lateral_cuneiform','First_metatarsal','Second_metatarsal','Third_metatarsal','Fourth_metatarsal','Fifth_metatarsal','first_finger_of_foot','second_finger_of_foot','third_finger_of_foot','fourth_finger_of_foot','fifth_finger_of_foot'];
-        var BONE_TO_MESH = {
-            'Tibia':'Tibia','Fibula':'Fibula',
-            'Talus':'Talus','Calcaneus':'Calcaneus',
-            'Navicular':'Navicular_boner','Cuboid':'Cuboid_boner',
-            'Medial Cuneiform':'Medial_cuneiform','Intermediate Cuneiform':'Intermediate_cuneiform','Lateral Cuneiform':'Lateral_cuneiform',
-            'Metatarsal I':'First_metatarsal','Metatarsal II':'Second_metatarsal','Metatarsal III':'Third_metatarsal','Metatarsal IV':'Fourth_metatarsal','Metatarsal V':'Fifth_metatarsal',
-            'Proximal Phalanx I (Foot)':'first_finger_of_foot','Distal Phalanx I (Foot)':'first_finger_of_foot',
-            'Proximal Phalanx II (Foot)':'second_finger_of_foot','Middle Phalanx II (Foot)':'second_finger_of_foot','Distal Phalanx II (Foot)':'second_finger_of_foot',
-            'Proximal Phalanx III (Foot)':'third_finger_of_foot','Middle Phalanx III (Foot)':'third_finger_of_foot','Distal Phalanx III (Foot)':'third_finger_of_foot',
-            'Proximal Phalanx IV (Foot)':'fourth_finger_of_foot','Middle Phalanx IV (Foot)':'fourth_finger_of_foot','Distal Phalanx IV (Foot)':'fourth_finger_of_foot',
-            'Proximal Phalanx V (Foot)':'fifth_finger_of_foot','Middle Phalanx V (Foot)':'fifth_finger_of_foot','Distal Phalanx V (Foot)':'fifth_finger_of_foot'
-        };
-        function isMine(n){ for(var i=0;i<MESH_KEYS.length;i++) if(n.indexOf(MESH_KEYS[i])!==-1) return true; return false; }
-        window.update3D = function(bones){
-            if(!_skeleton) return;
-            _skeleton.traverse(function(node){
-                if(!node.isMesh) return;
-                if(!isMine(node.name)){node.visible=false;return;}
-                node.visible=true;
-                var m=null;
-                for(var i=0;i<bones.length;i++){var k=BONE_TO_MESH[bones[i].name];if(k&&node.name.indexOf(k)!==-1){m=bones[i];break;}}
-                if(m){
-                    var c=0x3b82f6,e=0.5;
-                    if(m.type==='start'){c=0x10b981;e=0.6;}
-                    if(m.type==='bad'){c=0xef4444;e=0.8;}
-                    if(m.type==='reveal'){c=0xd946ef;e=0.8;}
-                    node.material=new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:e,transparent:false,opacity:1});
-                } else {
-                    node.material=new THREE.MeshStandardMaterial({color:0x475569,transparent:true,opacity:0.25});
-                }
-            });
-        };
-        window.reset3D = function(){
-            if(!_skeleton) return;
-            _skeleton.traverse(function(node){
-                if(!node.isMesh) return;
-                if(isMine(node.name)){node.material=new THREE.MeshStandardMaterial({color:0x475569,transparent:true,opacity:0.25});node.visible=true;}
-                else node.visible=false;
-            });
-        };
-        window.addEventListener('DOMContentLoaded',function(){
-            var container=document.getElementById('canvas-container');
-            var scene=new THREE.Scene();
-            var camera=new THREE.PerspectiveCamera(45,container.clientWidth/container.clientHeight,0.1,1000);
-            var renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
-            renderer.setSize(container.clientWidth,container.clientHeight);
-            container.appendChild(renderer.domElement);
-            var controls=new THREE.OrbitControls(camera,renderer.domElement);
-            controls.enableDamping=true;controls.dampingFactor=0.05;
-            controls.minDistance=0.05;controls.maxDistance=3;controls.maxPolarAngle=Math.PI;
-            controls.enableZoom=false;
-            renderer.domElement.addEventListener('wheel',function(e){
-                e.preventDefault();
-                var rect=renderer.domElement.getBoundingClientRect();
-                var mouse=new THREE.Vector2(((e.clientX-rect.left)/rect.width)*2-1,-((e.clientY-rect.top)/rect.height)*2+1);
-                var ray=new THREE.Raycaster();ray.setFromCamera(mouse,camera);
-                var t3d;
-                if(_skeleton){var hits=ray.intersectObjects([_skeleton],true);if(hits.length)t3d=hits[0].point.clone();}
-                if(!t3d)t3d=ray.ray.at(camera.position.distanceTo(controls.target),new THREE.Vector3());
-                var dir=new THREE.Vector3().subVectors(t3d,camera.position);
-                var dist=camera.position.distanceTo(controls.target);
-                var step=dir.length()*0.12;
-                if(e.deltaY<0&&dist>controls.minDistance)camera.position.addScaledVector(dir.normalize(),step);
-                else if(e.deltaY>0&&dist<controls.maxDistance)camera.position.addScaledVector(dir.normalize(),-step);
-                controls.update();
-            },{passive:false});
-            scene.add(new THREE.AmbientLight(0xffffff,0.7));
-            var dl=new THREE.DirectionalLight(0xffffff,0.8);dl.position.set(5,10,7.5);scene.add(dl);
-            var dl2=new THREE.DirectionalLight(0xffffff,0.3);dl2.position.set(-5,-5,-5);scene.add(dl2);
-            var draco=new THREE.DRACOLoader();draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
-            var loader=new THREE.GLTFLoader();loader.setDRACOLoader(draco);
-            loader.load('../models/overview-skeleton.glb',function(gltf){
-                _skeleton=gltf.scene;scene.add(_skeleton);
-                var box=new THREE.Box3();
-                _skeleton.traverse(function(node){if(!node.isMesh)return;if(isMine(node.name))box.expandByObject(node);else node.visible=false;});
-                var center=box.getCenter(new THREE.Vector3());var size=box.getSize(new THREE.Vector3());
-                controls.target.copy(center);
-                var maxDim=Math.max(size.x,size.y,size.z),fov=camera.fov*(Math.PI/180);
-                camera.position.set(center.x,center.y+size.y*0.3,center.z+Math.abs(maxDim/2/Math.tan(fov/2))*2.2);
-                camera.lookAt(center);controls.update();
-                window.reset3D();
-            });
-            function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera);}animate();
-            window.addEventListener('resize',function(){camera.aspect=container.clientWidth/container.clientHeight;camera.updateProjectionMatrix();renderer.setSize(container.clientWidth,container.clientHeight);});
-        });
-    </script>
+<div id="cv"></div>
+<div id="root"></div>
 
-    <script type="text/babel">
-        const { useState, useEffect, useMemo, useCallback } = React;
+<!-- 3D ENGINE -->
+<script>
+var _sk = null;
 
-        const GRAPH = {
-            'Tibia':                    ['Fibula','Talus'],
-            'Fibula':                   ['Tibia','Talus'],
-            'Talus':                    ['Tibia','Fibula','Calcaneus','Navicular'],
-            'Calcaneus':                ['Talus','Cuboid'],
-            'Navicular':                ['Talus','Medial Cuneiform','Intermediate Cuneiform','Lateral Cuneiform'],
-            'Cuboid':                   ['Calcaneus','Lateral Cuneiform','Metatarsal IV','Metatarsal V'],
-            'Medial Cuneiform':         ['Navicular','Intermediate Cuneiform','Metatarsal I','Metatarsal II'],
-            'Intermediate Cuneiform':   ['Navicular','Medial Cuneiform','Lateral Cuneiform','Metatarsal II'],
-            'Lateral Cuneiform':        ['Navicular','Intermediate Cuneiform','Cuboid','Metatarsal III','Metatarsal IV'],
-            'Metatarsal I':             ['Medial Cuneiform','Proximal Phalanx I (Foot)'],
-            'Metatarsal II':            ['Medial Cuneiform','Intermediate Cuneiform','Proximal Phalanx II (Foot)'],
-            'Metatarsal III':           ['Lateral Cuneiform','Proximal Phalanx III (Foot)'],
-            'Metatarsal IV':            ['Lateral Cuneiform','Cuboid','Proximal Phalanx IV (Foot)'],
-            'Metatarsal V':             ['Cuboid','Proximal Phalanx V (Foot)'],
-            'Proximal Phalanx I (Foot)':  ['Metatarsal I','Distal Phalanx I (Foot)'],
-            'Distal Phalanx I (Foot)':    ['Proximal Phalanx I (Foot)'],
-            'Proximal Phalanx II (Foot)': ['Metatarsal II','Middle Phalanx II (Foot)'],
-            'Middle Phalanx II (Foot)':   ['Proximal Phalanx II (Foot)','Distal Phalanx II (Foot)'],
-            'Distal Phalanx II (Foot)':   ['Middle Phalanx II (Foot)'],
-            'Proximal Phalanx III (Foot)':['Metatarsal III','Middle Phalanx III (Foot)'],
-            'Middle Phalanx III (Foot)':  ['Proximal Phalanx III (Foot)','Distal Phalanx III (Foot)'],
-            'Distal Phalanx III (Foot)':  ['Middle Phalanx III (Foot)'],
-            'Proximal Phalanx IV (Foot)': ['Metatarsal IV','Middle Phalanx IV (Foot)'],
-            'Middle Phalanx IV (Foot)':   ['Proximal Phalanx IV (Foot)','Distal Phalanx IV (Foot)'],
-            'Distal Phalanx IV (Foot)':   ['Middle Phalanx IV (Foot)'],
-            'Proximal Phalanx V (Foot)':  ['Metatarsal V','Middle Phalanx V (Foot)'],
-            'Middle Phalanx V (Foot)':    ['Proximal Phalanx V (Foot)','Distal Phalanx V (Foot)'],
-            'Distal Phalanx V (Foot)':    ['Middle Phalanx V (Foot)'],
-        };
+// Foot mesh substrings — using known GLB node name patterns
+var FOOT_KEYS = ['Tibia','Fibula','Talus','Calcaneus','Navicular_boner','Cuboid_boner',
+    'Medial_cuneiform','Intermediate_cuneiform','Lateral_cuneiform',
+    'First_metatarsal','Second_metatarsal','Third_metatarsal','Fourth_metatarsal','Fifth_metatarsal',
+    'finger_of_foot'];
 
-        const GROUPS = [
-            { label: '🦴 Lower Leg',         bones: ['Tibia','Fibula'] },
-            { label: '🦶 Tarsals',            bones: ['Talus','Calcaneus','Navicular','Cuboid','Medial Cuneiform','Intermediate Cuneiform','Lateral Cuneiform'] },
-            { label: '👟 Metatarsals',        bones: ['Metatarsal I','Metatarsal II','Metatarsal III','Metatarsal IV','Metatarsal V'] },
-            { label: '👍 Big Toe (I)',         bones: ['Proximal Phalanx I (Foot)','Distal Phalanx I (Foot)'] },
-            { label: '☝️ 2nd Toe (II)',       bones: ['Proximal Phalanx II (Foot)','Middle Phalanx II (Foot)','Distal Phalanx II (Foot)'] },
-            { label: '🖕 3rd Toe (III)',       bones: ['Proximal Phalanx III (Foot)','Middle Phalanx III (Foot)','Distal Phalanx III (Foot)'] },
-            { label: '💍 4th Toe (IV)',        bones: ['Proximal Phalanx IV (Foot)','Middle Phalanx IV (Foot)','Distal Phalanx IV (Foot)'] },
-            { label: '🤙 Little Toe (V)',      bones: ['Proximal Phalanx V (Foot)','Middle Phalanx V (Foot)','Distal Phalanx V (Foot)'] },
-        ];
+var FOOT_B2M = {
+    'Tibia':'Tibia','Fibula':'Fibula',
+    'Talus':'Talus','Calcaneus':'Calcaneus',
+    'Navicular':'Navicular_boner','Cuboid':'Cuboid_boner',
+    'Medial Cuneiform':'Medial_cuneiform','Intermediate Cuneiform':'Intermediate_cuneiform','Lateral Cuneiform':'Lateral_cuneiform',
+    'Metatarsal I':'First_metatarsal','Metatarsal II':'Second_metatarsal',
+    'Metatarsal III':'Third_metatarsal','Metatarsal IV':'Fourth_metatarsal','Metatarsal V':'Fifth_metatarsal',
+    'Proximal Phalanx I (Foot)':'first_finger_of_foot','Distal Phalanx I (Foot)':'first_finger_of_foot',
+    'Proximal Phalanx II (Foot)':'second_finger_of_foot','Middle Phalanx II (Foot)':'second_finger_of_foot','Distal Phalanx II (Foot)':'second_finger_of_foot',
+    'Proximal Phalanx III (Foot)':'third_finger_of_foot','Middle Phalanx III (Foot)':'third_finger_of_foot','Distal Phalanx III (Foot)':'third_finger_of_foot',
+    'Proximal Phalanx IV (Foot)':'fourth_finger_of_foot','Middle Phalanx IV (Foot)':'fourth_finger_of_foot','Distal Phalanx IV (Foot)':'fourth_finger_of_foot',
+    'Proximal Phalanx V (Foot)':'fifth_finger_of_foot','Middle Phalanx V (Foot)':'fifth_finger_of_foot','Distal Phalanx V (Foot)':'fifth_finger_of_foot'
+};
 
-        const ALL = Object.keys(GRAPH);
-        const TOTAL = ALL.length; // 29 — Tibia + Fibula + 27 foot bones
+function isFoot(n) {
+    for (var i=0;i<FOOT_KEYS.length;i++) if (n.indexOf(FOOT_KEYS[i])!==-1) return true;
+    return false;
+}
 
-        function App() {
-            const [guessed, setGuessed] = useState(new Set());
-            const [bad, setBad]         = useState([]);
-            const [left, setLeft]       = useState(0);
-            const [max, setMax]         = useState(0);
-            const [input, setInput]     = useState('');
-            const [state, setState]     = useState('playing');
-            const [reveal, setReveal]   = useState(false);
+window.update3D = function(bones) {
+    if (!_sk) return;
+    _sk.traverse(function(node) {
+        if (!node.isMesh) return;
+        if (!isFoot(node.name)) { node.visible=false; return; }
+        node.visible = true;
+        var m = null;
+        for (var i=0;i<bones.length;i++) {
+            var k = FOOT_B2M[bones[i].name];
+            if (k && node.name.indexOf(k)!==-1) { m=bones[i]; break; }
+        }
+        if (m) {
+            var c=0x3b82f6, e=0.5;
+            if (m.type==='start')  { c=0x10b981; e=0.6; }
+            if (m.type==='bad')    { c=0xef4444; e=0.8; }
+            if (m.type==='reveal') { c=0xd946ef; e=0.8; }
+            node.material = new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:e,transparent:false,opacity:1});
+        } else {
+            node.material = new THREE.MeshStandardMaterial({color:0x334155,transparent:true,opacity:0.3});
+        }
+    });
+};
 
-            const START = 'Tibia';
+window.reset3D = function() {
+    if (!_sk) return;
+    _sk.traverse(function(node) {
+        if (!node.isMesh) return;
+        if (isFoot(node.name)) {
+            node.material = new THREE.MeshStandardMaterial({color:0x334155,transparent:true,opacity:0.3});
+            node.visible = true;
+        } else { node.visible = false; }
+    });
+};
 
-            const init = useCallback(() => {
-                const total = (TOTAL - 1) + 5;
-                setGuessed(new Set([START]));
-                setBad([]); setLeft(total); setMax(total);
-                setInput(''); setState('playing'); setReveal(false);
-                if (window.reset3D) window.reset3D();
-            }, []);
+window.addEventListener('DOMContentLoaded', function() {
+    var cont = document.getElementById('cv');
+    var scene = new THREE.Scene();
+    var cam = new THREE.PerspectiveCamera(45, cont.clientWidth/cont.clientHeight, 0.01, 100);
+    var renderer = new THREE.WebGLRenderer({antialias:true,alpha:true});
+    renderer.setSize(cont.clientWidth, cont.clientHeight);
+    cont.appendChild(renderer.domElement);
 
-            useEffect(() => { init(); }, [init]);
+    var ctrl = new THREE.OrbitControls(cam, renderer.domElement);
+    ctrl.enableDamping=true; ctrl.dampingFactor=0.05; ctrl.maxPolarAngle=Math.PI;
+    ctrl.minDistance=0.05; ctrl.maxDistance=2; ctrl.enableZoom=false;
 
-            const frontier = useMemo(() => {
-                const f = new Set();
-                guessed.forEach(b => { (GRAPH[b]||[]).forEach(n => { if(!guessed.has(n)) f.add(n); }); });
-                return f;
-            }, [guessed]);
+    renderer.domElement.addEventListener('wheel', function(e) {
+        e.preventDefault();
+        var rect=renderer.domElement.getBoundingClientRect();
+        var mouse=new THREE.Vector2(((e.clientX-rect.left)/rect.width)*2-1,-((e.clientY-rect.top)/rect.height)*2+1);
+        var ray=new THREE.Raycaster(); ray.setFromCamera(mouse,cam);
+        var t3d;
+        if(_sk){var h=ray.intersectObjects([_sk],true);if(h.length)t3d=h[0].point.clone();}
+        if(!t3d)t3d=ray.ray.at(cam.position.distanceTo(ctrl.target),new THREE.Vector3());
+        var dir=new THREE.Vector3().subVectors(t3d,cam.position);
+        var dist=cam.position.distanceTo(ctrl.target);
+        var step=dir.length()*0.12;
+        if(e.deltaY<0&&dist>ctrl.minDistance)cam.position.addScaledVector(dir.normalize(),step);
+        else if(e.deltaY>0&&dist<ctrl.maxDistance)cam.position.addScaledVector(dir.normalize(),-step);
+        ctrl.update();
+    },{passive:false});
 
-            useEffect(() => {
-                const h = [];
-                guessed.forEach(b => h.push({name:b, type: b===START ? 'start' : 'found'}));
-                if (reveal && state==='lost') ALL.forEach(b => { if(!guessed.has(b)) h.push({name:b,type:'reveal'}); });
-                bad.forEach(b => h.push({name:b,type:'bad'}));
-                if (window.update3D) window.update3D(h);
-            }, [guessed, bad, reveal, state]);
+    scene.add(new THREE.AmbientLight(0xffffff,0.7));
+    var dl=new THREE.DirectionalLight(0xffffff,0.9); dl.position.set(3,8,5); scene.add(dl);
+    var dl2=new THREE.DirectionalLight(0xffffff,0.3); dl2.position.set(-5,-3,-5); scene.add(dl2);
 
-            const submit = (g) => {
-                if (state!=='playing'||guessed.has(g)||!g) return;
-                const nl = left - 1; setLeft(nl);
-                if (frontier.has(g)) {
-                    const ng = new Set(guessed); ng.add(g); setGuessed(ng);
-                    if (ng.size===TOTAL) { setState('won'); setInput(''); return; }
-                    if (nl<=0) setState('lost');
-                } else {
-                    setBad(p=>[...new Set([g,...p])]);
-                    if (nl<=0) setState('lost');
-                }
-                setInput('');
-            };
+    var draco=new THREE.DRACOLoader(); draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
+    var loader=new THREE.GLTFLoader(); loader.setDRACOLoader(draco);
+    loader.load('../models/overview-skeleton.glb', function(gltf) {
+        _sk = gltf.scene; scene.add(_sk);
+        var box = new THREE.Box3();
+        _sk.traverse(function(n){ if(!n.isMesh) return; if(isFoot(n.name)) box.expandByObject(n); else n.visible=false; });
+        if (box.isEmpty()) { console.warn('No foot meshes found'); return; }
+        var center=box.getCenter(new THREE.Vector3()); var size=box.getSize(new THREE.Vector3());
+        ctrl.target.copy(center);
+        var fov=cam.fov*(Math.PI/180); var maxDim=Math.max(size.x,size.y,size.z);
+        cam.position.set(center.x, center.y+size.y*0.2, center.z+Math.abs(maxDim/2/Math.tan(fov/2))*2.4);
+        cam.lookAt(center); ctrl.update();
+        window.reset3D();
+    });
 
-            const suggestions = useMemo(() => {
-                if (!input) return [];
-                return ALL.filter(b=>b.toLowerCase().includes(input.toLowerCase())&&!guessed.has(b)&&!bad.includes(b)).slice(0,5);
-            }, [input, guessed, bad]);
+    function animate(){ requestAnimationFrame(animate); ctrl.update(); renderer.render(scene,cam); }
+    animate();
 
-            const pct = Math.round((guessed.size/TOTAL)*100);
+    var ro = new ResizeObserver(function(){
+        cam.aspect=cont.clientWidth/cont.clientHeight; cam.updateProjectionMatrix();
+        renderer.setSize(cont.clientWidth,cont.clientHeight);
+    }); ro.observe(cont);
+});
+</script>
 
-            return (
-                <div className="sidebar p-5 flex flex-col h-screen">
-                    <header className="mb-3">
-                        <div className="mb-1"><a href="../index.html" className="text-slate-500 hover:text-white text-xs uppercase tracking-widest">← Menu</a></div>
-                        <h1 className="text-3xl font-black text-white tracking-tighter uppercase">Anatomle</h1>
-                        <div className="flex justify-between items-center border-b border-slate-700 pb-2">
-                            <span className="text-[9px] text-orange-500/70 tracking-[0.3em] uppercase">🦶 Foot · Flood Fill</span>
-                            <span className={`text-xs font-bold ${left < 5 ? 'text-red-400' : 'text-emerald-400'}`}>{left} guesses left</span>
-                        </div>
-                    </header>
+<!-- REACT UI -->
+<script type="text/babel">
+const { useState, useEffect, useMemo, useCallback, useRef } = React;
 
-                    <div className="bg-slate-800/40 p-3 border border-slate-700 mb-3 rounded text-[9px] text-slate-400 leading-relaxed">
-                        Start: <span className="text-emerald-400 font-bold">Tibia</span>. Name any bone <span className="text-blue-400 font-bold">physically touching</span> a found bone. Identify all <span className="text-white font-bold">{TOTAL}</span> bones to win.
+const GRAPH = {
+    'Tibia':                     ['Fibula','Talus'],
+    'Fibula':                    ['Tibia','Talus'],
+    'Talus':                     ['Tibia','Fibula','Calcaneus','Navicular'],
+    'Calcaneus':                 ['Talus','Cuboid'],
+    'Navicular':                 ['Talus','Medial Cuneiform','Intermediate Cuneiform','Lateral Cuneiform'],
+    'Cuboid':                    ['Calcaneus','Lateral Cuneiform','Metatarsal IV','Metatarsal V'],
+    'Medial Cuneiform':          ['Navicular','Intermediate Cuneiform','Metatarsal I','Metatarsal II'],
+    'Intermediate Cuneiform':    ['Navicular','Medial Cuneiform','Lateral Cuneiform','Metatarsal II'],
+    'Lateral Cuneiform':         ['Navicular','Intermediate Cuneiform','Cuboid','Metatarsal III','Metatarsal IV'],
+    'Metatarsal I':              ['Medial Cuneiform','Proximal Phalanx I (Foot)'],
+    'Metatarsal II':             ['Medial Cuneiform','Intermediate Cuneiform','Proximal Phalanx II (Foot)'],
+    'Metatarsal III':            ['Lateral Cuneiform','Proximal Phalanx III (Foot)'],
+    'Metatarsal IV':             ['Lateral Cuneiform','Cuboid','Proximal Phalanx IV (Foot)'],
+    'Metatarsal V':              ['Cuboid','Proximal Phalanx V (Foot)'],
+    'Proximal Phalanx I (Foot)': ['Metatarsal I','Distal Phalanx I (Foot)'],
+    'Distal Phalanx I (Foot)':   ['Proximal Phalanx I (Foot)'],
+    'Proximal Phalanx II (Foot)':['Metatarsal II','Middle Phalanx II (Foot)'],
+    'Middle Phalanx II (Foot)':  ['Proximal Phalanx II (Foot)','Distal Phalanx II (Foot)'],
+    'Distal Phalanx II (Foot)':  ['Middle Phalanx II (Foot)'],
+    'Proximal Phalanx III (Foot)':['Metatarsal III','Middle Phalanx III (Foot)'],
+    'Middle Phalanx III (Foot)': ['Proximal Phalanx III (Foot)','Distal Phalanx III (Foot)'],
+    'Distal Phalanx III (Foot)': ['Middle Phalanx III (Foot)'],
+    'Proximal Phalanx IV (Foot)':['Metatarsal IV','Middle Phalanx IV (Foot)'],
+    'Middle Phalanx IV (Foot)':  ['Proximal Phalanx IV (Foot)','Distal Phalanx IV (Foot)'],
+    'Distal Phalanx IV (Foot)':  ['Middle Phalanx IV (Foot)'],
+    'Proximal Phalanx V (Foot)': ['Metatarsal V','Middle Phalanx V (Foot)'],
+    'Middle Phalanx V (Foot)':   ['Proximal Phalanx V (Foot)','Distal Phalanx V (Foot)'],
+    'Distal Phalanx V (Foot)':   ['Middle Phalanx V (Foot)'],
+};
+const ALL   = Object.keys(GRAPH);
+const TOTAL = ALL.length; // 29
+const START = 'Tibia';
+
+function App() {
+    const [guessed, setGuessed] = useState(() => new Set([START]));
+    const [bad,     setBad]     = useState([]);
+    const [left,    setLeft]    = useState((TOTAL - 1) + 5);
+    const [max,     setMax]     = useState((TOTAL - 1) + 5);
+    const [input,   setInput]   = useState('');
+    const [selIdx,  setSelIdx]  = useState(-1);
+    const [phase,   setPhase]   = useState('playing');
+    const [reveal,  setReveal]  = useState(false);
+    const inputRef = useRef(null);
+
+    const startNew = useCallback(() => {
+        const total = (TOTAL - 1) + 5;
+        setGuessed(new Set([START]));
+        setBad([]); setLeft(total); setMax(total);
+        setInput(''); setSelIdx(-1); setPhase('playing'); setReveal(false);
+        try { window.reset3D && window.reset3D(); } catch(e) {}
+        setTimeout(() => inputRef.current?.focus(), 50);
+    }, []);
+
+    useEffect(() => { startNew(); }, []);
+
+    const frontier = useMemo(() => {
+        const f = new Set();
+        guessed.forEach(b => { (GRAPH[b]||[]).forEach(n => { if (!guessed.has(n)) f.add(n); }); });
+        return f;
+    }, [guessed]);
+
+    useEffect(() => {
+        const h = [];
+        guessed.forEach(b => h.push({name:b, type: b===START ? 'start' : 'found'}));
+        if (reveal && phase==='lost') ALL.forEach(b => { if (!guessed.has(b)) h.push({name:b,type:'reveal'}); });
+        bad.forEach(b => h.push({name:b,type:'bad'}));
+        try { window.update3D && window.update3D(h); } catch(e) {}
+    }, [guessed, bad, reveal, phase]);
+
+    const suggestions = useMemo(() => {
+        if (!input.trim()) return [];
+        return ALL.filter(b =>
+            b.toLowerCase().includes(input.toLowerCase()) &&
+            !guessed.has(b) && !bad.includes(b)
+        ).slice(0, 7);
+    }, [input, guessed, bad]);
+
+    useEffect(() => { setSelIdx(-1); }, [suggestions.length]);
+
+    const submit = useCallback((g) => {
+        if (phase !== 'playing' || !g || !ALL.includes(g) || guessed.has(g)) return;
+        const nl = left - 1; setLeft(nl);
+        if (frontier.has(g)) {
+            const ng = new Set(guessed); ng.add(g); setGuessed(ng);
+            if (ng.size === TOTAL) { setPhase('won'); setInput(''); return; }
+            if (nl <= 0) { setPhase('lost'); setInput(''); return; }
+        } else {
+            setBad(p => [...new Set([g, ...p])]);
+            if (nl <= 0) { setPhase('lost'); setInput(''); return; }
+        }
+        setInput(''); setSelIdx(-1);
+        setTimeout(() => inputRef.current?.focus(), 10);
+    }, [phase, guessed, frontier, left, bad]);
+
+    const handleKey = (e) => {
+        if (e.key === 'ArrowDown') { e.preventDefault(); setSelIdx(i => Math.min(i+1, suggestions.length-1)); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); setSelIdx(i => Math.max(i-1, 0)); }
+        else if (e.key === 'Enter') {
+            if (selIdx >= 0 && suggestions[selIdx]) submit(suggestions[selIdx]);
+            else if (suggestions.length === 1) submit(suggestions[0]);
+        }
+        else if (e.key === 'Escape') { setInput(''); setSelIdx(-1); }
+    };
+
+    const pct = Math.round((guessed.size / TOTAL) * 100);
+    const foundList = [...guessed].filter(b => b !== START);
+
+    const NAV_H = 56, BAR_H = 48, SRCH_H = 64, PANEL_W = 280;
+    const secHead = (label, count, color) => (
+        <div style={{padding:'9px 14px 6px',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
+            <span style={{fontSize:8,color,textTransform:'uppercase',letterSpacing:'0.25em',fontWeight:700}}>{label}</span>
+            <span style={{fontSize:10,color,fontWeight:700}}>{count}</span>
+        </div>
+    );
+
+    return (
+        <>
+        {/* NAVBAR */}
+        <div style={{position:'fixed',top:0,left:0,right:0,height:NAV_H,zIndex:200,
+            background:'rgba(10,15,30,0.98)',borderBottom:'1px solid #1e293b',
+            display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 20px'}}>
+            <div style={{display:'flex',alignItems:'center',gap:14}}>
+                <h1 style={{fontSize:22,fontWeight:900,color:'white',margin:0,letterSpacing:'-0.05em',textTransform:'uppercase'}}>Anatomle</h1>
+                <span style={{fontSize:9,color:'#f97316',letterSpacing:'0.3em',textTransform:'uppercase',opacity:0.9}}>🦶 Foot Bones</span>
+            </div>
+            <div style={{display:'flex',alignItems:'center',gap:20}}>
+                <span style={{fontSize:10,color:'#94a3b8'}}>{guessed.size}/{TOTAL} found</span>
+                <a href="../index.html" style={{fontSize:9,color:'#64748b',textDecoration:'none',textTransform:'uppercase',letterSpacing:'0.2em'}}>← Menu</a>
+            </div>
+        </div>
+
+        {/* CHALLENGE BAR */}
+        <div style={{position:'fixed',top:NAV_H,left:0,right:PANEL_W,height:BAR_H,zIndex:100,
+            background:'rgba(10,15,30,0.92)',borderBottom:'1px solid #1e293b',
+            display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 18px'}}>
+            <span style={{fontSize:10,color:'#94a3b8'}}>
+                Start: <span style={{color:'#34d399',fontWeight:700}}>{START}</span>
+                &nbsp;·&nbsp; Name any bone <span style={{color:'#60a5fa',fontWeight:600}}>touching</span> a found bone
+            </span>
+            <div style={{display:'flex',alignItems:'center',gap:10}}>
+                <div style={{width:90,height:5,background:'#1e293b',borderRadius:3,overflow:'hidden'}}>
+                    <div style={{width:`${pct}%`,height:'100%',background:pct===100?'#10b981':'#f97316',transition:'width .4s'}}/>
+                </div>
+                <span style={{fontSize:10,fontWeight:700,color:left<5?'#f87171':'#34d399'}}>{left} guesses</span>
+            </div>
+        </div>
+
+        {/* RIGHT PANEL */}
+        <div style={{position:'fixed',top:NAV_H,right:0,width:PANEL_W,bottom:0,zIndex:100,
+            background:'rgba(10,15,30,0.98)',borderLeft:'1px solid #1e293b',display:'flex',flexDirection:'column'}}>
+            <div style={{flex:'1 1 0',overflow:'hidden',display:'flex',flexDirection:'column',borderBottom:'1px solid #1e293b'}}>
+                {secHead('✓ Correct', guessed.size, '#34d399')}
+                <div className="scr" style={{overflowY:'auto',flex:1,padding:'0 12px 10px'}}>
+                    <div style={{padding:'5px 9px',marginBottom:3,background:'rgba(16,185,129,0.12)',border:'1px solid rgba(16,185,129,0.3)',borderRadius:3,fontSize:9,color:'#34d399',fontWeight:700,textTransform:'uppercase',display:'flex',justifyContent:'space-between'}}>
+                        <span>{START}</span><span>📍</span>
                     </div>
+                    {foundList.map(b => (
+                        <div key={b} style={{padding:'5px 9px',marginBottom:3,background:'rgba(59,130,246,0.1)',border:'1px solid rgba(59,130,246,0.25)',borderRadius:3,fontSize:9,color:'#93c5fd',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.04em'}}>{b}</div>
+                    ))}
+                </div>
+            </div>
+            <div style={{flex:'0 0 auto',maxHeight:'38%',overflow:'hidden',display:'flex',flexDirection:'column',borderBottom:'1px solid #1e293b'}}>
+                {secHead('✗ Not Adjacent', bad.length, '#f87171')}
+                <div className="scr" style={{overflowY:'auto',flex:1,padding:'0 12px 10px'}}>
+                    {bad.length === 0 && <div style={{fontSize:9,color:'#1e293b',textAlign:'center',marginTop:6}}>None yet</div>}
+                    {bad.map(b => (
+                        <div key={b} className="shake" style={{padding:'5px 9px',marginBottom:3,background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.25)',borderRadius:3,fontSize:9,color:'#fca5a5',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.04em'}}>{b}</div>
+                    ))}
+                </div>
+            </div>
+            <div style={{padding:12,flexShrink:0}}>
+                <button onClick={startNew} style={{width:'100%',padding:'11px 0',background:'white',color:'black',border:'none',fontFamily:'EB Garamond,serif',fontWeight:900,fontSize:10,textTransform:'uppercase',letterSpacing:'0.2em',cursor:'pointer'}}>
+                    New Foot
+                </button>
+            </div>
+        </div>
 
-                    <div className="mb-3">
-                        <div className="flex justify-between text-[8px] uppercase text-slate-500 mb-1">
-                            <span>Bones found</span><span className="text-white font-bold">{guessed.size} / {TOTAL}</span>
-                        </div>
-                        <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                            <div className="h-full rounded-full transition-all duration-500" style={{width:`${pct}%`,background:pct===100?'#10b981':'#f97316'}} />
-                        </div>
-                    </div>
-
-                    {bad.length > 0 && (
-                        <div className="mb-2">
-                            <p className="text-[8px] text-red-400 uppercase font-bold mb-1 tracking-wider">❌ Not Adjacent</p>
-                            <div className="flex flex-wrap gap-1">
-                                {bad.map((g,i)=><div key={i} className="failure-item text-[8px] font-bold text-red-400 bg-red-900/30 px-2 py-0.5 border border-red-800/40 uppercase rounded">{g}</div>)}
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="flex-1 overflow-y-auto custom-scrollbar mb-3 space-y-2">
-                        {GROUPS.map(group => (
-                            <div key={group.label}>
-                                <p className="text-[7px] text-slate-600 uppercase font-bold mb-1 tracking-wider">{group.label}</p>
-                                <div className="grid grid-cols-2 gap-1">
-                                    {group.bones.map(bone => {
-                                        const found=guessed.has(bone), isStart=bone===START;
-                                        const isReveal=reveal&&state==='lost'&&!found;
-                                        return (
-                                            <div key={bone} className={`p-1.5 border text-[7px] font-bold uppercase tracking-tight rounded transition-all ${
-                                                isStart?'bg-emerald-900/40 border-emerald-600/60 text-emerald-400'
-                                                :found?'bg-slate-800 border-slate-600 text-blue-400'
-                                                :isReveal?'bg-fuchsia-900/30 border-fuchsia-700/40 text-fuchsia-400'
-                                                :'border-dashed border-slate-700/30 text-slate-700 opacity-30'
-                                            }`}>
-                                                {found||isReveal?bone:'???'}{isStart&&' 📍'}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+        {/* SEARCH BAR */}
+        <div style={{position:'fixed',bottom:0,left:0,right:PANEL_W,height:SRCH_H,zIndex:150,
+            background:'rgba(10,15,30,0.98)',borderTop:'1px solid #1e293b',padding:'10px 14px',display:'flex',alignItems:'center'}}>
+            <div style={{flex:1,position:'relative'}}>
+                {suggestions.length > 0 && (
+                    <div style={{position:'absolute',bottom:'100%',left:0,right:0,background:'#0f172a',border:'1px solid #334155',borderBottom:'none',zIndex:300,maxHeight:280,overflowY:'auto'}}>
+                        {suggestions.map((s,i) => (
+                            <div key={s} onClick={() => submit(s)}
+                                style={{padding:'10px 14px',fontSize:10,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',
+                                    cursor:'pointer',color:i===selIdx?'white':'#94a3b8',
+                                    background:i===selIdx?'#c2410c':'transparent',
+                                    borderBottom:'1px solid #1e293b'}}>
+                                {s}
                             </div>
                         ))}
                     </div>
+                )}
+                <input ref={inputRef}
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={handleKey}
+                    disabled={phase !== 'playing'}
+                    placeholder={phase==='playing' ? "Type to search, then select from list above ↑" : "Game over — click New Foot"}
+                    style={{width:'100%',background:'#1e293b',border:'1px solid #334155',padding:'10px 14px',
+                        color:'white',fontFamily:'EB Garamond,serif',fontSize:11,fontStyle:'italic',outline:'none',
+                        borderColor: input && suggestions.length===0 ? '#ef4444' : '#334155'}}
+                />
+            </div>
+        </div>
 
-                    <div className="mt-auto space-y-2">
-                        <div className="relative">
-                            <input
-                                className="w-full bg-slate-900 border border-slate-700 p-3 text-white outline-none focus:border-orange-500 text-xs italic"
-                                placeholder="Name a touching foot bone..."
-                                value={input}
-                                onChange={e=>setInput(e.target.value)}
-                                onKeyDown={e=>{if(e.key==='Enter')submit(suggestions.length>0?suggestions[0]:input.trim());}}
-                                disabled={state!=='playing'}
-                            />
-                            {suggestions.length>0&&(
-                                <div className="absolute bottom-full left-0 w-full bg-slate-900 border border-slate-700 z-[60] shadow-2xl">
-                                    {suggestions.map(s=><div key={s} onClick={()=>submit(s)} className="suggestion-item p-3 text-[10px] uppercase font-black transition-all">{s}</div>)}
-                                </div>
-                            )}
-                        </div>
-                        <button onClick={init} className="w-full py-3 bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-orange-400 hover:text-white transition-all">New Foot</button>
-                    </div>
-
-                    {state!=='playing'&&!reveal&&(
-                        <div className={`fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-xl ${state==='won'?'victory-bg':'loss-bg'}`}>
-                            <div className="text-center p-12 bg-slate-950/90 border border-white/10 rounded-3xl max-w-md">
-                                <h2 className="text-5xl font-black text-white mb-2 tracking-tighter uppercase">
-                                    {state==='won'?'🦶 Complete!':'✗ Incomplete'}
-                                </h2>
-                                <p className="text-slate-400 text-sm mb-6">
-                                    {state==='won'?`All ${TOTAL} foot bones! ${max-left} guesses used.`:`Found ${guessed.size}/${TOTAL}. ${bad.length} non-adjacent guess${bad.length!==1?'es':''}.`}
-                                </p>
-                                {state==='lost'&&<div className="mb-6"><button onClick={()=>setReveal(true)} className="px-6 py-3 bg-fuchsia-500 text-white font-black text-xs uppercase hover:bg-fuchsia-400">👁️ Reveal Missing</button></div>}
-                                <div className="flex gap-3 justify-center">
-                                    <button onClick={init} className="px-8 py-4 bg-white text-black font-black text-xs uppercase hover:scale-105 transition-transform">Play Again</button>
-                                    <a href="../index.html" className="px-8 py-4 bg-slate-700 text-white font-black text-xs uppercase hover:bg-slate-600 flex items-center">Menu</a>
-                                </div>
-                            </div>
+        {/* END OVERLAY */}
+        {phase !== 'playing' && !reveal && (
+            <div style={{position:'fixed',inset:0,zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(18px)'}}
+                className={phase==='won'?'win-bg':'loss-bg'}>
+                <div style={{textAlign:'center',padding:48,background:'rgba(10,15,30,0.95)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:24,maxWidth:420}}>
+                    <h2 style={{fontSize:46,fontWeight:900,color:'white',margin:'0 0 8px',letterSpacing:'-0.05em',textTransform:'uppercase'}}>
+                        {phase==='won' ? '🦶 Complete!' : '✗ Incomplete'}
+                    </h2>
+                    <p style={{color:'#94a3b8',fontSize:14,marginBottom:24}}>
+                        {phase==='won'
+                            ? `All ${TOTAL} foot bones identified! ${max-left} guesses used.`
+                            : `Found ${guessed.size}/${TOTAL} bones. ${bad.length} non-adjacent guess${bad.length!==1?'es':''}.`}
+                    </p>
+                    {phase==='lost' && (
+                        <div style={{marginBottom:20}}>
+                            <button onClick={() => setReveal(true)} style={{padding:'10px 22px',background:'#a855f7',color:'white',border:'none',fontWeight:900,fontSize:10,textTransform:'uppercase',cursor:'pointer',letterSpacing:'0.15em',fontFamily:'EB Garamond,serif'}}>
+                                👁 Reveal Missing
+                            </button>
                         </div>
                     )}
+                    <div style={{display:'flex',gap:12,justifyContent:'center'}}>
+                        <button onClick={startNew} style={{padding:'13px 32px',background:'white',color:'black',border:'none',fontWeight:900,fontSize:10,textTransform:'uppercase',letterSpacing:'0.15em',cursor:'pointer',fontFamily:'EB Garamond,serif'}}>
+                            Play Again
+                        </button>
+                        <a href="../index.html" style={{padding:'13px 32px',background:'#1e293b',color:'white',fontWeight:900,fontSize:10,textTransform:'uppercase',letterSpacing:'0.1em',textDecoration:'none',display:'flex',alignItems:'center',fontFamily:'EB Garamond,serif'}}>
+                            Menu
+                        </a>
+                    </div>
                 </div>
-            );
-        }
-        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-    </script>
+            </div>
+        )}
+        </>
+    );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
 </body>
 </html>
