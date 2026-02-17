@@ -70,9 +70,9 @@
             'Atlas (C1)': ['Occipital Bone', 'Axis (C2)'],
             'Axis (C2)': ['Atlas (C1)', 'Cervical Vertebrae'],
             'Cervical Vertebrae': ['Axis (C2)', 'Thoracic Vertebrae'],
-            'Thoracic Vertebrae': ['Cervical Vertebrae', 'Lumbar Vertebrae', 'Ribs', 'Sternum'],
-            'Sternum': ['Thoracic Vertebrae', 'Clavicle', 'Ribs'],
-            'Ribs': ['Thoracic Vertebrae', 'Sternum'],
+            'Thoracic Vertebrae': ['Cervical Vertebrae', 'Lumbar Vertebrae', 'Ribs'], // Removed direct Sternum - ribs are the bridge
+            'Sternum': ['Clavicle', 'Ribs'], // Removed direct Thoracic - connected via ribs
+            'Ribs': ['Thoracic Vertebrae', 'Sternum'], // Ribs bridge spine to sternum
             'Clavicle': ['Sternum', 'Scapula'],
             'Scapula': ['Clavicle', 'Humerus'],
             'Humerus': ['Scapula', 'Radius', 'Ulna'],
@@ -146,12 +146,26 @@
             return null;
         };
 
+        // Check if a bone is on ANY valid path from start to target
+        const isOnValidPath = (bone, start, target) => {
+            // Can we reach the bone from start?
+            const pathToGuess = findShortestPath(start, bone);
+            if (!pathToGuess) return false;
+            
+            // Can we reach target from the bone?
+            const pathFromGuess = findShortestPath(bone, target);
+            if (!pathFromGuess) return false;
+            
+            return true; // Valid path exists through this bone
+        };
+
         function App() {
             const [target, setTarget] = useState({ start: '', end: '', path: [] });
             const [chain, setChain] = useState([]);
             const [guessesLeft, setGuessesLeft] = useState(10);
             const [maxGuesses, setMaxGuesses] = useState(10);
-            const [badGuesses, setBadGuesses] = useState([]);
+            const [badGuesses, setBadGuesses] = useState([]); // Off any valid path
+            const [detours, setDetours] = useState([]); // Valid but not on optimal path
             const [inputValue, setInputValue] = useState('');
             const [gameState, setGameState] = useState('playing');
             const [showReveal, setShowReveal] = useState(false);
@@ -178,7 +192,8 @@
                 const totalGuesses = optimalGuesses + 3;
                 setGuessesLeft(totalGuesses);
                 setMaxGuesses(totalGuesses); 
-                setBadGuesses([]); 
+                setBadGuesses([]);
+                setDetours([]); // Reset detours
                 setInputValue(''); 
                 setGameState('playing');
                 setShowReveal(false);
@@ -213,48 +228,54 @@
                         }
                     });
                     
+                    // Show detours (valid but suboptimal)
+                    detours.forEach(g => highlights.push({ name: g, type: 'detour' }));
+                    
                     // Show bad guesses
                     badGuesses.forEach(g => highlights.push({ name: g, type: 'bad' }));
                 }
                 
                 if (window.update3D) window.update3D(highlights);
-            }, [chain, badGuesses, showReveal, gameState]);
+            }, [chain, badGuesses, detours, showReveal, gameState]);
 
             const submitGuess = (guess) => {
                 if (gameState !== 'playing' || guess === target.end) return;
                 
-                // Check if guess is on the correct path
-                const isOnCorrectPath = target.path.includes(guess);
+                // Check if guess is on the optimal (shortest) path
+                const isOnOptimalPath = target.path.includes(guess);
                 
-                if (!isOnCorrectPath) {
-                    // Off-path guess = failure
-                    setBadGuesses(prev => [...new Set([guess, ...prev])]);
+                if (isOnOptimalPath) {
+                    // OPTIMAL PATH: On the shortest route ✓
                     setGuessesLeft(prev => prev - 1);
+                    setChain(prev => prev.map(item => 
+                        item.bone === guess ? { ...item, guessed: true } : item
+                    ));
                     
-                    if (guessesLeft <= 1) {
-                        setGameState('lost');
+                    // Check win condition: all bones guessed except the last one (target.end)
+                    const updatedChain = chain.map(item => 
+                        item.bone === guess ? { ...item, guessed: true } : item
+                    );
+                    const allPathBonesGuessed = updatedChain
+                        .slice(0, -1) // Exclude target.end
+                        .every(item => item.guessed);
+                    
+                    if (allPathBonesGuessed) {
+                        setGameState('won');
+                        return;
                     }
-                    setInputValue('');
-                    return;
-                }
-                
-                // Valid guess - mark it as guessed in the chain
-                setGuessesLeft(prev => prev - 1);
-                setChain(prev => prev.map(item => 
-                    item.bone === guess ? { ...item, guessed: true } : item
-                ));
-                
-                // Check win condition: all bones guessed except the last one (target.end)
-                const updatedChain = chain.map(item => 
-                    item.bone === guess ? { ...item, guessed: true } : item
-                );
-                const allPathBonesGuessed = updatedChain
-                    .slice(0, -1) // Exclude target.end
-                    .every(item => item.guessed);
-                
-                if (allPathBonesGuessed) {
-                    setGameState('won');
-                    return;
+                } else {
+                    // Not on optimal path - check if it's on ANY valid path
+                    const isValidDetour = isOnValidPath(guess, target.start, target.end);
+                    
+                    if (isValidDetour) {
+                        // SUBOPTIMAL PATH: Valid but longer route ⚠
+                        setDetours(prev => [...new Set([guess, ...prev])]);
+                        setGuessesLeft(prev => prev - 1);
+                    } else {
+                        // FAILURE: Not on any valid path ✗
+                        setBadGuesses(prev => [...new Set([guess, ...prev])]);
+                        setGuessesLeft(prev => prev - 1);
+                    }
                 }
                 
                 if (guessesLeft <= 1) setGameState('lost');
@@ -269,9 +290,10 @@
                         b.toLowerCase().includes(inputValue.toLowerCase()) && 
                         !guessedBones.includes(b) && 
                         b !== target.end &&
-                        !badGuesses.includes(b)
+                        !badGuesses.includes(b) &&
+                        !detours.includes(b) // Also exclude detours
                     ).slice(0, 5);
-            }, [inputValue, chain, target, badGuesses]);
+            }, [inputValue, chain, target, badGuesses, detours]);
 
             return (
                 <div className="sidebar p-6">
@@ -293,6 +315,20 @@
                             <p className="text-[10px] font-bold uppercase text-amber-400">{target.end}</p>
                         </div>
                     </div>
+
+                    {/* Detours Section - Valid but not optimal */}
+                    {detours.length > 0 && (
+                        <div className="mb-4">
+                            <p className="text-[8px] text-amber-400 uppercase font-bold mb-2 tracking-wider">⚠️ Longer Routes</p>
+                            <div className="flex flex-wrap gap-1.5">
+                                {detours.map((g, i) => (
+                                    <div key={i} className="text-[9px] font-bold text-amber-400 bg-amber-900/30 px-2.5 py-1 border border-amber-800/40 uppercase tracking-tight rounded">
+                                        {g}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Failed Guesses Section - Horizontal */}
                     {badGuesses.length > 0 && (
@@ -556,6 +592,10 @@
                             
                             if (match.type === 'start') col = 0x10b981; // Green for start
                             if (match.type === 'end') col = 0xf59e0b; // Amber for end
+                            if (match.type === 'detour') {
+                                col = 0xf97316; // Orange for suboptimal/longer routes
+                                emissiveInt = 0.6;
+                            }
                             if (match.type === 'bad') { 
                                 col = 0xef4444; // Red for failures
                                 emissiveInt = 0.8;
