@@ -70,9 +70,9 @@ function canReachTargetWithGuessed(start, target, guessedBones, detourBones, gra
     while (queue.length > 0) {
         const current = queue.shift();
         
-        // Check if current bone is a neighbor of the target (win condition!)
-        if (graph[current]?.includes(target)) {
-            return true; // We can reach the target from here!
+        // Check if we've reached the target
+        if (current === target) {
+            return true;
         }
         
         // Explore neighbors that have been guessed
