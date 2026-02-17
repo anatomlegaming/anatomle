@@ -135,7 +135,7 @@
             // Initialize 3D and game on mount
             useEffect(() => {
                 initScene('canvas-container');
-                loadSkeletonModel('../models/overview-skeleton.glb', () => {
+                loadSkeletonModel('/anatomle/models/overview-skeleton.glb', () => {
                     console.log('Model loaded!');
                 });
                 initGame();
@@ -205,3 +205,4 @@
     </script>
 </body>
 </html>
+
