@@ -1,5 +1,5 @@
 // ====================================
-// ANATOMLE - Bone to 3D Model Mappings
+// ANATOMLE - Bone to 3D Model Mappingsa
 // ====================================
 // Maps game bone names to 3D model node names
 
