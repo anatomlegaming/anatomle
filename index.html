@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ANATOMLE | Medical Training Game</title>
+    <title>ANATOMLE | Anatomy Training Platform</title>
 
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -10,10 +10,24 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;700&display=swap');
-        body { font-family: 'EB Garamond', serif; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); margin: 0; overflow: hidden; }
-        .mode-card { transition: all 0.3s ease; }
-        .mode-card:hover:not(.disabled) { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+        @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;700;900&display=swap');
+        body { 
+            font-family: 'EB Garamond', serif; 
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); 
+            margin: 0; 
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+        .category-card, .mode-card { 
+            transition: all 0.3s ease; 
+        }
+        .category-card:hover, .mode-card:hover:not(.disabled) { 
+            transform: translateY(-6px); 
+            box-shadow: 0 16px 32px rgba(0,0,0,0.6); 
+        }
+        .back-btn:hover {
+            transform: translateX(-4px);
+        }
     </style>
 </head>
 <body>
@@ -26,38 +40,110 @@
             return (
                 <div className="fixed inset-0 flex flex-col items-center justify-center">
                     <div className="text-center">
-                        <h1 className="text-8xl font-black text-white mb-6 tracking-tighter uppercase">Anatomle</h1>
-                        <p className="text-slate-400 text-lg mb-8 tracking-wider uppercase">Medical Training Game</p>
-                        <div className="flex gap-3 justify-center">
-                            <div className="w-4 h-4 bg-emerald-500 rounded-full animate-bounce" style={{animationDelay:'0s'}}></div>
-                            <div className="w-4 h-4 bg-blue-500 rounded-full animate-bounce" style={{animationDelay:'0.15s'}}></div>
-                            <div className="w-4 h-4 bg-amber-500 rounded-full animate-bounce" style={{animationDelay:'0.3s'}}></div>
+                        <h1 className="text-9xl font-black text-white mb-6 tracking-tighter uppercase">Anatomle</h1>
+                        <p className="text-slate-400 text-xl mb-10 tracking-wider uppercase">Anatomy Training Platform</p>
+                        <div className="flex gap-4 justify-center">
+                            <div className="w-5 h-5 bg-emerald-500 rounded-full animate-bounce" style={{animationDelay:'0s'}}></div>
+                            <div className="w-5 h-5 bg-blue-500 rounded-full animate-bounce" style={{animationDelay:'0.15s'}}></div>
+                            <div className="w-5 h-5 bg-amber-500 rounded-full animate-bounce" style={{animationDelay:'0.3s'}}></div>
                         </div>
                     </div>
                 </div>
             );
         }
 
-        function MainMenu() {
-            const modes = [
+        function CategoryMenu({ onSelectCategory }) {
+            const categories = [
                 {
-                    id: 'full-skeleton',
-                    name: 'Full Skeleton',
-                    description: 'Navigate the complete human skeletal system — all 90 bones.',
-                    difficulty: 'Medium',
-                    color: 'blue',
+                    id: 'bone-games',
+                    name: 'Bone Games',
+                    description: 'Master skeletal anatomy through interactive pathfinding and flood-fill challenges.',
                     icon: '🦴',
-                    file: 'games/full-skeleton.html',
-                    disabled: false
+                    color: 'blue',
+                    available: true
                 },
                 {
-                    id: 'skull',
-                    name: 'Skull Bones',
-                    description: 'Flood-fill all 14 cranial and facial bones starting from a random seed bone.',
-                    difficulty: 'Hard',
-                    color: 'amber',
-                    icon: '💀',
-                    file: 'games/skull.html',
+                    id: 'muscle-games',
+                    name: 'Muscle Games',
+                    description: 'Learn muscular systems, origins, insertions, and actions.',
+                    icon: '💪',
+                    color: 'red',
+                    available: false
+                },
+                {
+                    id: 'blood-games',
+                    name: 'Blood Cell Games',
+                    description: 'Identify blood cells, understand hematology, and master cellular morphology.',
+                    icon: '🩸',
+                    color: 'rose',
+                    available: false
+                }
+            ];
+
+            const colorStyles = {
+                blue: 'border-blue-500/50 hover:border-blue-400',
+                red: 'border-red-500/50 hover:border-red-400',
+                rose: 'border-rose-500/50 hover:border-rose-400'
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center p-8">
+                    <div className="max-w-6xl w-full">
+                        <header className="text-center mb-16">
+                            <h1 className="text-8xl font-black text-white mb-4 tracking-tighter uppercase">Anatomle</h1>
+                            <p className="text-slate-400 text-base uppercase tracking-[0.4em] mb-2">Anatomy Training Platform</p>
+                            <p className="text-slate-500 text-sm max-w-2xl mx-auto leading-relaxed">
+                                Interactive medical education games designed for anatomy students and healthcare professionals.
+                            </p>
+                        </header>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                            {categories.map(cat => (
+                                <div
+                                    key={cat.id}
+                                    onClick={() => cat.available && onSelectCategory(cat.id)}
+                                    className={`category-card ${cat.available ? 'cursor-pointer' : 'opacity-40 cursor-not-allowed'} 
+                                        relative bg-slate-800/70 border-2 ${cat.available ? colorStyles[cat.color] : 'border-slate-700/50'} 
+                                        rounded-2xl p-8 text-center`}
+                                >
+                                    {!cat.available && (
+                                        <div className="absolute top-4 right-4 bg-slate-700 text-slate-400 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider">
+                                            Coming Soon
+                                        </div>
+                                    )}
+                                    <div className="text-6xl mb-4">{cat.icon}</div>
+                                    <h3 className="text-2xl font-black text-white mb-3 uppercase tracking-tight">{cat.name}</h3>
+                                    <p className="text-slate-400 text-sm leading-relaxed">{cat.description}</p>
+                                </div>
+                            ))}
+                        </div>
+
+                        <footer className="flex justify-center gap-6 pt-8 border-t border-slate-700/50">
+                            <button className="text-slate-500 text-xs uppercase tracking-widest hover:text-white transition-colors">
+                                Settings
+                            </button>
+                            <button className="text-slate-500 text-xs uppercase tracking-widest hover:text-white transition-colors">
+                                About Us
+                            </button>
+                            <button className="text-slate-500 text-xs uppercase tracking-widest hover:text-white transition-colors">
+                                Contact
+                            </button>
+                        </footer>
+                    </div>
+                </div>
+            );
+        }
+
+        function BoneGamesMenu({ onBack }) {
+            const modes = [
+                {
+                    id: 'foot',
+                    name: 'Foot Bones',
+                    description: 'Flood-fill all 29 foot bones — tarsals, metatarsals, and phalanges.',
+                    difficulty: 'Easy',
+                    color: 'emerald',
+                    icon: '🦶',
+                    file: 'games/foot.html',
                     disabled: false
                 },
                 {
@@ -65,85 +151,111 @@
                     name: 'Hand Bones',
                     description: 'Flood-fill all 29 hand bones — carpals, metacarpals, and phalanges.',
                     difficulty: 'Medium',
-                    color: 'emerald',
+                    color: 'blue',
                     icon: '✋',
                     file: 'games/hand.html',
                     disabled: false
                 },
                 {
-                    id: 'foot',
-                    name: 'Foot Bones',
-                    description: 'Flood-fill all 29 foot bones — tarsals, metatarsals, and phalanges.',
+                    id: 'skull',
+                    name: 'Skull Bones',
+                    description: 'Flood-fill all 14 cranial and facial bones starting from a random seed.',
                     difficulty: 'Medium',
-                    color: 'orange',
-                    icon: '🦶',
-                    file: 'games/foot.html',
+                    color: 'amber',
+                    icon: '💀',
+                    file: 'games/skull.html',
+                    disabled: false
+                },
+                {
+                    id: 'full-skeleton',
+                    name: 'Full Skeleton',
+                    description: 'Navigate pathfinding challenges across the complete skeletal system.',
+                    difficulty: 'Hard',
+                    color: 'purple',
+                    icon: '🦴',
+                    file: 'games/full-skeleton.html',
                     disabled: false
                 },
                 {
                     id: 'challenge',
                     name: 'Challenge Mode',
-                    description: 'Invisible skeleton — expert level only.',
+                    description: 'Invisible skeleton — expert pathfinding with no visual feedback.',
                     difficulty: 'Expert',
                     color: 'fuchsia',
                     icon: '⚡',
-                    file: 'games/challenge-mode.html',
+                    file: 'games/challenge.html',
                     disabled: true
                 }
             ];
 
             const difficultyStyle = {
-                Easy:   'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
-                Medium: 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
-                Hard:   'bg-amber-500/20 text-amber-400 border border-amber-500/30',
-                Expert: 'bg-fuchsia-500/20 text-fuchsia-400 border border-fuchsia-500/30',
+                Easy:   'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40',
+                Medium: 'bg-blue-500/20 text-blue-400 border border-blue-500/40',
+                Hard:   'bg-purple-500/20 text-purple-400 border border-purple-500/40',
+                Expert: 'bg-fuchsia-500/20 text-fuchsia-400 border border-fuchsia-500/40',
             };
 
             const borderStyle = {
+                emerald: 'border-emerald-500/40',
                 blue:    'border-blue-500/40',
                 amber:   'border-amber-500/40',
-                emerald: 'border-emerald-500/40',
-                orange:  'border-orange-500/40',
+                purple:  'border-purple-500/40',
                 fuchsia: 'border-fuchsia-500/40',
             };
 
             return (
-                <div className="fixed inset-0 flex flex-col items-center justify-center p-8">
-                    <div className="max-w-4xl w-full">
-                        <header className="text-center mb-10">
-                            <h1 className="text-7xl font-black text-white mb-3 tracking-tighter uppercase">Anatomle</h1>
-                            <p className="text-slate-500 text-xs uppercase tracking-[0.4em]">Clinical Training — Select a Mode</p>
+                <div className="min-h-screen flex flex-col items-center justify-center p-8 py-16">
+                    <div className="max-w-6xl w-full">
+                        <header className="text-center mb-12">
+                            <button 
+                                onClick={onBack}
+                                className="back-btn mb-6 text-slate-500 hover:text-white text-sm uppercase tracking-wider transition-all inline-flex items-center gap-2"
+                            >
+                                ← Back to Categories
+                            </button>
+                            <h1 className="text-7xl font-black text-white mb-3 tracking-tighter uppercase">Bone Games</h1>
+                            <p className="text-slate-400 text-sm uppercase tracking-[0.4em]">Master Skeletal Anatomy</p>
                         </header>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
-                            {modes.map(mode => (
-                                <div
-                                    key={mode.id}
-                                    onClick={() => !mode.disabled && (window.location.href = mode.file)}
-                                    className={`mode-card ${mode.disabled ? 'disabled opacity-40 cursor-default' : 'cursor-pointer'} relative bg-slate-800/60 border-2 ${mode.disabled ? 'border-slate-700/50' : borderStyle[mode.color]} rounded-2xl p-6`}
-                                >
-                                    {mode.disabled && (
-                                        <div className="absolute top-4 right-4 bg-slate-700 text-slate-400 text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
-                                            Coming Soon
-                                        </div>
-                                    )}
-                                    <div className="text-4xl mb-3">{mode.icon}</div>
-                                    <h3 className="text-2xl font-black text-white mb-2 uppercase tracking-tight">{mode.name}</h3>
-                                    <p className="text-slate-400 text-sm mb-4 leading-relaxed">{mode.description}</p>
-                                    <div className="flex items-center justify-between">
-                                        <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${difficultyStyle[mode.difficulty]}`}>
-                                            {mode.difficulty}
-                                        </span>
-                                        {!mode.disabled && (
-                                            <span className="text-slate-500 text-xs uppercase tracking-wider">Play →</span>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" style={{
+                            gridTemplateColumns: modes.length === 5 ? 'repeat(3, minmax(0, 1fr))' : 'repeat(auto-fit, minmax(280px, 1fr))'
+                        }}>
+                            {modes.map((mode, idx) => {
+                                const isSecondRow = idx >= 3;
+                                const shouldCenter = modes.length === 5 && isSecondRow;
+                                
+                                return (
+                                    <div
+                                        key={mode.id}
+                                        onClick={() => !mode.disabled && (window.location.href = mode.file)}
+                                        className={`mode-card ${mode.disabled ? 'disabled opacity-40 cursor-default' : 'cursor-pointer'} 
+                                            relative bg-slate-800/70 border-2 ${mode.disabled ? 'border-slate-700/50' : borderStyle[mode.color]} 
+                                            rounded-2xl p-7`}
+                                        style={shouldCenter && idx === 3 ? {gridColumn: '2 / 3'} : {}}
+                                    >
+                                        {mode.disabled && (
+                                            <div className="absolute top-4 right-4 bg-slate-700 text-slate-400 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider">
+                                                Coming Soon
+                                            </div>
                                         )}
+                                        <div className="text-5xl mb-4">{mode.icon}</div>
+                                        <h3 className="text-2xl font-black text-white mb-2 uppercase tracking-tight">{mode.name}</h3>
+                                        <p className="text-slate-400 text-sm mb-5 leading-relaxed min-h-[60px]">{mode.description}</p>
+                                        <div className="flex items-center justify-between">
+                                            <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full ${difficultyStyle[mode.difficulty]}`}>
+                                                {mode.difficulty}
+                                            </span>
+                                            {!mode.disabled && (
+                                                <span className="text-slate-500 text-xs uppercase tracking-wider hover:text-white transition-colors">Play →</span>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
 
-                        <footer className="text-center text-slate-600 text-xs uppercase tracking-widest">
-                            A medical training game for anatomy students
+                        <footer className="text-center text-slate-600 text-xs uppercase tracking-widest pt-8">
+                            Interactive pathfinding and flood-fill challenges
                         </footer>
                     </div>
                 </div>
@@ -152,8 +264,20 @@
 
         function App() {
             const [loading, setLoading] = useState(true);
-            useEffect(() => { const t = setTimeout(() => setLoading(false), 1200); return () => clearTimeout(t); }, []);
-            return loading ? <LoadingScreen /> : <MainMenu />;
+            const [view, setView] = useState('categories'); // 'categories' | 'bone-games'
+
+            useEffect(() => { 
+                const t = setTimeout(() => setLoading(false), 1200); 
+                return () => clearTimeout(t); 
+            }, []);
+
+            if (loading) return <LoadingScreen />;
+
+            if (view === 'bone-games') {
+                return <BoneGamesMenu onBack={() => setView('categories')} />;
+            }
+
+            return <CategoryMenu onSelectCategory={(cat) => setView(cat)} />;
         }
 
         ReactDOM.createRoot(document.getElementById('root')).render(<App />);
