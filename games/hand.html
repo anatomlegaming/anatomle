@@ -1,3 +1,4 @@
+<!-- This is a single-line comment -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,7 +6,232 @@
     <title>ANATOMLE | Hand</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/th<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ANATOMLE | Hand</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+    * { box-sizing: border-box; }
+    body {
+        font-family: 'DM Sans', sans-serif;
+        background: #fdf6ec;
+        color: #2d1f14;
+        margin: 0;
+        overflow: hidden;
+    }
+    #cv {
+        position: fixed;
+        top: 104px;
+        left: 0;
+        right: 580px;
+        bottom: 68px;
+        z-index: 10;
+        background: radial-gradient(ellipse at 50% 40%, #f5e8d0 0%, #ede0c8 60%, #e4d4b8 100%);
+    }
+    #ad-slot {
+        position: fixed;
+        top: 58px;
+        right: 0;
+        width: 160px;
+        bottom: 0;
+        z-index: 150;
+        background: #fff8f0;
+        border-left: 2px solid #e8d5c0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    #ad-slot span {
+        font-family: 'DM Sans', sans-serif;
+        font-size: 9px;
+        color: #c8b8a8;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        writing-mode: vertical-rl;
+    }
+    #ad-slot .ad-placeholder {
+        width: 120px;
+        height: 240px;
+        border: 2px dashed #e8d5c0;
+        border-radius: 8px;
+    }
+    .scr::-webkit-scrollbar { width: 3px; }
+    .scr::-webkit-scrollbar-thumb { background: #e8d5c0; border-radius: 2px; }
+    .shake { animation: shake 0.3s ease-in-out; }
+    @keyframes shake {
+        0%,100% { transform: translateX(0); }
+        25%      { transform: translateX(-4px); }
+        75%      { transform: translateX(4px); }
+    }
+</style>
+</head>
+<body>
+<div id="cv"></div>
+<div id="ad-slot">
+    <div class="ad-placeholder"></div>
+    <span>Coming Soon</span>
+</div>
+<div id="root"></div>
+
+<script>
+const HAND_GRAPH = {
+    'Radius':['Ulna','Scaphoid','Lunate'],'Ulna':['Radius','Triquetrum','Pisiform'],
+    'Scaphoid':['Radius','Lunate','Trapezium','Trapezoid','Capitate'],
+    'Lunate':['Radius','Scaphoid','Triquetrum','Capitate','Hamate'],
+    'Triquetrum':['Ulna','Lunate','Pisiform','Hamate'],'Pisiform':['Ulna','Triquetrum'],
+    'Trapezium':['Scaphoid','Trapezoid','Metacarpal I'],
+    'Trapezoid':['Scaphoid','Trapezium','Capitate','Metacarpal II'],
+    'Capitate':['Scaphoid','Lunate','Trapezoid','Hamate','Metacarpal II','Metacarpal III'],
+    'Hamate':['Lunate','Triquetrum','Capitate','Metacarpal IV','Metacarpal V'],
+    'Metacarpal I':['Trapezium','Proximal Phalanx I'],
+    'Metacarpal II':['Trapezoid','Capitate','Proximal Phalanx II'],
+    'Metacarpal III':['Capitate','Proximal Phalanx III'],
+    'Metacarpal IV':['Hamate','Proximal Phalanx IV'],
+    'Metacarpal V':['Hamate','Proximal Phalanx V'],
+    'Proximal Phalanx I':['Metacarpal I','Distal Phalanx I'],'Distal Phalanx I':['Proximal Phalanx I'],
+    'Proximal Phalanx II':['Metacarpal II','Middle Phalanx II'],
+    'Middle Phalanx II':['Proximal Phalanx II','Distal Phalanx II'],'Distal Phalanx II':['Middle Phalanx II'],
+    'Proximal Phalanx III':['Metacarpal III','Middle Phalanx III'],
+    'Middle Phalanx III':['Proximal Phalanx III','Distal Phalanx III'],'Distal Phalanx III':['Middle Phalanx III'],
+    'Proximal Phalanx IV':['Metacarpal IV','Middle Phalanx IV'],
+    'Middle Phalanx IV':['Proximal Phalanx IV','Distal Phalanx IV'],'Distal Phalanx IV':['Middle Phalanx IV'],
+    'Proximal Phalanx V':['Metacarpal V','Middle Phalanx V'],
+    'Middle Phalanx V':['Proximal Phalanx V','Distal Phalanx V'],'Distal Phalanx V':['Middle Phalanx V'],
+};
+const HAND_ALL = Object.keys(HAND_GRAPH);
+const HAND_TOTAL = HAND_ALL.length;
+const HAND_B2M = {
+    'Radius':'Radiusr','Ulna':'Ulnar',
+    'Scaphoid':'Scaphoidr','Lunate':'Lunate_boner','Triquetrum':'Triquetrum','Pisiform':'Pisiformr',
+    'Trapezium':'Trapeziumr','Trapezoid':'Trapezoidr','Capitate':'Capitater','Hamate':'Hamater',
+    'Metacarpal I':'1st_metacarpal_boner','Metacarpal II':'2nd_metacarpal_boner',
+    'Metacarpal III':'3rd_metacarpal_boner','Metacarpal IV':'4th_metacarpal_boner','Metacarpal V':'5th_metacarpal_boner',
+    'Proximal Phalanx I':'Proximal_phalanx_of_1st_fingerr',
+    'Distal Phalanx I':'Distal_phalanx_of_1st_fingerr',
+    'Proximal Phalanx II':'Proximal_phalanx_of_2d_fingerr',
+    'Middle Phalanx II':'Middle_phalanx_of_2d_fingerr',
+    'Distal Phalanx II':'Distal_phalanx_of_2d_fingerr',
+    'Proximal Phalanx III':'roximal_phalanx_of_3',
+    'Middle Phalanx III':'iddle_phalanx_of_3',
+    'Distal Phalanx III':'istal_phalanx_of_3',
+    'Proximal Phalanx IV':'Proximal_phalanx_of_4th_fingerr',
+    'Middle Phalanx IV':'Middle_phalanx_of_4th_fingerr',
+    'Distal Phalanx IV':'Distal_phalanx_of_4th_fingerr',
+    'Proximal Phalanx V':'Proximal_phalanx_of_5th_fingerr',
+    'Middle Phalanx V':'Middle_phalanx_of_5th_fingerr',
+    'Distal Phalanx V':'Distal_phalanx_of_5th_fingerr',
+};
+</script>
+
+<script src="../js/3d/handEngine.js"></script>
+<script src="../js/ui/floodFillUI.js"></script>
+
+<script type="text/babel">
+const { useState, useEffect, useMemo, useCallback } = React;
+
+function HandGame() {
+    const [guessed, setGuessed] = useState(() => new Set());
+    const [bad, setBad] = useState([]); // not-adjacent attempts (can retry)
+    const [left, setLeft] = useState((HAND_TOTAL - 1) + 5);
+    const [max, setMax] = useState((HAND_TOTAL - 1) + 5);
+    const [input, setInput] = useState('');
+    const [selIdx, setSelIdx] = useState(-1);
+    const [phase, setPhase] = useState('playing');
+    const [start, setStart] = useState('');
+    const [reveal, setReveal] = useState(false);
+
+    const startNew = useCallback(() => {
+        const total = (HAND_TOTAL - 1) + 5;
+        const newStart = HAND_ALL[Math.floor(Math.random() * HAND_ALL.length)];
+        setStart(newStart);
+        setGuessed(new Set([newStart]));
+        setBad([]); setLeft(total); setMax(total);
+        setInput(''); setSelIdx(-1); setPhase('playing'); setReveal(false);
+        try { window.reset3D && window.reset3D(); } catch(e) {}
+    }, []);
+
+    useEffect(() => { startNew(); }, []);
+
+    const frontier = useMemo(() => {
+        const f = new Set();
+        guessed.forEach(b => { (HAND_GRAPH[b]||[]).forEach(n => { if(!guessed.has(n)) f.add(n); }); });
+        return f;
+    }, [guessed]);
+
+    useEffect(() => {
+        const h = [];
+        guessed.forEach(b => h.push({name:b, type: b===start ? 'start' : 'found'}));
+        if (reveal && phase==='lost') HAND_ALL.forEach(b => { if(!guessed.has(b)) h.push({name:b,type:'reveal'}); });
+        bad.forEach(b => h.push({name:b,type:'bad'}));
+        try { window.update3D && window.update3D(h); } catch(e) {}
+    }, [guessed, bad, reveal, phase]);
+
+    const suggestions = useMemo(() => {
+        if (!input.trim()) return [];
+        return HAND_ALL.filter(b =>
+            b.toLowerCase().includes(input.toLowerCase()) &&
+            !guessed.has(b)
+        ).slice(0, 7);
+    }, [input, guessed, bad]);
+
+    useEffect(() => { setSelIdx(-1); }, [suggestions.length]);
+
+    const submit = useCallback((g) => {
+        if (phase !== 'playing' || !g || !HAND_ALL.includes(g) || guessed.has(g)) return;
+        const nl = left - 1; setLeft(nl);
+        if (frontier.has(g)) {
+            const ng = new Set(guessed); ng.add(g); setGuessed(ng);
+            if (ng.size === HAND_TOTAL) { setPhase('won'); setInput(''); return; }
+            if (nl <= 0) { setPhase('lost'); setInput(''); return; }
+        } else {
+            setBad(p => p.includes(g) ? p : [g, ...p]); // track for display, bone stays guessable
+            if (nl <= 0) { setPhase('lost'); setInput(''); return; }
+        }
+        setInput(''); setSelIdx(-1);
+    }, [phase, guessed, frontier, left, bad]);
+
+    const handleKey = (ev) => {
+        if (ev.key === 'ArrowDown') { ev.preventDefault(); setSelIdx(i => Math.min(i+1, suggestions.length-1)); }
+        else if (ev.key === 'ArrowUp') { ev.preventDefault(); setSelIdx(i => Math.max(i-1, 0)); }
+        else if (ev.key === 'Enter') {
+            if (selIdx >= 0 && suggestions[selIdx]) submit(suggestions[selIdx]);
+            else if (suggestions.length === 1) submit(suggestions[0]);
+        }
+        else if (ev.key === 'Escape') { setInput(''); setSelIdx(-1); }
+    };
+
+    return (
+        <window.FloodFillUI
+            gameTitle="✋ Hand"
+            state={{ start: start, total: HAND_TOTAL, guessed, bad, left, max, input, selIdx, phase, reveal, suggestions }}
+            handlers={{
+                onInputChange: ev => setInput(ev.target.value),
+                onKeyDown: handleKey,
+                onSubmit: submit,
+                onNewGame: startNew,
+                onReveal: () => setReveal(true)
+            }}
+        />
+    );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<HandGame />);
+</script>
+</body>
+</html>ree@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
