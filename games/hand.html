@@ -106,6 +106,18 @@ const HAND_GRAPH = {
 };
 const HAND_ALL = Object.keys(HAND_GRAPH);
 const HAND_TOTAL = HAND_ALL.length;
+const HAND_B2M = {
+    'Radius':'Radius','Ulna':'Ulna',
+    'Scaphoid':'Scaphoid','Lunate':'Lunate','Triquetrum':'Triquetrum','Pisiform':'Pisiform',
+    'Trapezium':'Trapezium','Trapezoid':'Trapezoid','Capitate':'Capitate','Hamate':'Hamate',
+    'Metacarpal I':'1st_metacarpal','Metacarpal II':'2nd_metacarpal',
+    'Metacarpal III':'3rd_metacarpal','Metacarpal IV':'4th_metacarpal','Metacarpal V':'5th_metacarpal',
+    'Proximal Phalanx I':'phalanx_of_1st','Distal Phalanx I':'phalanx_of_1st',
+    'Proximal Phalanx II':'phalanx_of_2d','Middle Phalanx II':'phalanx_of_2d','Distal Phalanx II':'phalanx_of_2d',
+    'Proximal Phalanx III':'phalanx_of_3d','Middle Phalanx III':'phalanx_of_3d','Distal Phalanx III':'phalanx_of_3d',
+    'Proximal Phalanx IV':'phalanx_of_4th','Middle Phalanx IV':'phalanx_of_4th','Distal Phalanx IV':'phalanx_of_4th',
+    'Proximal Phalanx V':'phalanx_of_5th','Middle Phalanx V':'phalanx_of_5th','Distal Phalanx V':'phalanx_of_5th'
+};
 </script>
 
 <script src="../js/3d/handEngine.js"></script>
@@ -116,7 +128,7 @@ const { useState, useEffect, useMemo, useCallback } = React;
 
 function HandGame() {
     const [guessed, setGuessed] = useState(() => new Set());
-    const [bad, setBad] = useState([]);
+    const [bad, setBad] = useState([]); // not-adjacent attempts (can retry)
     const [left, setLeft] = useState((HAND_TOTAL - 1) + 5);
     const [max, setMax] = useState((HAND_TOTAL - 1) + 5);
     const [input, setInput] = useState('');
@@ -155,7 +167,7 @@ function HandGame() {
         if (!input.trim()) return [];
         return HAND_ALL.filter(b =>
             b.toLowerCase().includes(input.toLowerCase()) &&
-            !guessed.has(b) && !bad.includes(b)
+            !guessed.has(b)
         ).slice(0, 7);
     }, [input, guessed, bad]);
 
@@ -169,7 +181,7 @@ function HandGame() {
             if (ng.size === HAND_TOTAL) { setPhase('won'); setInput(''); return; }
             if (nl <= 0) { setPhase('lost'); setInput(''); return; }
         } else {
-            setBad(p => [...new Set([g, ...p])]);
+            setBad(p => p.includes(g) ? p : [g, ...p]); // track for display, bone stays guessable
             if (nl <= 0) { setPhase('lost'); setInput(''); return; }
         }
         setInput(''); setSelIdx(-1);
