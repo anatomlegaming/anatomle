@@ -110,6 +110,18 @@ const FOOT_GRAPH = {
 };
 const FOOT_ALL = Object.keys(FOOT_GRAPH);
 const FOOT_TOTAL = FOOT_ALL.length;
+const FOOT_B2M = {
+    'Tibia':'Tibia','Fibula':'Fibula','Talus':'Talus','Calcaneus':'Calcaneus',
+    'Navicular':'Navicular_boner','Cuboid':'Cuboid_boner',
+    'Medial Cuneiform':'Medial_cuneiform','Intermediate Cuneiform':'Intermediate_cuneiform','Lateral Cuneiform':'Lateral_cuneiform',
+    'Metatarsal I':'First_metatarsal','Metatarsal II':'Second_metatarsal',
+    'Metatarsal III':'Third_metatarsal','Metatarsal IV':'Fourth_metatarsal','Metatarsal V':'Fifth_metatarsal',
+    'Proximal Phalanx I (Foot)':'first_finger_of_foot','Distal Phalanx I (Foot)':'first_finger_of_foot',
+    'Proximal Phalanx II (Foot)':'second_finger_of_foot','Middle Phalanx II (Foot)':'second_finger_of_foot','Distal Phalanx II (Foot)':'second_finger_of_foot',
+    'Proximal Phalanx III (Foot)':'third_finger_of_foot','Middle Phalanx III (Foot)':'third_finger_of_foot','Distal Phalanx III (Foot)':'third_finger_of_foot',
+    'Proximal Phalanx IV (Foot)':'fourth_finger_of_foot','Middle Phalanx IV (Foot)':'fourth_finger_of_foot','Distal Phalanx IV (Foot)':'fourth_finger_of_foot',
+    'Proximal Phalanx V (Foot)':'fifth_finger_of_foot','Middle Phalanx V (Foot)':'fifth_finger_of_foot','Distal Phalanx V (Foot)':'fifth_finger_of_foot'
+};
 </script>
 
 <script src="../js/3d/footEngine.js"></script>
@@ -120,7 +132,7 @@ const { useState, useEffect, useMemo, useCallback } = React;
 
 function FootGame() {
     const [guessed, setGuessed] = useState(() => new Set());
-    const [bad, setBad] = useState([]);
+    const [bad, setBad] = useState([]); // not-adjacent attempts (can retry)
     const [left, setLeft] = useState((FOOT_TOTAL - 1) + 5);
     const [max, setMax] = useState((FOOT_TOTAL - 1) + 5);
     const [input, setInput] = useState('');
@@ -159,7 +171,7 @@ function FootGame() {
         if (!input.trim()) return [];
         return FOOT_ALL.filter(b =>
             b.toLowerCase().includes(input.toLowerCase()) &&
-            !guessed.has(b) && !bad.includes(b)
+            !guessed.has(b)
         ).slice(0, 7);
     }, [input, guessed, bad]);
 
@@ -173,7 +185,7 @@ function FootGame() {
             if (ng.size === FOOT_TOTAL) { setPhase('won'); setInput(''); return; }
             if (nl <= 0) { setPhase('lost'); setInput(''); return; }
         } else {
-            setBad(p => [...new Set([g, ...p])]);
+            setBad(p => p.includes(g) ? p : [g, ...p]); // track for display, bone stays guessable
             if (nl <= 0) { setPhase('lost'); setInput(''); return; }
         }
         setInput(''); setSelIdx(-1);
