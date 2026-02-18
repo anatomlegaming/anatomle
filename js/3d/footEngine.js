@@ -1,12 +1,22 @@
 // ============================================================================
-// FOOT 3D ENGINEa
+// FOOT 3D ENGINE
 // ============================================================================
 // Requires: THREE.js, OrbitControls, GLTFLoader, DRACOLoader
 // Requires: FOOT_B2M mapping defined in game file
 // ============================================================================
 
 var _sk = null;
-var FOOT_MESH_KEYS = ['Tibia','Fibula','Talus','Calcaneus','Navicular_boner','Cuboid_boner','Medial_cuneiform','Intermediate_cuneiform','Lateral_cuneiform','First_metatarsal','Second_metatarsal','Third_metatarsal','Fourth_metatarsal','Fifth_metatarsal','finger_of_foot'];
+var FOOT_MESH_KEYS = [
+    'Tibiar','Fibular','Talusr','Calcaneusr',
+    'Navicular_boner','Cuboid_boner',
+    'Medial_cuneiform_boner','Intermediate_cuneiform_boner','Lateral_cuneiform_boner',
+    'First_metatarsal_boner','Second_metatarsal_boner','Third_metatarsal_boner','Fourth_metatarsal_boner','Fifth_metatarsal_boner',
+    'Proximal_phalanx_of_first_finger_of_footr','Distal_phalanx_of_first_finger_of_footr',
+    'Proximal_phalanx_of_second_finger_of_footr','Middle_phalanx_of_second_finger_of_footr','Distal_phalanx_of_second_finger_of_footr',
+    'Proximal_phalanx_of_third_finger_of_footr','Middle_phalanx_of_third_finger_of_footr','Distal_phalanx_of_third_finger_of_footr',
+    'Proximal_phalanx_of_fourth_finger_of_footr','Middle_phalanx_of_fourth_finger_of_footr','Distal_phalanx_of_fourth_finger_of_footr',
+    'Proximal_phalanx_of_fifth_finger_of_footr','Middle_phalanx_of_fifth_finger_of_footr','Distal_phalanx_of_fifth_finger_of_footr'
+];
 
 function isFoot(n) {
     for (var i=0;i<FOOT_MESH_KEYS.length;i++) if (n.indexOf(FOOT_MESH_KEYS[i])!==-1) return true;
@@ -19,8 +29,6 @@ window.update3D = function(bones) {
         if (!node.isMesh) return;
         if (!isFoot(node.name)) { node.visible = false; return; }
         node.visible = true;
-        // Find the best matching bone for this mesh node
-        // Multiple game bones can share a mesh key, so highlight if ANY match
         var m = null;
         for (var i = 0; i < bones.length; i++) {
             var k = FOOT_B2M[bones[i].name];
@@ -28,13 +36,12 @@ window.update3D = function(bones) {
         }
         if (m) {
             var c = 0x5a8a6a, e = 0.55;
-            if (m.type === 'start')  { c = 0x5a8a6a; e = 0.55; }
+            if (m.type === 'start')  { c = 0x5a8a6a; e = 0.6; }
             if (m.type === 'found')  { c = 0x5a8a6a; e = 0.5; }
             if (m.type === 'bad')    { c = 0xc94d2b; e = 0.75; }
             if (m.type === 'reveal') { c = 0x8b5cf6; e = 0.7; }
             node.material = new THREE.MeshStandardMaterial({color:c, emissive:c, emissiveIntensity:e, transparent:false, opacity:1});
         } else {
-            // Unmatched — show as resting warm bone (NOT hidden)
             node.material = new THREE.MeshStandardMaterial({color:0x8B7355, transparent:true, opacity:0.55});
         }
     });
