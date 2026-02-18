@@ -1,5 +1,5 @@
 // ============================================================================
-// HAND 3D ENGINEa
+// HAND 3D ENGINE
 // ============================================================================
 // Requires: THREE.js, OrbitControls, GLTFLoader, DRACOLoader
 // Requires: HAND_B2M mapping defined in game file
@@ -25,13 +25,13 @@ window.update3D = function(bones) {
             if (k && node.name.indexOf(k)!==-1) { m = bones[i]; break; }
         }
         if (m) {
-            var c=0x3b82f6, e=0.5;
+            var c=0x5a8a6a, e=0.55;
             if (m.type==='start')  { c=0x10b981; e=0.6; }
             if (m.type==='bad')    { c=0xef4444; e=0.8; }
             if (m.type==='reveal') { c=0xd946ef; e=0.8; }
             node.material = new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:e});
         } else {
-            node.material = new THREE.MeshStandardMaterial({color:0x334155,transparent:true,opacity:0.3});
+            node.material = new THREE.MeshStandardMaterial({color:0x8B7355,transparent:true,opacity:0.55});
         }
     });
 };
@@ -41,7 +41,7 @@ window.reset3D = function() {
     _sk.traverse(function(node) {
         if (!node.isMesh) return;
         if (isHand(node.name)) {
-            node.material = new THREE.MeshStandardMaterial({color:0x334155,transparent:true,opacity:0.3});
+            node.material = new THREE.MeshStandardMaterial({color:0x8B7355,transparent:true,opacity:0.55});
             node.visible = true;
         } else { node.visible = false; }
     });
@@ -75,9 +75,9 @@ window.addEventListener('DOMContentLoaded', function() {
         ctrl.update();
     },{passive:false});
 
-    scene.add(new THREE.AmbientLight(0xffffff,0.7));
-    var dl=new THREE.DirectionalLight(0xffffff,0.9); dl.position.set(3,8,5); scene.add(dl);
-    var dl2=new THREE.DirectionalLight(0xffffff,0.3); dl2.position.set(-5,-3,-5); scene.add(dl2);
+    scene.add(new THREE.AmbientLight(0xfff8f0, 0.9));
+    var dl=new THREE.DirectionalLight(0xfff4e8, 0.7); dl.position.set(3,8,5); scene.add(dl);
+    var dl2=new THREE.DirectionalLight(0xfff4e8, 0.7); dl2.position.set(-5,-3,-5); scene.add(dl2);
 
     var draco=new THREE.DRACOLoader(); draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
     var loader=new THREE.GLTFLoader(); loader.setDRACOLoader(draco);
@@ -88,7 +88,7 @@ window.addEventListener('DOMContentLoaded', function() {
         var center=box.getCenter(new THREE.Vector3()); var size=box.getSize(new THREE.Vector3());
         ctrl.target.copy(center);
         var fov=cam.fov*(Math.PI/180); var maxDim=Math.max(size.x,size.y,size.z);
-        cam.position.set(center.x, center.y, center.z+Math.abs(maxDim/2/Math.tan(fov/2))*2.2);
+        cam.position.set(center.x, center.y, center.z+Math.abs(maxDim/2/Math.tan(fov/2))*0.9);
         cam.lookAt(center); ctrl.update();
         window.reset3D();
     });
