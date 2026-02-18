@@ -17,21 +17,26 @@ function isHand(n) {
 window.update3D = function(bones) {
     if (!_sk) return;
     _sk.traverse(function(node) {
-        if (!node.isMesh || !isHand(node.name)) { node.visible = false; return; }
+        if (!node.isMesh) return;
+        if (!isHand(node.name)) { node.visible = false; return; }
         node.visible = true;
+        // Find the best matching bone for this mesh node
+        // Multiple game bones can share a mesh key, so highlight if ANY match
         var m = null;
-        for (var i=0;i<bones.length;i++) {
+        for (var i = 0; i < bones.length; i++) {
             var k = HAND_B2M[bones[i].name];
-            if (k && node.name.indexOf(k)!==-1) { m = bones[i]; break; }
+            if (k && node.name.indexOf(k) !== -1) { m = bones[i]; break; }
         }
         if (m) {
-            var c=0x5a8a6a, e=0.55;
-            if (m.type==='start')  { c=0x10b981; e=0.6; }
-            if (m.type==='bad')    { c=0xef4444; e=0.8; }
-            if (m.type==='reveal') { c=0xd946ef; e=0.8; }
-            node.material = new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:e});
+            var c = 0x5a8a6a, e = 0.55;
+            if (m.type === 'start')  { c = 0x5a8a6a; e = 0.55; }
+            if (m.type === 'found')  { c = 0x5a8a6a; e = 0.5; }
+            if (m.type === 'bad')    { c = 0xc94d2b; e = 0.75; }
+            if (m.type === 'reveal') { c = 0x8b5cf6; e = 0.7; }
+            node.material = new THREE.MeshStandardMaterial({color:c, emissive:c, emissiveIntensity:e, transparent:false, opacity:1});
         } else {
-            node.material = new THREE.MeshStandardMaterial({color:0x8B7355,transparent:true,opacity:0.55});
+            // Unmatched — show as resting warm bone (NOT hidden)
+            node.material = new THREE.MeshStandardMaterial({color:0x8B7355, transparent:true, opacity:0.55});
         }
     });
 };
@@ -41,9 +46,11 @@ window.reset3D = function() {
     _sk.traverse(function(node) {
         if (!node.isMesh) return;
         if (isHand(node.name)) {
-            node.material = new THREE.MeshStandardMaterial({color:0x8B7355,transparent:true,opacity:0.55});
+            node.material = new THREE.MeshStandardMaterial({color:0x8B7355, transparent:true, opacity:0.55});
             node.visible = true;
-        } else { node.visible = false; }
+        } else {
+            node.visible = false;
+        }
     });
 };
 
@@ -88,7 +95,7 @@ window.addEventListener('DOMContentLoaded', function() {
         var center=box.getCenter(new THREE.Vector3()); var size=box.getSize(new THREE.Vector3());
         ctrl.target.copy(center);
         var fov=cam.fov*(Math.PI/180); var maxDim=Math.max(size.x,size.y,size.z);
-        cam.position.set(center.x, center.y, center.z+Math.abs(maxDim/2/Math.tan(fov/2))*0.9);
+        cam.position.set(center.x, center.y, center.z+Math.abs(maxDim/2/Math.tan(fov/2))*1.2);
         cam.lookAt(center); ctrl.update();
         window.reset3D();
     });
