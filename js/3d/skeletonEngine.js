@@ -67,7 +67,7 @@ window.addEventListener('DOMContentLoaded', function() {
         ctrl.update();
     },{passive:false});
 
-    scene.add(new THREE.AmbientLight(0xfff8f0,0.85));
+    scene.add(new THREE.AmbientLight(0xfff8f0,0.9));
     var dl=new THREE.DirectionalLight(0xfff4e8,0.7); dl.position.set(5,10,7.5); scene.add(dl);
 
     var draco=new THREE.DRACOLoader(); draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
