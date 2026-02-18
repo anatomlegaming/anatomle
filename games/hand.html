@@ -1,4 +1,3 @@
-<!-- This is a single-line comment -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -107,7 +106,6 @@ const HAND_GRAPH = {
 };
 const HAND_ALL = Object.keys(HAND_GRAPH);
 const HAND_TOTAL = HAND_ALL.length;
-const HAND_START = 'Radius';
 </script>
 
 <script src="../js/3d/handEngine.js"></script>
@@ -124,11 +122,14 @@ function HandGame() {
     const [input, setInput] = useState('');
     const [selIdx, setSelIdx] = useState(-1);
     const [phase, setPhase] = useState('playing');
+    const [start, setStart] = useState('');
     const [reveal, setReveal] = useState(false);
 
     const startNew = useCallback(() => {
         const total = (HAND_TOTAL - 1) + 5;
-        setGuessed(new Set([HAND_START]));
+        const newStart = HAND_ALL[Math.floor(Math.random() * HAND_ALL.length)];
+        setStart(newStart);
+        setGuessed(new Set([newStart]));
         setBad([]); setLeft(total); setMax(total);
         setInput(''); setSelIdx(-1); setPhase('playing'); setReveal(false);
         try { window.reset3D && window.reset3D(); } catch(e) {}
@@ -144,7 +145,7 @@ function HandGame() {
 
     useEffect(() => {
         const h = [];
-        guessed.forEach(b => h.push({name:b, type: b===HAND_START ? 'start' : 'found'}));
+        guessed.forEach(b => h.push({name:b, type: b===start ? 'start' : 'found'}));
         if (reveal && phase==='lost') HAND_ALL.forEach(b => { if(!guessed.has(b)) h.push({name:b,type:'reveal'}); });
         bad.forEach(b => h.push({name:b,type:'bad'}));
         try { window.update3D && window.update3D(h); } catch(e) {}
@@ -187,7 +188,7 @@ function HandGame() {
     return (
         <window.FloodFillUI
             gameTitle="✋ Hand"
-            state={{ start: HAND_START, total: HAND_TOTAL, guessed, bad, left, max, input, selIdx, phase, reveal, suggestions }}
+            state={{ start: start, total: HAND_TOTAL, guessed, bad, left, max, input, selIdx, phase, reveal, suggestions }}
             handlers={{
                 onInputChange: ev => setInput(ev.target.value),
                 onKeyDown: handleKey,
