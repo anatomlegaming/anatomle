@@ -6,7 +6,17 @@
 // ============================================================================
 
 var _sk = null;
-var HAND_MESH_KEYS = ['Radius','Ulna','Scaphoid','Lunate','Triquetrum','Pisiform','Trapezium','Trapezoid','Capitate','Hamate','1st_metacarpal','2nd_metacarpal','3rd_metacarpal','4th_metacarpal','5th_metacarpal','phalanx_of_1st','phalanx_of_2d','phalanx_of_3d','phalanx_of_4th','phalanx_of_5th'];
+var HAND_MESH_KEYS = [
+    'Radiusr','Ulnar',
+    'Scaphoidr','Lunater','Triquetrum','Pisiformr',
+    'Trapeziumr','Trapezoidr','Capitater','Hamater',
+    '1st_metacarpal_boner','2nd_metacarpal_boner','3rd_metacarpal_boner','4th_metacarpal_boner','5th_metacarpal_boner',
+    'Proximal_phalanx_of_1st_fingerr','Distal_phalanx_of_1st_fingerr',
+    'Proximal_phalanx_of_2d_fingerr','Middle_phalanx_of_2d_fingerr','Distal_phalanx_of_2d_fingerr',
+    'Proximal_phalanx_of_3d_fingerr','Middle_phalanx_of_3d_fingerr','Distal_phalanx_of_3d_fingerr',
+    'Proximal_phalanx_of_4th_fingerr','Middle_phalanx_of_4th_fingerr','Distal_phalanx_of_4th_fingerr',
+    'Proximal_phalanx_of_5th_fingerr','Middle_phalanx_of_5th_fingerr','Distal_phalanx_of_5th_fingerr'
+];
 
 function isHand(n) {
     if (n.indexOf('foot')!==-1 || n.indexOf('_of_foot')!==-1 || n.indexOf('finger_of_foot')!==-1) return false;
@@ -20,8 +30,6 @@ window.update3D = function(bones) {
         if (!node.isMesh) return;
         if (!isHand(node.name)) { node.visible = false; return; }
         node.visible = true;
-        // Find the best matching bone for this mesh node
-        // Multiple game bones can share a mesh key, so highlight if ANY match
         var m = null;
         for (var i = 0; i < bones.length; i++) {
             var k = HAND_B2M[bones[i].name];
@@ -29,13 +37,12 @@ window.update3D = function(bones) {
         }
         if (m) {
             var c = 0x5a8a6a, e = 0.55;
-            if (m.type === 'start')  { c = 0x5a8a6a; e = 0.55; }
+            if (m.type === 'start')  { c = 0x5a8a6a; e = 0.6; }
             if (m.type === 'found')  { c = 0x5a8a6a; e = 0.5; }
             if (m.type === 'bad')    { c = 0xc94d2b; e = 0.75; }
             if (m.type === 'reveal') { c = 0x8b5cf6; e = 0.7; }
             node.material = new THREE.MeshStandardMaterial({color:c, emissive:c, emissiveIntensity:e, transparent:false, opacity:1});
         } else {
-            // Unmatched — show as resting warm bone (NOT hidden)
             node.material = new THREE.MeshStandardMaterial({color:0x8B7355, transparent:true, opacity:0.55});
         }
     });
