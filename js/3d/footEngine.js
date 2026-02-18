@@ -5,6 +5,32 @@
 // Requires: FOOT_B2M mapping defined in game file
 // ============================================================================
 
+// ── Bone name → 3D mesh node mapping (owned by engine, not HTML) ─────────────
+var FOOT_B2M = {
+    'Tibia':'Tibiar','Fibula':'Fibular','Talus':'Talusr','Calcaneus':'Calcaneusr',
+    'Navicular':'Navicular_boner','Cuboid':'Cuboid_boner',
+    'Medial Cuneiform':'Medial_cuneiform_boner',
+    'Intermediate Cuneiform':'Intermediate_cuneiform_boner',
+    'Lateral Cuneiform':'Lateral_cuneiform_boner',
+    'Metatarsal I':'First_metatarsal_boner','Metatarsal II':'Second_metatarsal_boner',
+    'Metatarsal III':'Third_metatarsal_boner','Metatarsal IV':'Fourth_metatarsal_boner',
+    'Metatarsal V':'Fifth_metatarsal_boner',
+    'Proximal Phalanx I (Foot)':'Proximal_phalanx_of_first_finger_of_footr',
+    'Distal Phalanx I (Foot)':'Distal_phalanx_of_first_finger_of_footr',
+    'Proximal Phalanx II (Foot)':'Proximal_phalanx_of_second_finger_of_footr',
+    'Middle Phalanx II (Foot)':'Middle_phalanx_of_second_finger_of_footr',
+    'Distal Phalanx II (Foot)':'Distal_phalanx_of_second_finger_of_footr',
+    'Proximal Phalanx III (Foot)':'Proximal_phalanx_of_third_finger_of_footr',
+    'Middle Phalanx III (Foot)':'Middle_phalanx_of_third_finger_of_footr',
+    'Distal Phalanx III (Foot)':'Distal_phalanx_of_third_finger_of_footr',
+    'Proximal Phalanx IV (Foot)':'Proximal_phalanx_of_fourth_finger_of_footr',
+    'Middle Phalanx IV (Foot)':'Middle_phalanx_of_fourth_finger_of_footr',
+    'Distal Phalanx IV (Foot)':'Distal_phalanx_of_fourth_finger_of_footr',
+    'Proximal Phalanx V (Foot)':'Proximal_phalanx_of_fifth_finger_of_footr',
+    'Middle Phalanx V (Foot)':'Middle_phalanx_of_fifth_finger_of_footr',
+    'Distal Phalanx V (Foot)':'Distal_phalanx_of_fifth_finger_of_footr',
+};
+
 var _sk = null;
 var FOOT_MESH_KEYS = [
     'Tibiar','Fibular','Talusr','Calcaneusr',
