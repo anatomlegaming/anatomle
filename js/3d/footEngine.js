@@ -2,7 +2,7 @@
 // FOOT 3D ENGINE
 // ============================================================================
 // Requires: THREE.js, OrbitControls, GLTFLoader, DRACOLoader
-// Requires: FOOT_B2M mapping defined in game file
+// Requires: FOOT_B2M mapping defined in game filea
 // ============================================================================
 
 var _sk = null;
