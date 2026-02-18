@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ANATOMLE | Hand Bones</title>
+    <title>ANATOMLE | Hand</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
@@ -28,16 +28,33 @@
 <div id="cv"></div>
 <div id="root"></div>
 
-<!-- 3D ENGINE -->
 <script>
-var _sk = null;
+const HAND_GRAPH = {
+    'Radius':['Ulna','Scaphoid','Lunate'],'Ulna':['Radius','Triquetrum','Pisiform'],
+    'Scaphoid':['Radius','Lunate','Trapezium','Trapezoid','Capitate'],
+    'Lunate':['Radius','Scaphoid','Triquetrum','Capitate','Hamate'],
+    'Triquetrum':['Ulna','Lunate','Pisiform','Hamate'],'Pisiform':['Ulna','Triquetrum'],
+    'Trapezium':['Scaphoid','Trapezoid','Metacarpal I'],
+    'Trapezoid':['Scaphoid','Trapezium','Capitate','Metacarpal II'],
+    'Capitate':['Scaphoid','Lunate','Trapezoid','Hamate','Metacarpal II','Metacarpal III'],
+    'Hamate':['Lunate','Triquetrum','Capitate','Metacarpal IV','Metacarpal V'],
+    'Metacarpal I':['Trapezium','Proximal Phalanx I'],
+    'Metacarpal II':['Trapezoid','Capitate','Proximal Phalanx II'],
+    'Metacarpal III':['Capitate','Proximal Phalanx III'],
+    'Metacarpal IV':['Hamate','Proximal Phalanx IV'],
+    'Metacarpal V':['Hamate','Proximal Phalanx V'],
+    'Proximal Phalanx I':['Metacarpal I','Distal Phalanx I'],'Distal Phalanx I':['Proximal Phalanx I'],
+    'Proximal Phalanx II':['Metacarpal II','Middle Phalanx II'],
+    'Middle Phalanx II':['Proximal Phalanx II','Distal Phalanx II'],'Distal Phalanx II':['Middle Phalanx II'],
+    'Proximal Phalanx III':['Metacarpal III','Middle Phalanx III'],
+    'Middle Phalanx III':['Proximal Phalanx III','Distal Phalanx III'],'Distal Phalanx III':['Middle Phalanx III'],
+    'Proximal Phalanx IV':['Metacarpal IV','Middle Phalanx IV'],
+    'Middle Phalanx IV':['Proximal Phalanx IV','Distal Phalanx IV'],'Distal Phalanx IV':['Middle Phalanx IV'],
+    'Proximal Phalanx V':['Metacarpal V','Middle Phalanx V'],
+    'Middle Phalanx V':['Proximal Phalanx V','Distal Phalanx V'],'Distal Phalanx V':['Middle Phalanx V'],
+};
 
-var HAND_KEYS = ['Radius','Ulna','Scaphoid','Lunate','Triquetrum','Pisiform',
-    'Trapezium','Trapezoid','Capitate','Hamate',
-    '1st_metacarpal','2nd_metacarpal','3rd_metacarpal','4th_metacarpal','5th_metacarpal',
-    'phalanx_of_1st','phalanx_of_2d','phalanx_of_3d','phalanx_of_4th','phalanx_of_5th'];
-
-var HAND_B2M = {
+const HAND_B2M = {
     'Radius':'Radius','Ulna':'Ulna',
     'Scaphoid':'Scaphoid','Lunate':'Lunate','Triquetrum':'Triquetrum','Pisiform':'Pisiform',
     'Trapezium':'Trapezium','Trapezoid':'Trapezoid','Capitate':'Capitate','Hamate':'Hamate',
@@ -50,197 +67,54 @@ var HAND_B2M = {
     'Proximal Phalanx V':'phalanx_of_5th','Middle Phalanx V':'phalanx_of_5th','Distal Phalanx V':'phalanx_of_5th'
 };
 
-function isHand(n) {
-    if (n.indexOf('foot')!==-1 || n.indexOf('_of_foot')!==-1 || n.indexOf('finger_of_foot')!==-1) return false;
-    for (var i=0;i<HAND_KEYS.length;i++) if (n.indexOf(HAND_KEYS[i])!==-1) return true;
-    return false;
-}
-
-window.update3D = function(bones) {
-    if (!_sk) return;
-    _sk.traverse(function(node) {
-        if (!node.isMesh) return;
-        if (!isHand(node.name)) { node.visible=false; return; }
-        node.visible = true;
-        var m = null;
-        for (var i=0;i<bones.length;i++) {
-            var k = HAND_B2M[bones[i].name];
-            if (k && node.name.indexOf(k)!==-1) { m=bones[i]; break; }
-        }
-        if (m) {
-            var c=0x3b82f6, e=0.5;
-            if (m.type==='start')  { c=0x10b981; e=0.6; }
-            if (m.type==='bad')    { c=0xef4444; e=0.8; }
-            if (m.type==='reveal') { c=0xd946ef; e=0.8; }
-            node.material = new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:e,transparent:false,opacity:1});
-        } else {
-            node.material = new THREE.MeshStandardMaterial({color:0x334155,transparent:true,opacity:0.3});
-        }
-    });
-};
-
-window.reset3D = function() {
-    if (!_sk) return;
-    _sk.traverse(function(node) {
-        if (!node.isMesh) return;
-        if (isHand(node.name)) {
-            node.material = new THREE.MeshStandardMaterial({color:0x334155,transparent:true,opacity:0.3});
-            node.visible = true;
-        } else { node.visible = false; }
-    });
-};
-
-window.addEventListener('DOMContentLoaded', function() {
-    var cont = document.getElementById('cv');
-    var scene = new THREE.Scene();
-    var cam = new THREE.PerspectiveCamera(45, cont.clientWidth/cont.clientHeight, 0.01, 100);
-    var renderer = new THREE.WebGLRenderer({antialias:true,alpha:true});
-    renderer.setSize(cont.clientWidth, cont.clientHeight);
-    cont.appendChild(renderer.domElement);
-
-    var ctrl = new THREE.OrbitControls(cam, renderer.domElement);
-    ctrl.enableDamping=true; ctrl.dampingFactor=0.05; ctrl.maxPolarAngle=Math.PI;
-    ctrl.minDistance=0.05; ctrl.maxDistance=2; ctrl.enableZoom=false;
-
-    // Zoom to cursor
-    renderer.domElement.addEventListener('wheel', function(e) {
-        e.preventDefault();
-        var rect=renderer.domElement.getBoundingClientRect();
-        var mouse=new THREE.Vector2(((e.clientX-rect.left)/rect.width)*2-1,-((e.clientY-rect.top)/rect.height)*2+1);
-        var ray=new THREE.Raycaster(); ray.setFromCamera(mouse,cam);
-        var t3d;
-        if(_sk){var h=ray.intersectObjects([_sk],true);if(h.length)t3d=h[0].point.clone();}
-        if(!t3d)t3d=ray.ray.at(cam.position.distanceTo(ctrl.target),new THREE.Vector3());
-        var dir=new THREE.Vector3().subVectors(t3d,cam.position);
-        var dist=cam.position.distanceTo(ctrl.target);
-        var step=dir.length()*0.12;
-        if(e.deltaY<0&&dist>ctrl.minDistance)cam.position.addScaledVector(dir.normalize(),step);
-        else if(e.deltaY>0&&dist<ctrl.maxDistance)cam.position.addScaledVector(dir.normalize(),-step);
-        ctrl.update();
-    },{passive:false});
-
-    scene.add(new THREE.AmbientLight(0xffffff,0.7));
-    var dl=new THREE.DirectionalLight(0xffffff,0.9); dl.position.set(3,8,5); scene.add(dl);
-    var dl2=new THREE.DirectionalLight(0xffffff,0.3); dl2.position.set(-5,-3,-5); scene.add(dl2);
-
-    var draco=new THREE.DRACOLoader(); draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
-    var loader=new THREE.GLTFLoader(); loader.setDRACOLoader(draco);
-    loader.load('../models/overview-skeleton.glb', function(gltf) {
-        _sk = gltf.scene; scene.add(_sk);
-        var box = new THREE.Box3();
-        _sk.traverse(function(n){ if(!n.isMesh) return; if(isHand(n.name)) box.expandByObject(n); else n.visible=false; });
-        if (box.isEmpty()) { console.warn('No hand meshes found - check mesh name filters'); return; }
-        var center=box.getCenter(new THREE.Vector3()); var size=box.getSize(new THREE.Vector3());
-        ctrl.target.copy(center);
-        var fov=cam.fov*(Math.PI/180); var maxDim=Math.max(size.x,size.y,size.z);
-        cam.position.set(center.x, center.y, center.z+Math.abs(maxDim/2/Math.tan(fov/2))*2.2);
-        cam.lookAt(center); ctrl.update();
-        window.reset3D();
-        console.log('Hand model loaded. Box size:', size, 'Center:', center);
-    }, undefined, function(err){ console.error('Model load error:', err); });
-
-    function animate(){ requestAnimationFrame(animate); ctrl.update(); renderer.render(scene,cam); }
-    animate();
-
-    var ro = new ResizeObserver(function(){
-        cam.aspect=cont.clientWidth/cont.clientHeight; cam.updateProjectionMatrix();
-        renderer.setSize(cont.clientWidth,cont.clientHeight);
-    }); ro.observe(cont);
-});
+const HAND_ALL = Object.keys(HAND_GRAPH);
+const HAND_TOTAL = HAND_ALL.length;
+const HAND_START = 'Radius';
 </script>
 
-<!-- REACT UI -->
+<script src="../js/3d/handEngine.js"></script>
+<script src="../js/ui/floodFillUI.js"></script>
+
 <script type="text/babel">
-const { useState, useEffect, useMemo, useCallback, useRef } = React;
+const { useState, useEffect, useMemo, useCallback } = React;
 
-// ── HAND GRAPH ──────────────────────────────────────────────────────────────
-const GRAPH = {
-    'Radius':              ['Ulna','Scaphoid','Lunate'],
-    'Ulna':                ['Radius','Triquetrum','Pisiform'],
-    'Scaphoid':            ['Radius','Lunate','Trapezium','Trapezoid','Capitate'],
-    'Lunate':              ['Radius','Scaphoid','Triquetrum','Capitate','Hamate'],
-    'Triquetrum':          ['Ulna','Lunate','Pisiform','Hamate'],
-    'Pisiform':            ['Ulna','Triquetrum'],
-    'Trapezium':           ['Scaphoid','Trapezoid','Metacarpal I'],
-    'Trapezoid':           ['Scaphoid','Trapezium','Capitate','Metacarpal II'],
-    'Capitate':            ['Scaphoid','Lunate','Trapezoid','Hamate','Metacarpal II','Metacarpal III'],
-    'Hamate':              ['Lunate','Triquetrum','Capitate','Metacarpal IV','Metacarpal V'],
-    'Metacarpal I':        ['Trapezium','Proximal Phalanx I'],
-    'Metacarpal II':       ['Trapezoid','Capitate','Proximal Phalanx II'],
-    'Metacarpal III':      ['Capitate','Proximal Phalanx III'],
-    'Metacarpal IV':       ['Hamate','Proximal Phalanx IV'],
-    'Metacarpal V':        ['Hamate','Proximal Phalanx V'],
-    'Proximal Phalanx I':  ['Metacarpal I','Distal Phalanx I'],
-    'Distal Phalanx I':    ['Proximal Phalanx I'],
-    'Proximal Phalanx II': ['Metacarpal II','Middle Phalanx II'],
-    'Middle Phalanx II':   ['Proximal Phalanx II','Distal Phalanx II'],
-    'Distal Phalanx II':   ['Middle Phalanx II'],
-    'Proximal Phalanx III':['Metacarpal III','Middle Phalanx III'],
-    'Middle Phalanx III':  ['Proximal Phalanx III','Distal Phalanx III'],
-    'Distal Phalanx III':  ['Middle Phalanx III'],
-    'Proximal Phalanx IV': ['Metacarpal IV','Middle Phalanx IV'],
-    'Middle Phalanx IV':   ['Proximal Phalanx IV','Distal Phalanx IV'],
-    'Distal Phalanx IV':   ['Middle Phalanx IV'],
-    'Proximal Phalanx V':  ['Metacarpal V','Middle Phalanx V'],
-    'Middle Phalanx V':    ['Proximal Phalanx V','Distal Phalanx V'],
-    'Distal Phalanx V':    ['Middle Phalanx V'],
-};
-const ALL   = Object.keys(GRAPH);
-const TOTAL = ALL.length; // 29
-const START = 'Radius';
+function HandGame() {
+    const [guessed, setGuessed] = useState(() => new Set([HAND_START]));
+    const [bad, setBad] = useState([]);
+    const [left, setLeft] = useState((HAND_TOTAL - 1) + 5);
+    const [max, setMax] = useState((HAND_TOTAL - 1) + 5);
+    const [input, setInput] = useState('');
+    const [selIdx, setSelIdx] = useState(-1);
+    const [phase, setPhase] = useState('playing');
+    const [reveal, setReveal] = useState(false);
 
-// ── COMPONENT ───────────────────────────────────────────────────────────────
-function App() {
-    const [gameKey, setGameKey] = useState(0);  // increment to force new game
-    const [guessed, setGuessed] = useState(() => new Set([START]));
-    const [bad,     setBad]     = useState([]);
-    const [left,    setLeft]    = useState((TOTAL - 1) + 5);
-    const [max,     setMax]     = useState((TOTAL - 1) + 5);
-    const [input,   setInput]   = useState('');
-    const [selIdx,  setSelIdx]  = useState(-1);
-    const [phase,   setPhase]   = useState('playing');
-    const [reveal,  setReveal]  = useState(false);
-    const inputRef = useRef(null);
-
-    // Start/restart game
     const startNew = useCallback(() => {
-        const total = (TOTAL - 1) + 5;
-        setGuessed(new Set([START]));
+        const total = (HAND_TOTAL - 1) + 5;
+        setGuessed(new Set([HAND_START]));
         setBad([]); setLeft(total); setMax(total);
         setInput(''); setSelIdx(-1); setPhase('playing'); setReveal(false);
         try { window.reset3D && window.reset3D(); } catch(e) {}
-        setTimeout(() => inputRef.current?.focus(), 50);
     }, []);
 
-    // New game button: increment key + reset
-    const newGame = useCallback(() => {
-        setGameKey(k => k + 1);
-        startNew();
-    }, [startNew]);
-
-    // Init on mount
     useEffect(() => { startNew(); }, []);
 
-    // Bones adjacent to any guessed bone
     const frontier = useMemo(() => {
         const f = new Set();
-        guessed.forEach(b => { (GRAPH[b]||[]).forEach(n => { if (!guessed.has(n)) f.add(n); }); });
+        guessed.forEach(b => { (HAND_GRAPH[b]||[]).forEach(n => { if(!guessed.has(n)) f.add(n); }); });
         return f;
     }, [guessed]);
 
-    // Sync 3D highlights
     useEffect(() => {
         const h = [];
-        guessed.forEach(b => h.push({name:b, type: b===START ? 'start' : 'found'}));
-        if (reveal && phase==='lost') ALL.forEach(b => { if (!guessed.has(b)) h.push({name:b,type:'reveal'}); });
+        guessed.forEach(b => h.push({name:b, type: b===HAND_START ? 'start' : 'found'}));
+        if (reveal && phase==='lost') HAND_ALL.forEach(b => { if(!guessed.has(b)) h.push({name:b,type:'reveal'}); });
         bad.forEach(b => h.push({name:b,type:'bad'}));
         try { window.update3D && window.update3D(h); } catch(e) {}
     }, [guessed, bad, reveal, phase]);
 
-    // Suggestions — only valid, unguessed, non-bad bones matching input
     const suggestions = useMemo(() => {
         if (!input.trim()) return [];
-        return ALL.filter(b =>
+        return HAND_ALL.filter(b =>
             b.toLowerCase().includes(input.toLowerCase()) &&
             !guessed.has(b) && !bad.includes(b)
         ).slice(0, 7);
@@ -249,180 +123,46 @@ function App() {
     useEffect(() => { setSelIdx(-1); }, [suggestions.length]);
 
     const submit = useCallback((g) => {
-        if (phase !== 'playing' || !g || !ALL.includes(g) || guessed.has(g)) return;
-        const nl = left - 1;
-        setLeft(nl);
+        if (phase !== 'playing' || !g || !HAND_ALL.includes(g) || guessed.has(g)) return;
+        const nl = left - 1; setLeft(nl);
         if (frontier.has(g)) {
             const ng = new Set(guessed); ng.add(g); setGuessed(ng);
-            if (ng.size === TOTAL) { setPhase('won'); setInput(''); return; }
+            if (ng.size === HAND_TOTAL) { setPhase('won'); setInput(''); return; }
             if (nl <= 0) { setPhase('lost'); setInput(''); return; }
         } else {
             setBad(p => [...new Set([g, ...p])]);
             if (nl <= 0) { setPhase('lost'); setInput(''); return; }
         }
         setInput(''); setSelIdx(-1);
-        setTimeout(() => inputRef.current?.focus(), 10);
     }, [phase, guessed, frontier, left, bad]);
 
     const handleKey = (e) => {
         if (e.key === 'ArrowDown') { e.preventDefault(); setSelIdx(i => Math.min(i+1, suggestions.length-1)); }
         else if (e.key === 'ArrowUp') { e.preventDefault(); setSelIdx(i => Math.max(i-1, 0)); }
         else if (e.key === 'Enter') {
-            // Only submit if a suggestion is highlighted or exactly one suggestion exists
             if (selIdx >= 0 && suggestions[selIdx]) submit(suggestions[selIdx]);
             else if (suggestions.length === 1) submit(suggestions[0]);
-            // else: do nothing — force user to select from list
         }
         else if (e.key === 'Escape') { setInput(''); setSelIdx(-1); }
     };
 
-    const pct = Math.round((guessed.size / TOTAL) * 100);
-    const foundList = [...guessed].filter(b => b !== START);
-
-    // ── RENDER ────────────────────────────────────────────────────────────
-    const NAV_H = 56, BAR_H = 48, SRCH_H = 64, PANEL_W = 280;
-    const panelStyle = {position:'fixed',top:NAV_H,right:0,width:PANEL_W,bottom:0,zIndex:100,
-        background:'rgba(10,15,30,0.98)',borderLeft:'1px solid #1e293b',display:'flex',flexDirection:'column'};
-    const secHead = (label, count, color) => (
-        <div style={{padding:'9px 14px 6px',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
-            <span style={{fontSize:8,color,textTransform:'uppercase',letterSpacing:'0.25em',fontWeight:700}}>{label}</span>
-            <span style={{fontSize:10,color,fontWeight:700}}>{count}</span>
-        </div>
-    );
-
     return (
-        <>
-        {/* ── NAVBAR ── */}
-        <div style={{position:'fixed',top:0,left:0,right:0,height:NAV_H,zIndex:200,
-            background:'rgba(10,15,30,0.98)',borderBottom:'1px solid #1e293b',
-            display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 20px'}}>
-            <div style={{display:'flex',alignItems:'center',gap:14}}>
-                <h1 style={{fontSize:22,fontWeight:900,color:'white',margin:0,letterSpacing:'-0.05em',textTransform:'uppercase'}}>Anatomle</h1>
-                <span style={{fontSize:9,color:'#10b981',letterSpacing:'0.3em',textTransform:'uppercase',opacity:0.9}}>✋ Hand Bones</span>
-            </div>
-            <div style={{display:'flex',alignItems:'center',gap:20}}>
-                <span style={{fontSize:10,color:'#94a3b8'}}>{guessed.size}/{TOTAL} found</span>
-                <a href="../index.html" style={{fontSize:9,color:'#64748b',textDecoration:'none',textTransform:'uppercase',letterSpacing:'0.2em'}}>← Menu</a>
-            </div>
-        </div>
-
-        {/* ── CHALLENGE BAR ── */}
-        <div style={{position:'fixed',top:NAV_H,left:0,right:PANEL_W,height:BAR_H,zIndex:100,
-            background:'rgba(10,15,30,0.92)',borderBottom:'1px solid #1e293b',
-            display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 18px'}}>
-            <span style={{fontSize:10,color:'#94a3b8'}}>
-                Start: <span style={{color:'#34d399',fontWeight:700}}>{START}</span>
-                &nbsp;·&nbsp; Name any bone <span style={{color:'#60a5fa',fontWeight:600}}>touching</span> a found bone
-            </span>
-            <div style={{display:'flex',alignItems:'center',gap:10}}>
-                <div style={{width:90,height:5,background:'#1e293b',borderRadius:3,overflow:'hidden'}}>
-                    <div style={{width:`${pct}%`,height:'100%',background:pct===100?'#10b981':'#3b82f6',transition:'width .4s'}}/>
-                </div>
-                <span style={{fontSize:10,fontWeight:700,color:left<5?'#f87171':'#34d399'}}>{left} guesses</span>
-            </div>
-        </div>
-
-        {/* ── RIGHT PANEL ── */}
-        <div style={panelStyle}>
-            {/* Correct / Found */}
-            <div style={{flex:'1 1 0',overflow:'hidden',display:'flex',flexDirection:'column',borderBottom:'1px solid #1e293b'}}>
-                {secHead('✓ Correct', guessed.size, '#34d399')}
-                <div className="scr" style={{overflowY:'auto',flex:1,padding:'0 12px 10px'}}>
-                    <div style={{padding:'5px 9px',marginBottom:3,background:'rgba(16,185,129,0.12)',border:'1px solid rgba(16,185,129,0.3)',borderRadius:3,fontSize:9,color:'#34d399',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.05em',display:'flex',justifyContent:'space-between'}}>
-                        <span>{START}</span><span>📍</span>
-                    </div>
-                    {foundList.map(b => (
-                        <div key={b} style={{padding:'5px 9px',marginBottom:3,background:'rgba(59,130,246,0.1)',border:'1px solid rgba(59,130,246,0.25)',borderRadius:3,fontSize:9,color:'#93c5fd',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.05em'}}>{b}</div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Failed / Not adjacent */}
-            <div style={{flex:'0 0 auto',maxHeight:'38%',overflow:'hidden',display:'flex',flexDirection:'column',borderBottom:'1px solid #1e293b'}}>
-                {secHead('✗ Not Adjacent', bad.length, '#f87171')}
-                <div className="scr" style={{overflowY:'auto',flex:1,padding:'0 12px 10px'}}>
-                    {bad.length === 0 && <div style={{fontSize:9,color:'#1e293b',textAlign:'center',marginTop:6}}>None yet</div>}
-                    {bad.map(b => (
-                        <div key={b} className="shake" style={{padding:'5px 9px',marginBottom:3,background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.25)',borderRadius:3,fontSize:9,color:'#fca5a5',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.05em'}}>{b}</div>
-                    ))}
-                </div>
-            </div>
-
-            {/* New game */}
-            <div style={{padding:12,flexShrink:0}}>
-                <button onClick={newGame} style={{width:'100%',padding:'11px 0',background:'white',color:'black',border:'none',fontFamily:'EB Garamond,serif',fontWeight:900,fontSize:10,textTransform:'uppercase',letterSpacing:'0.2em',cursor:'pointer',transition:'background .2s'}}>
-                    New Hand
-                </button>
-            </div>
-        </div>
-
-        {/* ── SEARCH BAR ── */}
-        <div style={{position:'fixed',bottom:0,left:0,right:PANEL_W,height:SRCH_H,zIndex:150,
-            background:'rgba(10,15,30,0.98)',borderTop:'1px solid #1e293b',
-            padding:'10px 14px',display:'flex',alignItems:'center'}}>
-            <div style={{flex:1,position:'relative'}}>
-                {suggestions.length > 0 && (
-                    <div style={{position:'absolute',bottom:'100%',left:0,right:0,background:'#0f172a',border:'1px solid #334155',borderBottom:'none',zIndex:300,maxHeight:280,overflowY:'auto'}}>
-                        {suggestions.map((s,i) => (
-                            <div key={s} onClick={() => submit(s)}
-                                style={{padding:'10px 14px',fontSize:10,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',
-                                    cursor:'pointer',color: i===selIdx?'white':'#94a3b8',
-                                    background: i===selIdx?'#1d4ed8':'transparent',
-                                    borderBottom:'1px solid #1e293b',transition:'background .1s'}}>
-                                {s}
-                            </div>
-                        ))}
-                    </div>
-                )}
-                <input ref={inputRef}
-                    value={input}
-                    onChange={e => setInput(e.target.value)}
-                    onKeyDown={handleKey}
-                    disabled={phase !== 'playing'}
-                    placeholder={phase==='playing' ? "Type to search, then select from list above ↑" : "Game over — click New Hand"}
-                    style={{width:'100%',background:'#1e293b',border:'1px solid #334155',padding:'10px 14px',
-                        color:'white',fontFamily:'EB Garamond,serif',fontSize:11,fontStyle:'italic',outline:'none',
-                        borderColor: input && suggestions.length===0 ? '#ef4444' : '#334155'}}
-                />
-            </div>
-        </div>
-
-        {/* ── END OVERLAY ── */}
-        {phase !== 'playing' && !reveal && (
-            <div style={{position:'fixed',inset:0,zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(18px)'}}
-                className={phase==='won'?'win-bg':'loss-bg'}>
-                <div style={{textAlign:'center',padding:48,background:'rgba(10,15,30,0.95)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:24,maxWidth:420}}>
-                    <h2 style={{fontSize:46,fontWeight:900,color:'white',margin:'0 0 8px',letterSpacing:'-0.05em',textTransform:'uppercase'}}>
-                        {phase==='won' ? '✋ Complete!' : '✗ Incomplete'}
-                    </h2>
-                    <p style={{color:'#94a3b8',fontSize:14,marginBottom:24}}>
-                        {phase==='won'
-                            ? `All ${TOTAL} hand bones identified! ${max-left} guesses used.`
-                            : `Found ${guessed.size}/${TOTAL} bones. ${bad.length} non-adjacent guess${bad.length!==1?'es':''}.`}
-                    </p>
-                    {phase==='lost' && (
-                        <div style={{marginBottom:20}}>
-                            <button onClick={() => setReveal(true)} style={{padding:'10px 22px',background:'#a855f7',color:'white',border:'none',fontWeight:900,fontSize:10,textTransform:'uppercase',cursor:'pointer',letterSpacing:'0.15em',fontFamily:'EB Garamond,serif'}}>
-                                👁 Reveal Missing Bones
-                            </button>
-                        </div>
-                    )}
-                    <div style={{display:'flex',gap:12,justifyContent:'center'}}>
-                        <button onClick={newGame} style={{padding:'13px 32px',background:'white',color:'black',border:'none',fontWeight:900,fontSize:10,textTransform:'uppercase',letterSpacing:'0.15em',cursor:'pointer',fontFamily:'EB Garamond,serif'}}>
-                            Play Again
-                        </button>
-                        <a href="../index.html" style={{padding:'13px 32px',background:'#1e293b',color:'white',fontWeight:900,fontSize:10,textTransform:'uppercase',letterSpacing:'0.1em',textDecoration:'none',display:'flex',alignItems:'center',fontFamily:'EB Garamond,serif'}}>
-                            Menu
-                        </a>
-                    </div>
-                </div>
-            </div>
-        )}
-        </>
+        <window.FloodFillUI
+            gameTitle="✋ Hand"
+            accentColor="#10b981"
+            state={{ start: HAND_START, total: HAND_TOTAL, guessed, bad, left, max, input, selIdx, phase, reveal, suggestions }}
+            handlers={{
+                onInputChange: e => setInput(e.target.value),
+                onKeyDown: handleKey,
+                onSubmit: submit,
+                onNewGame: startNew,
+                onReveal: () => setReveal(true)
+            }}
+        />
     );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+ReactDOM.createRoot(document.getElementById('root')).render(<HandGame />);
 </script>
 </body>
 </html>
