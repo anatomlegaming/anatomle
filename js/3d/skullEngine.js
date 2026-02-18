@@ -85,7 +85,7 @@ window.addEventListener('DOMContentLoaded',function(){
     
     var draco=new THREE.DRACOLoader();draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
     var loader=new THREE.GLTFLoader();loader.setDRACOLoader(draco);
-    loader.load('../../models/overview-skeleton.glb',function(gltf){
+    loader.load('../models/overview-skeleton.glb',function(gltf){
         _sk=gltf.scene;scene.add(_sk);
         var box=new THREE.Box3();
         _sk.traverse(function(n){
