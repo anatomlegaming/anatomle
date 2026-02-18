@@ -8,12 +8,12 @@
 var _sk = null;
 var HAND_MESH_KEYS = [
     'Radiusr','Ulnar',
-    'Scaphoidr','Lunater','Triquetrum','Pisiformr',
+    'Scaphoidr','Lunate_boner','Triquetrum','Pisiformr',
     'Trapeziumr','Trapezoidr','Capitater','Hamater',
     '1st_metacarpal_boner','2nd_metacarpal_boner','3rd_metacarpal_boner','4th_metacarpal_boner','5th_metacarpal_boner',
     'Proximal_phalanx_of_1st_fingerr','Distal_phalanx_of_1st_fingerr',
     'Proximal_phalanx_of_2d_fingerr','Middle_phalanx_of_2d_fingerr','Distal_phalanx_of_2d_fingerr',
-    'Proximal_phalanx_of_3d_fingerr','Middle_phalanx_of_3d_fingerr','Distal_phalanx_of_3d_fingerr',
+    'roximal_phalanx_of_3d_fingerr','iddle_phalanx_of_3d_fingerr','istal_phalanx_of_3d_fingerr',
     'Proximal_phalanx_of_4th_fingerr','Middle_phalanx_of_4th_fingerr','Distal_phalanx_of_4th_fingerr',
     'Proximal_phalanx_of_5th_fingerr','Middle_phalanx_of_5th_fingerr','Distal_phalanx_of_5th_fingerr'
 ];
