@@ -10,27 +10,75 @@
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;700&display=swap');
-        * { box-sizing: border-box; }
-        body { font-family: 'EB Garamond', serif; background: #0f172a; color: #d6d3d1; margin: 0; overflow: hidden; }
-        #cv { position: fixed; top: 104px; left: 0; right: 280px; bottom: 64px; z-index: 10; background: linear-gradient(160deg, #1e293b 0%, #0f172a 100%); }
-        .scr::-webkit-scrollbar { width: 3px; }
-        .scr::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
-        .shake { animation: shake .3s ease-in-out; }
-        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
-        .win-bg  { background: radial-gradient(circle, rgba(16,185,129,.2) 0%, rgba(5,10,20,.97) 100%); }
-        .loss-bg { background: radial-gradient(circle, rgba(239,68,68,.2) 0%, rgba(5,10,20,.97) 100%); }
-    </style>
+    * { box-sizing: border-box; }
+    body {
+        font-family: 'DM Sans', sans-serif;
+        background: #fdf6ec;
+        color: #2d1f14;
+        margin: 0;
+        overflow: hidden;
+    }
+    #cv {
+        position: fixed;
+        top: 104px;
+        left: 0;
+        right: 580px;
+        bottom: 68px;
+        z-index: 10;
+        background: radial-gradient(ellipse at 50% 40%, #f5e8d0 0%, #ede0c8 60%, #e4d4b8 100%);
+    }
+    #ad-slot {
+        position: fixed;
+        top: 58px;
+        right: 0;
+        width: 160px;
+        bottom: 0;
+        z-index: 150;
+        background: #fff8f0;
+        border-left: 2px solid #e8d5c0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    #ad-slot span {
+        font-family: 'DM Sans', sans-serif;
+        font-size: 9px;
+        color: #c8b8a8;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        writing-mode: vertical-rl;
+    }
+    #ad-slot .ad-placeholder {
+        width: 120px;
+        height: 240px;
+        border: 2px dashed #e8d5c0;
+        border-radius: 8px;
+    }
+    .scr::-webkit-scrollbar { width: 3px; }
+    .scr::-webkit-scrollbar-thumb { background: #e8d5c0; border-radius: 2px; }
+    .shake { animation: shake 0.3s ease-in-out; }
+    @keyframes shake {
+        0%,100% { transform: translateX(0); }
+        25%      { transform: translateX(-4px); }
+        75%      { transform: translateX(4px); }
+    }
+</style>
 </head>
 <body>
 <div id="cv"></div>
+<div id="ad-slot">
+    <div class="ad-placeholder"></div>
+    <span>Coming Soon</span>
+</div>
 <div id="root"></div>
 
-<!-- ══════════════════════════════════════════════════════════════════════════
-     GAME CONFIGURATION
-     ══════════════════════════════════════════════════════════════════════════ -->
 <script>
 const SKULL_GRAPH = {
     'Frontal Bone':['Parietal Bone','Sphenoid Bone','Ethmoid Bone','Nasal Bone','Lacrimal Bone','Zygomatic Bone','Maxilla'],
@@ -48,32 +96,13 @@ const SKULL_GRAPH = {
     'Inferior Nasal Concha':['Ethmoid Bone','Maxilla'],
     'Mandible':['Temporal Bone','Maxilla'],
 };
-
-const SKULL_B2M = {
-    'Frontal Bone':'Frontal','Parietal Bone':'Parietal','Occipital Bone':'Occipital',
-    'Temporal Bone':'Temporal','Sphenoid Bone':'Sphenoid','Ethmoid Bone':'Ethmoid',
-    'Nasal Bone':'Nasal_boner','Lacrimal Bone':'Lacrimal_boner','Zygomatic Bone':'Zygomatic',
-    'Maxilla':'Maxilla','Palatine Bone':'Palatine','Vomer':'Vomer',
-    'Inferior Nasal Concha':'Inferior_nasal_concha_boner','Mandible':'Mandible'
-};
-
 const SKULL_ALL = Object.keys(SKULL_GRAPH);
 const SKULL_TOTAL = SKULL_ALL.length;
 </script>
 
-<!-- ══════════════════════════════════════════════════════════════════════════
-     3D ENGINE MODULE
-     ══════════════════════════════════════════════════════════════════════════ -->
 <script src="../js/3d/skullEngine.js"></script>
-
-<!-- ══════════════════════════════════════════════════════════════════════════
-     UI TEMPLATE MODULE
-     ══════════════════════════════════════════════════════════════════════════ -->
 <script src="../js/ui/floodFillUI.js"></script>
 
-<!-- ══════════════════════════════════════════════════════════════════════════
-     GAME LOGIC
-     ══════════════════════════════════════════════════════════════════════════ -->
 <script type="text/babel">
 const { useState, useEffect, useMemo, useCallback } = React;
 
@@ -137,23 +166,22 @@ function SkullGame() {
         setInput(''); setSelIdx(-1);
     }, [phase, guessed, frontier, left, bad]);
 
-    const handleKey = (e) => {
-        if (e.key === 'ArrowDown') { e.preventDefault(); setSelIdx(i => Math.min(i+1, suggestions.length-1)); }
-        else if (e.key === 'ArrowUp') { e.preventDefault(); setSelIdx(i => Math.max(i-1, 0)); }
-        else if (e.key === 'Enter') {
+    const handleKey = (ev) => {
+        if (ev.key === 'ArrowDown') { ev.preventDefault(); setSelIdx(i => Math.min(i+1, suggestions.length-1)); }
+        else if (ev.key === 'ArrowUp') { ev.preventDefault(); setSelIdx(i => Math.max(i-1, 0)); }
+        else if (ev.key === 'Enter') {
             if (selIdx >= 0 && suggestions[selIdx]) submit(suggestions[selIdx]);
             else if (suggestions.length === 1) submit(suggestions[0]);
         }
-        else if (e.key === 'Escape') { setInput(''); setSelIdx(-1); }
+        else if (ev.key === 'Escape') { setInput(''); setSelIdx(-1); }
     };
 
     return (
         <window.FloodFillUI
             gameTitle="💀 Skull"
-            accentColor="#f59e0b"
             state={{ start, total: SKULL_TOTAL, guessed, bad, left, max, input, selIdx, phase, reveal, suggestions }}
             handlers={{
-                onInputChange: e => setInput(e.target.value),
+                onInputChange: ev => setInput(ev.target.value),
                 onKeyDown: handleKey,
                 onSubmit: submit,
                 onNewGame: startNew,
@@ -162,7 +190,6 @@ function SkullGame() {
         />
     );
 }
-
 ReactDOM.createRoot(document.getElementById('root')).render(<SkullGame />);
 </script>
 </body>
