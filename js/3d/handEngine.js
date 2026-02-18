@@ -5,6 +5,29 @@
 // Requires: HAND_B2M mapping defined in game file
 // ============================================================================
 
+// ── Bone name → 3D mesh node mapping (owned by engine, not HTML) ─────────────
+var HAND_B2M = {
+    'Radius':'Radiusr','Ulna':'Ulnar',
+    'Scaphoid':'Scaphoidr','Lunate':'Lunate_boner','Triquetrum':'Triquetrum','Pisiform':'Pisiformr',
+    'Trapezium':'Trapeziumr','Trapezoid':'Trapezoidr','Capitate':'Capitater','Hamate':'Hamater',
+    'Metacarpal I':'1st_metacarpal_boner','Metacarpal II':'2nd_metacarpal_boner',
+    'Metacarpal III':'3rd_metacarpal_boner','Metacarpal IV':'4th_metacarpal_boner','Metacarpal V':'5th_metacarpal_boner',
+    'Proximal Phalanx I':'Proximal_phalanx_of_1st_fingerr',
+    'Distal Phalanx I':'Distal_phalanx_of_1st_fingerr',
+    'Proximal Phalanx II':'Proximal_phalanx_of_2d_fingerr',
+    'Middle Phalanx II':'Middle_phalanx_of_2d_fingerr',
+    'Distal Phalanx II':'Distal_phalanx_of_2d_fingerr',
+    'Proximal Phalanx III':'roximal_phalanx_of_3',
+    'Middle Phalanx III':'iddle_phalanx_of_3',
+    'Distal Phalanx III':'istal_phalanx_of_3',
+    'Proximal Phalanx IV':'Proximal_phalanx_of_4th_fingerr',
+    'Middle Phalanx IV':'Middle_phalanx_of_4th_fingerr',
+    'Distal Phalanx IV':'Distal_phalanx_of_4th_fingerr',
+    'Proximal Phalanx V':'Proximal_phalanx_of_5th_fingerr',
+    'Middle Phalanx V':'Middle_phalanx_of_5th_fingerr',
+    'Distal Phalanx V':'Distal_phalanx_of_5th_fingerr',
+};
+
 var _sk = null;
 var HAND_MESH_KEYS = [
     'Radiusr','Ulnar',
