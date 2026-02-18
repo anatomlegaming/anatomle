@@ -13,7 +13,7 @@
 //     handlers={gameHandlers}
 //   />
 
-const { useRef, useEffect } = React;
+var useRef = React.useRef, useEffect = React.useEffect;
 
 function PathfindingUI({ gameTitle, accentColor, state, handlers }) {
     const {
