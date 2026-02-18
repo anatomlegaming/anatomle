@@ -110,7 +110,6 @@ const FOOT_GRAPH = {
 };
 const FOOT_ALL = Object.keys(FOOT_GRAPH);
 const FOOT_TOTAL = FOOT_ALL.length;
-const FOOT_START = 'Tibia';
 </script>
 
 <script src="../js/3d/footEngine.js"></script>
@@ -127,11 +126,14 @@ function FootGame() {
     const [input, setInput] = useState('');
     const [selIdx, setSelIdx] = useState(-1);
     const [phase, setPhase] = useState('playing');
+    const [start, setStart] = useState('');
     const [reveal, setReveal] = useState(false);
 
     const startNew = useCallback(() => {
         const total = (FOOT_TOTAL - 1) + 5;
-        setGuessed(new Set([FOOT_START]));
+        const newStart = FOOT_ALL[Math.floor(Math.random() * FOOT_ALL.length)];
+        setStart(newStart);
+        setGuessed(new Set([newStart]));
         setBad([]); setLeft(total); setMax(total);
         setInput(''); setSelIdx(-1); setPhase('playing'); setReveal(false);
         try { window.reset3D && window.reset3D(); } catch(e) {}
@@ -147,7 +149,7 @@ function FootGame() {
 
     useEffect(() => {
         const h = [];
-        guessed.forEach(b => h.push({name:b, type: b===FOOT_START ? 'start' : 'found'}));
+        guessed.forEach(b => h.push({name:b, type: b===start ? 'start' : 'found'}));
         if (reveal && phase==='lost') FOOT_ALL.forEach(b => { if(!guessed.has(b)) h.push({name:b,type:'reveal'}); });
         bad.forEach(b => h.push({name:b,type:'bad'}));
         try { window.update3D && window.update3D(h); } catch(e) {}
@@ -190,7 +192,7 @@ function FootGame() {
     return (
         <window.FloodFillUI
             gameTitle="🦶 Foot"
-            state={{ start: FOOT_START, total: FOOT_TOTAL, guessed, bad, left, max, input, selIdx, phase, reveal, suggestions }}
+            state={{ start: start, total: FOOT_TOTAL, guessed, bad, left, max, input, selIdx, phase, reveal, suggestions }}
             handlers={{
                 onInputChange: ev => setInput(ev.target.value),
                 onKeyDown: handleKey,
