@@ -115,7 +115,7 @@ const HAND_TOTAL = HAND_ALL.length;
 const { useState, useEffect, useMemo, useCallback } = React;
 
 function HandGame() {
-    const [guessed, setGuessed] = useState(() => new Set([HAND_START]));
+    const [guessed, setGuessed] = useState(() => new Set());
     const [bad, setBad] = useState([]);
     const [left, setLeft] = useState((HAND_TOTAL - 1) + 5);
     const [max, setMax] = useState((HAND_TOTAL - 1) + 5);
