@@ -146,7 +146,7 @@ function SkullGame() {
         if (!input.trim()) return [];
         return SKULL_ALL.filter(b =>
             b.toLowerCase().includes(input.toLowerCase()) &&
-            !guessed.has(b) && !bad.includes(b)
+            !guessed.has(b)
         ).slice(0, 7);
     }, [input, guessed, bad]);
 
@@ -160,7 +160,7 @@ function SkullGame() {
             if (ng.size === SKULL_TOTAL) { setPhase('won'); setInput(''); return; }
             if (nl <= 0) { setPhase('lost'); setInput(''); return; }
         } else {
-            setBad(p => [...new Set([g, ...p])]);
+            setBad(p => p.includes(g) ? p : [g, ...p]);
             if (nl <= 0) { setPhase('lost'); setInput(''); return; }
         }
         setInput(''); setSelIdx(-1);
