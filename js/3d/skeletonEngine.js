@@ -78,7 +78,7 @@ window.addEventListener('DOMContentLoaded', function() {
         var center=box.getCenter(new THREE.Vector3()); var size=box.getSize(new THREE.Vector3());
         ctrl.target.copy(center);
         var fov=cam.fov*(Math.PI/180); var maxDim=Math.max(size.x,size.y,size.z);
-        cam.position.set(center.x,center.y,center.z+Math.abs(maxDim/2/Math.tan(fov/2))*0.9);
+        cam.position.set(center.x,center.y,center.z+Math.abs(maxDim/2/Math.tan(fov/2))*1.2);
         cam.lookAt(center); ctrl.update();
         window.reset3D();
     });
