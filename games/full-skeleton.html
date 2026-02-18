@@ -29,15 +29,58 @@
             overflow: hidden;
         }
 
-        /* 3D viewport stays dark so bones are readable */
+        /*
+            LAYOUT (all sizes defined here and mirrored in pathfindingUI.js):
+            NAV_H   = 58px   top navbar
+            BAR_H   = 46px   challenge bar (below navbar, left of panel)
+            SRCH_H  = 68px   search bar (bottom, left of panel)
+            PANEL_W = 420px  right panel
+            AD_W    = 160px  future ad/content slot (rightmost strip)
+        */
         #cv {
             position: fixed;
-            top: 104px;   /* NAV_H 58 + BAR_H 46 */
+            top: 104px;        /* NAV_H + BAR_H */
             left: 0;
-            right: 300px; /* PANEL_W */
-            bottom: 68px; /* SRCH_H */
+            right: 580px;      /* PANEL_W + AD_W */
+            bottom: 68px;      /* SRCH_H */
             z-index: 10;
-            background: linear-gradient(160deg, #1a120a 0%, #0d0905 100%);
+            /* Warm cream background — matches the rest of the UI */
+            background: radial-gradient(ellipse at 50% 40%, #f5e8d0 0%, #ede0c8 60%, #e4d4b8 100%);
+        }
+
+        /* Future ad/content slot — right edge strip */
+        #ad-slot {
+            position: fixed;
+            top: 58px;         /* NAV_H */
+            right: 0;
+            width: 160px;
+            bottom: 0;
+            z-index: 150;
+            background: #fff8f0;
+            border-left: 2px solid #e8d5c0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        #ad-slot span {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 9px;
+            color: #c8b8a8;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+        }
+        #ad-slot .ad-placeholder {
+            width: 120px;
+            height: 240px;
+            border: 2px dashed #e8d5c0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .scr::-webkit-scrollbar { width: 3px; }
@@ -53,6 +96,13 @@
 </head>
 <body>
 <div id="cv"></div>
+
+<!-- Future ad/content slot -->
+<div id="ad-slot">
+    <div class="ad-placeholder"></div>
+    <span>Coming Soon</span>
+</div>
+
 <div id="root"></div>
 
 <script src="../js/3d/skeletonEngine.js"></script>
