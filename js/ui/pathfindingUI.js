@@ -1,7 +1,7 @@
 // ============================================================================
 // ANATOMLE - PATHFINDING UI (Redesigned — warm cream/coral palette)
 // ============================================================================
-// Uses React.createElement (no JSX) — works as a plain <script> tag.
+// Uses React.createElement (no JSX) — works as a plain <script> tag.aa
 // ============================================================================
 
 (function() {
