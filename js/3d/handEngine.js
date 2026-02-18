@@ -1,5 +1,5 @@
 // ============================================================================
-// HAND 3D ENGINE
+// HAND 3D ENGINEa
 // ============================================================================
 // Requires: THREE.js, OrbitControls, GLTFLoader, DRACOLoader
 // Requires: HAND_B2M mapping defined in game file
