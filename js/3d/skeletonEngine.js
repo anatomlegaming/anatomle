@@ -11,7 +11,7 @@ var FALSE_RIB_NODES = ['Rib_(8th)r','Rib_(9th)r','Rib_(10th)r','Rib_(11th)r','Ri
 
 window.reset3D = function() {
     if (!_skeleton) return;
-    _skeleton.traverse(function(n){ if(n.isMesh) n.material=new THREE.MeshStandardMaterial({color:0x334155,transparent:true,opacity:0.25}); });
+    _skeleton.traverse(function(n){ if(n.isMesh) n.material=new THREE.MeshStandardMaterial({color:0x8B7355,transparent:true,opacity:0.55}); });
 };
 
 window.update3D = function(bones) {
@@ -28,13 +28,13 @@ window.update3D = function(bones) {
             if (key && node.name.indexOf(key)!==-1) { matched=b; break; }
         }
         if (matched) {
-            var col=0x3b82f6,em=0.5;
-            if(matched.type==='start') {col=0x10b981;em=0.5;} if(matched.type==='end')    {col=0xf59e0b;em=0.5;}
-            if(matched.type==='detour'){col=0xf97316;em=0.6;} if(matched.type==='bad')    {col=0xef4444;em=0.8;}
-            if(matched.type==='reveal'){col=0xd946ef;em=0.8;}
+            var col=0x5a8a6a,em=0.55;
+            if(matched.type==='start') {col=0x5a8a6a;em=0.55;} if(matched.type==='end')    {col=0xe8603c;em=0.6;}
+            if(matched.type==='detour'){col=0xf0a500;em=0.6;} if(matched.type==='bad')    {col=0xc94d2b;em=0.75;}
+            if(matched.type==='reveal'){col=0x8b5cf6;em=0.7;}
             node.material=new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:em,transparent:false,opacity:1});
         } else {
-            node.material=new THREE.MeshStandardMaterial({color:0x334155,transparent:true,opacity:0.25});
+            node.material=new THREE.MeshStandardMaterial({color:0x8B7355,transparent:true,opacity:0.55});
         }
     });
 };
@@ -67,8 +67,8 @@ window.addEventListener('DOMContentLoaded', function() {
         ctrl.update();
     },{passive:false});
 
-    scene.add(new THREE.AmbientLight(0xffffff,0.6));
-    var dl=new THREE.DirectionalLight(0xffffff,0.8); dl.position.set(5,10,7.5); scene.add(dl);
+    scene.add(new THREE.AmbientLight(0xfff8f0,0.85));
+    var dl=new THREE.DirectionalLight(0xfff4e8,0.7); dl.position.set(5,10,7.5); scene.add(dl);
 
     var draco=new THREE.DRACOLoader(); draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
     var loader=new THREE.GLTFLoader(); loader.setDRACOLoader(draco);
