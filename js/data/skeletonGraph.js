@@ -24,14 +24,18 @@ const SKELETON_GRAPH = {
     'Atlas (C1)': ['Occipital Bone', 'Axis (C2)'],
     'Axis (C2)': ['Atlas (C1)', 'Cervical Vertebrae'],
     'Cervical Vertebrae': ['Axis (C2)', 'Thoracic Vertebrae'],
-    'Thoracic Vertebrae': ['Cervical Vertebrae', 'Lumbar Vertebrae', 'True Ribs', 'False Ribs'],
+    'Thoracic Vertebrae': ['Cervical Vertebrae', 'Lumbar Vertebrae', 'True Ribs (1-7)', 'False Ribs (8-10)', 'Floating Ribs (11-12)'],
     'Lumbar Vertebrae': ['Thoracic Vertebrae', 'Sacrum'],
-    'Sacrum': ['Lumbar Vertebrae', 'Hip Bone'],
+    'Sacrum': ['Lumbar Vertebrae', 'Hip Bone', 'Coccyx'],
+    'Coccyx': ['Sacrum'],
 
     // ===== RIBS & STERNUM =====
-    'True Ribs': ['Thoracic Vertebrae', 'Sternum'],
-    'False Ribs': ['Thoracic Vertebrae'],
-    'Sternum': ['True Ribs', 'Clavicle'],
+    'True Ribs (1-7)':     ['Thoracic Vertebrae', 'Costal Cartilage (1-7)'],
+    'False Ribs (8-10)':   ['Thoracic Vertebrae', 'Costal Cartilage (8-10)'],
+    'Floating Ribs (11-12)': ['Thoracic Vertebrae'],
+    'Costal Cartilage (1-7)':  ['True Ribs (1-7)', 'Sternum'],
+    'Costal Cartilage (8-10)': ['False Ribs (8-10)', 'Costal Cartilage (1-7)'],
+    'Sternum': ['Costal Cartilage (1-7)', 'Clavicle'],
 
     // ===== SHOULDER & ARM =====
     'Clavicle': ['Sternum', 'Scapula'],
@@ -51,27 +55,16 @@ const SKELETON_GRAPH = {
     'Hamate': ['Lunate', 'Triquetrum', 'Capitate', 'Metacarpal IV', 'Metacarpal V'],
 
     // ===== HAND - METACARPALS =====
-    'Metacarpal I': ['Trapezium', 'Proximal Phalanx I'],
-    'Metacarpal II': ['Trapezoid', 'Capitate', 'Proximal Phalanx II'],
-    'Metacarpal III': ['Capitate', 'Proximal Phalanx III'],
-    'Metacarpal IV': ['Hamate', 'Proximal Phalanx IV'],
-    'Metacarpal V': ['Hamate', 'Proximal Phalanx V'],
+    'Metacarpal I': ['Trapezium', 'Proximal Phalanx (Hand)'],
+    'Metacarpal II': ['Trapezoid', 'Capitate', 'Proximal Phalanx (Hand)'],
+    'Metacarpal III': ['Capitate', 'Proximal Phalanx (Hand)'],
+    'Metacarpal IV': ['Hamate', 'Proximal Phalanx (Hand)'],
+    'Metacarpal V': ['Hamate', 'Proximal Phalanx (Hand)'],
 
-    // ===== HAND - PHALANGES (Thumb has 2, Fingers have 3 each) =====
-    'Proximal Phalanx I': ['Metacarpal I', 'Distal Phalanx I'],
-    'Distal Phalanx I': ['Proximal Phalanx I'],
-    'Proximal Phalanx II': ['Metacarpal II', 'Middle Phalanx II'],
-    'Middle Phalanx II': ['Proximal Phalanx II', 'Distal Phalanx II'],
-    'Distal Phalanx II': ['Middle Phalanx II'],
-    'Proximal Phalanx III': ['Metacarpal III', 'Middle Phalanx III'],
-    'Middle Phalanx III': ['Proximal Phalanx III', 'Distal Phalanx III'],
-    'Distal Phalanx III': ['Middle Phalanx III'],
-    'Proximal Phalanx IV': ['Metacarpal IV', 'Middle Phalanx IV'],
-    'Middle Phalanx IV': ['Proximal Phalanx IV', 'Distal Phalanx IV'],
-    'Distal Phalanx IV': ['Middle Phalanx IV'],
-    'Proximal Phalanx V': ['Metacarpal V', 'Middle Phalanx V'],
-    'Middle Phalanx V': ['Proximal Phalanx V', 'Distal Phalanx V'],
-    'Distal Phalanx V': ['Middle Phalanx V'],
+    // ===== HAND - PHALANGES (grouped by row) =====
+    'Proximal Phalanx (Hand)': ['Metacarpal I', 'Metacarpal II', 'Metacarpal III', 'Metacarpal IV', 'Metacarpal V', 'Middle Phalanx (Hand)'],
+    'Middle Phalanx (Hand)': ['Proximal Phalanx (Hand)', 'Distal Phalanx (Hand)'],
+    'Distal Phalanx (Hand)': ['Middle Phalanx (Hand)'],
 
     // ===== PELVIS =====
     'Hip Bone': ['Sacrum', 'Femur'],
@@ -92,25 +85,14 @@ const SKELETON_GRAPH = {
     'Cuboid': ['Calcaneus', 'Lateral Cuneiform', 'Metatarsal IV', 'Metatarsal V'],
 
     // ===== FOOT - METATARSALS =====
-    'Metatarsal I': ['Medial Cuneiform', 'Proximal Phalanx I (Foot)'],
-    'Metatarsal II': ['Medial Cuneiform', 'Intermediate Cuneiform', 'Proximal Phalanx II (Foot)'],
-    'Metatarsal III': ['Lateral Cuneiform', 'Proximal Phalanx III (Foot)'],
-    'Metatarsal IV': ['Lateral Cuneiform', 'Cuboid', 'Proximal Phalanx IV (Foot)'],
-    'Metatarsal V': ['Cuboid', 'Proximal Phalanx V (Foot)'],
+    'Metatarsal I': ['Medial Cuneiform', 'Proximal Phalanx (Foot)'],
+    'Metatarsal II': ['Medial Cuneiform', 'Intermediate Cuneiform', 'Proximal Phalanx (Foot)'],
+    'Metatarsal III': ['Lateral Cuneiform', 'Proximal Phalanx (Foot)'],
+    'Metatarsal IV': ['Lateral Cuneiform', 'Cuboid', 'Proximal Phalanx (Foot)'],
+    'Metatarsal V': ['Cuboid', 'Proximal Phalanx (Foot)'],
 
-    // ===== FOOT - PHALANGES (Big toe has 2, other toes have 3 each) =====
-    'Proximal Phalanx I (Foot)': ['Metatarsal I', 'Distal Phalanx I (Foot)'],
-    'Distal Phalanx I (Foot)': ['Proximal Phalanx I (Foot)'],
-    'Proximal Phalanx II (Foot)': ['Metatarsal II', 'Middle Phalanx II (Foot)'],
-    'Middle Phalanx II (Foot)': ['Proximal Phalanx II (Foot)', 'Distal Phalanx II (Foot)'],
-    'Distal Phalanx II (Foot)': ['Middle Phalanx II (Foot)'],
-    'Proximal Phalanx III (Foot)': ['Metatarsal III', 'Middle Phalanx III (Foot)'],
-    'Middle Phalanx III (Foot)': ['Proximal Phalanx III (Foot)', 'Distal Phalanx III (Foot)'],
-    'Distal Phalanx III (Foot)': ['Middle Phalanx III (Foot)'],
-    'Proximal Phalanx IV (Foot)': ['Metatarsal IV', 'Middle Phalanx IV (Foot)'],
-    'Middle Phalanx IV (Foot)': ['Proximal Phalanx IV (Foot)', 'Distal Phalanx IV (Foot)'],
-    'Distal Phalanx IV (Foot)': ['Middle Phalanx IV (Foot)'],
-    'Proximal Phalanx V (Foot)': ['Metatarsal V', 'Middle Phalanx V (Foot)'],
-    'Middle Phalanx V (Foot)': ['Proximal Phalanx V (Foot)', 'Distal Phalanx V (Foot)'],
-    'Distal Phalanx V (Foot)': ['Middle Phalanx V (Foot)']
+    // ===== FOOT - PHALANGES (grouped by row) =====
+    'Proximal Phalanx (Foot)': ['Metatarsal I', 'Metatarsal II', 'Metatarsal III', 'Metatarsal IV', 'Metatarsal V', 'Middle Phalanx (Foot)'],
+    'Middle Phalanx (Foot)': ['Proximal Phalanx (Foot)', 'Distal Phalanx (Foot)'],
+    'Distal Phalanx (Foot)': ['Middle Phalanx (Foot)']
 };
