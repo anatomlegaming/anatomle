@@ -29,11 +29,15 @@ const BONE_TO_3D_MODEL = {
     "Thoracic Vertebrae":     "Thoracic",
     "Lumbar Vertebrae":       "Lumbar",
     "Sacrum":                 "Sacrum",
+    "Coccyx":                 "Coccyx",
 
-    // Ribs & sternum — ribs handled by special case in update3D
-    "True Ribs":              "__true_ribs__",
-    "False Ribs":             "__false_ribs__",
-    "Sternum":                "sternum",
+    // Ribs & sternum — handled by special case in update3D
+    "True Ribs (1-7)":          "__true_ribs__",
+    "False Ribs (8-10)":        "__false_ribs__",
+    "Floating Ribs (11-12)":    "__floating_ribs__",
+    "Costal Cartilage (1-7)":   "__costal_true__",
+    "Costal Cartilage (8-10)":  "__costal_false__",
+    "Sternum":                  "sternum",
 
     // Upper limb
     "Clavicle":               "Clavicler",
@@ -59,21 +63,11 @@ const BONE_TO_3D_MODEL = {
     "Metacarpal IV":          "4th_metacarpal_boner",
     "Metacarpal V":           "5th_metacarpal_boner",
 
-    // Hand phalanges
-    "Proximal Phalanx I":     "phalanx_of_1st_fingerr",
-    "Distal Phalanx I":       "phalanx_of_1st_fingerr",
-    "Proximal Phalanx II":    "phalanx_of_2d_fingerr",
-    "Middle Phalanx II":      "phalanx_of_2d_fingerr",
-    "Distal Phalanx II":      "phalanx_of_2d_fingerr",
-    "Proximal Phalanx III":   "phalanx_of_3d_fingerr",
-    "Middle Phalanx III":     "phalanx_of_3d_fingerr",
-    "Distal Phalanx III":     "phalanx_of_3d_fingerr",
-    "Proximal Phalanx IV":    "phalanx_of_4th_fingerr",
-    "Middle Phalanx IV":      "phalanx_of_4th_fingerr",
-    "Distal Phalanx IV":      "phalanx_of_4th_fingerr",
-    "Proximal Phalanx V":     "phalanx_of_5th_fingerr",
-    "Middle Phalanx V":       "phalanx_of_5th_fingerr",
-    "Distal Phalanx V":       "phalanx_of_5th_fingerr",
+    // Hand phalanges — grouped by row, each maps to all 5 finger meshes
+    // Engine handles __group__ prefix specially: matches any node containing any of the listed keys
+    "Proximal Phalanx (Hand)": "__group__Proximal_phalanx_of_1st_fingerr|Proximal_phalanx_of_2d_fingerr|roximal_phalanx_of_3|Proximal_phalanx_of_4th_fingerr|Proximal_phalanx_of_5th_fingerr",
+    "Middle Phalanx (Hand)":   "__group__Middle_phalanx_of_2d_fingerr|iddle_phalanx_of_3|Middle_phalanx_of_4th_fingerr|Middle_phalanx_of_5th_fingerr",
+    "Distal Phalanx (Hand)":   "__group__Distal_phalanx_of_1st_fingerr|Distal_phalanx_of_2d_fingerr|istal_phalanx_of_3|Distal_phalanx_of_4th_fingerr|Distal_phalanx_of_5th_fingerr",
 
     // Pelvis — handled by special case in update3D
     "Hip Bone":               "__hip_bone__",
@@ -100,21 +94,10 @@ const BONE_TO_3D_MODEL = {
     "Metatarsal IV":          "Fourth_metatarsal_boner",
     "Metatarsal V":           "Fifth_metatarsal_boner",
 
-    // Foot phalanges
-    "Proximal Phalanx I (Foot)":    "phalanx_of_first_finger_of_footr",
-    "Distal Phalanx I (Foot)":      "phalanx_of_first_finger_of_footr",
-    "Proximal Phalanx II (Foot)":   "phalanx_of_second_finger_of_footr",
-    "Middle Phalanx II (Foot)":     "phalanx_of_second_finger_of_footr",
-    "Distal Phalanx II (Foot)":     "phalanx_of_second_finger_of_footr",
-    "Proximal Phalanx III (Foot)":  "phalanx_of_third_finger_of_footr",
-    "Middle Phalanx III (Foot)":    "phalanx_of_third_finger_of_footr",
-    "Distal Phalanx III (Foot)":    "phalanx_of_third_finger_of_footr",
-    "Proximal Phalanx IV (Foot)":   "phalanx_of_fourth_finger_of_footr",
-    "Middle Phalanx IV (Foot)":     "phalanx_of_fourth_finger_of_footr",
-    "Distal Phalanx IV (Foot)":     "phalanx_of_fourth_finger_of_footr",
-    "Proximal Phalanx V (Foot)":    "phalanx_of_fifth_finger_of_footr",
-    "Middle Phalanx V (Foot)":      "phalanx_of_fifth_finger_of_footr",
-    "Distal Phalanx V (Foot)":      "phalanx_of_fifth_finger_of_footr"
+    // Foot phalanges — grouped by row
+    "Proximal Phalanx (Foot)": "__group__Proximal_phalanx_of_first_finger_of_footr|Proximal_phalanx_of_second_finger_of_footr|Proximal_phalanx_of_third_finger_of_footr|Proximal_phalanx_of_fourth_finger_of_footr|Proximal_phalanx_of_fifth_finger_of_footr",
+    "Middle Phalanx (Foot)":   "__group__Middle_phalanx_of_second_finger_of_footr|Middle_phalanx_of_third_finger_of_footr|Middle_phalanx_of_fourth_finger_of_footr|Middle_phalanx_of_fifth_finger_of_footr",
+    "Distal Phalanx (Foot)":   "__group__Distal_phalanx_of_first_finger_of_footr|Distal_phalanx_of_second_finger_of_footr|Distal_phalanx_of_third_finger_of_footr|Distal_phalanx_of_fourth_finger_of_footr|Distal_phalanx_of_fifth_finger_of_footr"
 };
 
 const TWIN_BONES = {
