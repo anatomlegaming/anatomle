@@ -10,30 +10,36 @@
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="../js/data/skeletonGraph.js"></script>
     <script src="../js/data/boneMappings.js"></script>
     <script src="../js/core/pathfinding.js"></script>
     <script src="../js/core/gameLogic.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;700&display=swap');
         * { box-sizing: border-box; }
-        body { font-family: 'EB Garamond', serif; background: #0f172a; color: #d6d3d1; margin: 0; overflow: hidden; }
-        #cv { position: fixed; top: 104px; left: 0; right: 280px; bottom: 64px; z-index: 10; background: linear-gradient(160deg, #1e293b 0%, #0f172a 100%); }
+        body { font-family: 'DM Sans', sans-serif; background: #fdf6ec; color: #2d1f14; margin: 0; overflow: hidden; }
+        #cv { position: fixed; top: 104px; left: 0; right: 580px; bottom: 68px; z-index: 10;
+              background: radial-gradient(ellipse at 50% 40%, #f5e8d0 0%, #ede0c8 60%, #e4d4b8 100%); }
+        #ad-slot { position: fixed; top: 58px; right: 0; width: 160px; bottom: 0; z-index: 150;
+              background: #fff8f0; border-left: 2px solid #e8d5c0;
+              display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+        #ad-slot span { font-family: 'DM Sans', sans-serif; font-size: 9px; color: #c8b8a8;
+              text-transform: uppercase; letter-spacing: 0.2em; writing-mode: vertical-rl; }
+        #ad-slot .ad-placeholder { width: 120px; height: 240px; border: 2px dashed #e8d5c0; border-radius: 8px; }
         .scr::-webkit-scrollbar { width: 3px; }
-        .scr::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+        .scr::-webkit-scrollbar-thumb { background: #e8d5c0; border-radius: 2px; }
         .shake { animation: shake .3s ease-in-out; }
         @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
-        .win-bg  { background: radial-gradient(circle, rgba(16,185,129,.2) 0%, rgba(5,10,20,.97) 100%); }
-        .loss-bg { background: radial-gradient(circle, rgba(239,68,68,.2) 0%, rgba(5,10,20,.97) 100%); }
     </style>
 </head>
 <body>
 <div id="cv"></div>
+<div id="ad-slot"><div class="ad-placeholder"></div><span>Coming Soon</span></div>
 <div id="root"></div>
 
 <script src="../js/3d/skeletonEngine.js"></script>
-<script src="../js/ui/pathfindingUI.js"></script>
+<script type="text/babel" src="../js/ui/pathfindingUI.js"></script>
 
 <script type="text/babel">
 const { useState, useEffect, useMemo, useCallback } = React;
