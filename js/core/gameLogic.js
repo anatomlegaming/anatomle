@@ -14,20 +14,40 @@
  */
 function validateGuess(guess, optimalPath, start, target, graph) {
     // Check if guess is on the optimal (shortest) path
-    const isOnOptimalPath = optimalPath.includes(guess);
-    
-    if (isOnOptimalPath) {
+    if (optimalPath.includes(guess)) {
         return { type: 'optimal', isValid: true };
     }
-    
-    // Not on optimal path - check if it's on ANY valid path
-    const isValidDetour = isOnValidPath(guess, start, target, graph);
-    
-    if (isValidDetour) {
-        return { type: 'detour', isValid: true };
+
+    // Find the minimum BFS distance from this guess to any node on the optimal path.
+    // We search outward from the guess and stop at the first optimal-path node we reach.
+    const optimalSet = new Set(optimalPath);
+    const visited = new Set([guess]);
+    const queue = [[guess, 0]];
+
+    while (queue.length > 0) {
+        const [current, dist] = queue.shift();
+
+        // If we've reached a node on the optimal path, classify by distance
+        if (optimalSet.has(current) && current !== guess) {
+            if (dist <= 2) {
+                return { type: 'detour', isValid: true };
+            } else {
+                return { type: 'failure', isValid: false };
+            }
+        }
+
+        // Don't explore too far — anything beyond 3 hops can't be a detour
+        if (dist >= 3) continue;
+
+        for (const neighbor of (graph[current] || [])) {
+            if (!visited.has(neighbor)) {
+                visited.add(neighbor);
+                queue.push([neighbor, dist + 1]);
+            }
+        }
     }
-    
-    // Not on any valid path
+
+    // Never reached the optimal path at all
     return { type: 'failure', isValid: false };
 }
 
