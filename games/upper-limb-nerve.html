@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anatomle — Upper Limb: Nerve Challenge</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="../js/data/upperLimbGraph.js"></script>
+    <script src="../js/core/pathfinding.js"></script>
+    <script src="../js/core/gameLogic.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'DM Sans', sans-serif; background: #fdf6ec; color: #2d1f14; margin: 0; overflow: hidden; }
+        #cv {
+            position: fixed; top: 58px; left: 0; right: 580px; bottom: 68px; z-index: 10;
+            background: radial-gradient(ellipse at 50% 40%, #f5e8d0 0%, #ede0c8 60%, #e4d4b8 100%);
+        }
+        #ad-slot {
+            position: fixed; top: 58px; right: 0; width: 160px; bottom: 0; z-index: 150;
+            background: #fff8f0; border-left: 2px solid #e8d5c0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+        }
+        #ad-slot .ad-placeholder { width: 120px; height: 240px; border: 2px dashed #e8d5c0; border-radius: 8px; }
+        #ad-slot span { font-size: 9px; color: #c8b8a8; text-transform: uppercase; letter-spacing: 0.2em; writing-mode: vertical-rl; }
+        .scr::-webkit-scrollbar { width: 3px; }
+        .scr::-webkit-scrollbar-thumb { background: #e8d5c0; border-radius: 2px; }
+        .shake { animation: shake .3s ease-in-out; }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+        #root { position: fixed; inset: 0; z-index: 100; pointer-events: none; }
+        #root > * { pointer-events: all; }
+    </style>
+</head>
+<body>
+<div id="cv"></div>
+<div id="ad-slot"><div class="ad-placeholder"></div><span>Coming Soon</span></div>
+<div id="root"></div>
+
+<script src="../js/3d/upperLimbEngine.js"></script>
+<script src="../js/ui/pathfindingUI.js"></script>
+
+<script type="text/babel">
+const { useState, useEffect, useMemo, useCallback } = React;
+
+// ── GAME CONFIG ──────────────────────────────────────────────────────────────
+const GRAPH      = UPPER_LIMB_NERVE_GRAPH;   // ← nerve edges only
+const ALL        = Object.keys(UPPER_LIMB_MUSCLES);
+const GAME_TITLE = 'Upper Limb · Nerve Challenge';
+const MIN_PATH   = 3;
+const MAX_PATH   = 6;
+const BONUS      = 2;  // fewer bonus guesses — harder mode
+
+// ── DAILY SEED (same date → same start/end as standard, different path) ──────
+function getDailySeed() {
+    var d = new Date();
+    return d.getFullYear() * 10000 + (d.getMonth()+1) * 100 + d.getDate();
+}
+function seededRandom(seed) {
+    var x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
+}
+function getDailyPuzzle() {
+    var seed = getDailySeed();
+    var attempts = 0;
+    while (attempts < 1000) {
+        var s1 = Math.floor(seededRandom(seed + attempts) * ALL.length);
+        var s2 = Math.floor(seededRandom(seed + attempts + 500) * ALL.length);
+        var start = ALL[s1], end = ALL[s2];
+        if (start === end) { attempts++; continue; }
+        var path = findShortestPath(start, end, GRAPH);
+        if (path && path.length >= MIN_PATH && path.length <= MAX_PATH) {
+            return { start, end, path };
+        }
+        attempts++;
+    }
+    return { start: ALL[0], end: ALL[10], path: findShortestPath(ALL[0], ALL[10], GRAPH) || [ALL[0], ALL[10]] };
+}
+
+function buildShareText(chain, detours, bad, won) {
+    var d = new Date();
+    var dateStr = d.toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+    var grid = chain.map(function(c) {
+        if (!c.guessed && c.bone !== chain[chain.length-1].bone) return '⬜';
+        if (c.type === 'start') return '🟢';
+        return '🟦';
+    }).join('');
+    return 'Anatomle – Upper Limb 🧠\n' + dateStr + '\n' +
+        (won ? '✅' : '❌') + ' Nerve Challenge\n' +
+        grid +
+        detours.map(function(){ return '🟡'; }).join('') +
+        bad.map(function(){ return '🔴'; }).join('');
+}
+
+function NerveChallengeGame() {
+    const daily = useMemo(() => getDailyPuzzle(), []);
+    const [target, setTarget]         = useState(daily);
+    const [chain, setChain]           = useState(() => daily.path.map(function(b,i){ return {bone:b,type:i===0?'start':'path',guessed:i===0}; }));
+    const [guessedSet, setGuessedSet] = useState(() => new Set([daily.start]));
+    const [detours, setDetours]       = useState([]);
+    const [bad, setBad]               = useState([]);
+    const [left, setLeft]             = useState(function(){ return (daily.path.length-1)+BONUS; });
+    const [max, setMax]               = useState(function(){ return (daily.path.length-1)+BONUS; });
+    const [input, setInput]           = useState('');
+    const [selIdx, setSelIdx]         = useState(-1);
+    const [phase, setPhase]           = useState('playing');
+    const [reveal, setReveal]         = useState(false);
+    const [hintUsed, setHintUsed]     = useState(false);
+    const [shared, setShared]         = useState(false);
+
+    // Supply label shown for each guessed muscle — key teaching moment
+    const [supplyLog, setSupplyLog]   = useState([
+        { muscle: daily.start, supply: UPPER_LIMB_MUSCLES[daily.start].supply }
+    ]);
+
+    useEffect(function() {
+        var bones3d = chain.map(function(c){
+            if (!c.guessed && !(reveal && phase==='lost')) return null;
+            return { name: c.bone, type: c.type };
+        }).filter(Boolean);
+        detours.forEach(function(d){ bones3d.push({name:d,type:'detour'}); });
+        bad.forEach(function(b){ bones3d.push({name:b,type:'bad'}); });
+        if (reveal && phase==='lost') {
+            chain.forEach(function(c){ if(!c.guessed) bones3d.push({name:c.bone,type:'reveal'}); });
+        }
+        if (window.update3D) window.update3D(bones3d);
+    }, [chain, detours, bad, reveal, phase]);
+
+    const suggestions = useMemo(function() {
+        if (!input.trim()) return [];
+        var q = input.toLowerCase();
+        return ALL.filter(function(m) {
+            return m.toLowerCase().includes(q) &&
+                   !guessedSet.has(m) && !detours.includes(m) && !bad.includes(m);
+        }).slice(0, 8);
+    }, [input, guessedSet, detours, bad]);
+
+    function handleHint() {
+        if (hintUsed || phase !== 'playing') return;
+        setHintUsed(true);
+        if (window.showNerveHint) window.showNerveHint(target.end);
+        setTimeout(function() {
+            var bones3d = [];
+            chain.forEach(function(c){ if(c.guessed) bones3d.push({name:c.bone,type:c.type}); });
+            detours.forEach(function(d){ bones3d.push({name:d,type:'detour'}); });
+            bad.forEach(function(b){ bones3d.push({name:b,type:'bad'}); });
+            if (window.update3D) window.update3D(bones3d);
+        }, 4000);
+    }
+
+    function submitGuess(guess) {
+        if (phase !== 'playing' || !guess || !ALL.includes(guess)) return;
+        if (guessedSet.has(guess) || detours.includes(guess) || bad.includes(guess)) return;
+        setInput(''); setSelIdx(-1);
+
+        if (target.path.includes(guess)) {
+            var newGuessed = new Set(guessedSet);
+            newGuessed.add(guess);
+            setGuessedSet(newGuessed);
+            setChain(function(prev){ return prev.map(function(c){ return c.bone===guess ? {...c,guessed:true} : c; }); });
+            // Log nerve supply for educational feedback
+            setSupplyLog(function(p){ return [...p, {muscle:guess, supply:UPPER_LIMB_MUSCLES[guess].supply}]; });
+            if (newGuessed.size === target.path.length) setPhase('won');
+            return;
+        }
+
+        var result = validateGuess(guess, target.path, target.start, target.end, GRAPH);
+        var newLeft = left - 1;
+        setLeft(newLeft);
+        if (result.type === 'detour') {
+            setDetours(function(p){ return [...p, guess]; });
+            setSupplyLog(function(p){ return [...p, {muscle:guess, supply:UPPER_LIMB_MUSCLES[guess].supply, detour:true}]; });
+        } else {
+            setBad(function(p){ return [...p, guess]; });
+        }
+        if (newLeft <= 0) setPhase('lost');
+    }
+
+    function handleKeyDown(e) {
+        if (e.key === 'ArrowDown') { setSelIdx(function(i){ return Math.min(i+1, suggestions.length-1); }); e.preventDefault(); }
+        else if (e.key === 'ArrowUp') { setSelIdx(function(i){ return Math.max(i-1, -1); }); e.preventDefault(); }
+        else if (e.key === 'Enter') {
+            if (selIdx >= 0 && suggestions[selIdx]) submitGuess(suggestions[selIdx]);
+            else if (suggestions.length === 1) submitGuess(suggestions[0]);
+        }
+        else if (e.key === 'Escape') { setInput(''); setSelIdx(-1); }
+    }
+
+    function startNew() {
+        var g = initializeGame(GRAPH, { minLength: MIN_PATH, maxLength: MAX_PATH });
+        setTarget(g);
+        setChain(g.path.map(function(b,i){ return {bone:b,type:i===0?'start':'path',guessed:i===0}; }));
+        setGuessedSet(new Set([g.start]));
+        setDetours([]); setBad([]);
+        setLeft((g.path.length-1)+BONUS); setMax((g.path.length-1)+BONUS);
+        setInput(''); setSelIdx(-1);
+        setPhase('playing'); setReveal(false);
+        setHintUsed(false); setShared(false);
+        setSupplyLog([{muscle:g.start, supply:UPPER_LIMB_MUSCLES[g.start].supply}]);
+        if (window.reset3D) window.reset3D();
+    }
+
+    function handleShare() {
+        var text = buildShareText(chain, detours, bad, phase==='won');
+        navigator.clipboard.writeText(text).then(function(){ setShared(true); });
+    }
+
+    var state = {
+        target, chain, left, max, bad, detours,
+        input, selIdx, phase, reveal, suggestions,
+        hintUsed, shared, supplyLog
+    };
+
+    var handlers = {
+        onInputChange: function(e){ setInput(e.target.value); setSelIdx(-1); },
+        onKeyDown: handleKeyDown,
+        onSubmit: submitGuess,
+        onNewGame: startNew,
+        onGiveUp: function(){ setPhase('lost'); },
+        onReveal: function(){ setReveal(true); },
+        onHint: handleHint,
+        onShare: handleShare
+    };
+
+    return React.createElement(PathfindingUI, {
+        gameTitle: GAME_TITLE,
+        state: state,
+        handlers: handlers,
+        mode: 'nerve'
+    });
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(React.createElement(NerveChallengeGame));
+</script>
+</body>
+</html>
