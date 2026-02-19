@@ -10,99 +10,26 @@
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="../js/data/skeletonGraph.js"></script>
     <script src="../js/data/boneMappings.js"></script>
     <script src="../js/core/pathfinding.js"></script>
     <script src="../js/core/gameLogic.js"></script>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
-
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;700&display=swap');
         * { box-sizing: border-box; }
-
-        body {
-            font-family: 'DM Sans', sans-serif;
-            background: #fdf6ec;
-            color: #2d1f14;
-            margin: 0;
-            overflow: hidden;
-        }
-
-        /*
-            LAYOUT (all sizes defined here and mirrored in pathfindingUI.js):
-            NAV_H   = 58px   top navbar
-            BAR_H   = 46px   challenge bar (below navbar, left of panel)
-            SRCH_H  = 68px   search bar (bottom, left of panel)
-            PANEL_W = 420px  right panel
-            AD_W    = 160px  future ad/content slot (rightmost strip)
-        */
-        #cv {
-            position: fixed;
-            top: 104px;        /* NAV_H + BAR_H */
-            left: 0;
-            right: 580px;      /* PANEL_W + AD_W */
-            bottom: 68px;      /* SRCH_H */
-            z-index: 10;
-            /* Warm cream background — matches the rest of the UI */
-            background: radial-gradient(ellipse at 50% 40%, #f5e8d0 0%, #ede0c8 60%, #e4d4b8 100%);
-        }
-
-        /* Future ad/content slot — right edge strip */
-        #ad-slot {
-            position: fixed;
-            top: 58px;         /* NAV_H */
-            right: 0;
-            width: 160px;
-            bottom: 0;
-            z-index: 150;
-            background: #fff8f0;
-            border-left: 2px solid #e8d5c0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        #ad-slot span {
-            font-family: 'DM Sans', sans-serif;
-            font-size: 9px;
-            color: #c8b8a8;
-            text-transform: uppercase;
-            letter-spacing: 0.2em;
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
-        }
-        #ad-slot .ad-placeholder {
-            width: 120px;
-            height: 240px;
-            border: 2px dashed #e8d5c0;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
+        body { font-family: 'EB Garamond', serif; background: #0f172a; color: #d6d3d1; margin: 0; overflow: hidden; }
+        #cv { position: fixed; top: 104px; left: 0; right: 280px; bottom: 64px; z-index: 10; background: linear-gradient(160deg, #1e293b 0%, #0f172a 100%); }
         .scr::-webkit-scrollbar { width: 3px; }
-        .scr::-webkit-scrollbar-thumb { background: #e8d5c0; border-radius: 2px; }
-
-        .shake { animation: shake 0.3s ease-in-out; }
-        @keyframes shake {
-            0%,100% { transform: translateX(0); }
-            25%      { transform: translateX(-4px); }
-            75%      { transform: translateX(4px); }
-        }
+        .scr::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+        .shake { animation: shake .3s ease-in-out; }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+        .win-bg  { background: radial-gradient(circle, rgba(16,185,129,.2) 0%, rgba(5,10,20,.97) 100%); }
+        .loss-bg { background: radial-gradient(circle, rgba(239,68,68,.2) 0%, rgba(5,10,20,.97) 100%); }
     </style>
 </head>
 <body>
 <div id="cv"></div>
-
-<!-- Future ad/content slot -->
-<div id="ad-slot">
-    <div class="ad-placeholder"></div>
-    <span>Coming Soon</span>
-</div>
-
 <div id="root"></div>
 
 <script src="../js/3d/skeletonEngine.js"></script>
@@ -112,16 +39,16 @@
 const { useState, useEffect, useMemo, useCallback } = React;
 
 function SkeletonGame() {
-    const [target,  setTarget]  = useState({ start: '', end: '', path: [] });
-    const [chain,   setChain]   = useState([]);
-    const [left,    setLeft]    = useState(10);
-    const [max,     setMax]     = useState(10);
-    const [bad,     setBad]     = useState([]);
+    const [target, setTarget] = useState({ start: '', end: '', path: [] });
+    const [chain, setChain] = useState([]);
+    const [left, setLeft] = useState(10);
+    const [max, setMax] = useState(10);
+    const [bad, setBad] = useState([]);
     const [detours, setDetours] = useState([]);
-    const [input,   setInput]   = useState('');
-    const [selIdx,  setSelIdx]  = useState(-1);
-    const [phase,   setPhase]   = useState('playing');
-    const [reveal,  setReveal]  = useState(false);
+    const [input, setInput] = useState('');
+    const [selIdx, setSelIdx] = useState(-1);
+    const [phase, setPhase] = useState('playing');
+    const [reveal, setReveal] = useState(false);
 
     const startNew = useCallback(() => {
         const g = initializeGame(SKELETON_GRAPH, { minLength: 4, maxLength: 8 });
@@ -131,7 +58,7 @@ function SkeletonGame() {
         setLeft(total); setMax(total);
         setBad([]); setDetours([]);
         setInput(''); setSelIdx(-1); setPhase('playing'); setReveal(false);
-        try { window.reset3D && window.reset3D(); } catch (e) {}
+        try { window.reset3D && window.reset3D(); } catch (e) { }
     }, []);
 
     useEffect(() => { startNew(); }, []);
@@ -154,7 +81,7 @@ function SkeletonGame() {
             detours.forEach(g => h.push({ name: g, type: 'detour' }));
             bad.forEach(g => h.push({ name: g, type: 'bad' }));
         }
-        try { window.update3D && window.update3D(h); } catch (e) {}
+        try { window.update3D && window.update3D(h); } catch (e) { }
     }, [chain, bad, detours, reveal, phase]);
 
     const suggestions = useMemo(() => {
@@ -197,8 +124,8 @@ function SkeletonGame() {
     }, [phase, chain, detours, target, left, bad]);
 
     const handleKey = (e) => {
-        if (e.key === 'ArrowDown')  { e.preventDefault(); setSelIdx(i => Math.min(i + 1, suggestions.length - 1)); }
-        else if (e.key === 'ArrowUp')   { e.preventDefault(); setSelIdx(i => Math.max(i - 1, 0)); }
+        if (e.key === 'ArrowDown') { e.preventDefault(); setSelIdx(i => Math.min(i + 1, suggestions.length - 1)); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); setSelIdx(i => Math.max(i - 1, 0)); }
         else if (e.key === 'Enter') {
             if (selIdx >= 0 && suggestions[selIdx]) submit(suggestions[selIdx]);
             else if (suggestions.length === 1) submit(suggestions[0]);
@@ -209,12 +136,14 @@ function SkeletonGame() {
     return (
         <window.PathfindingUI
             gameTitle="🦴 Full Skeleton"
+            accentColor="#3b82f6"
             state={{ target, chain, left, max, bad, detours, input, selIdx, phase, reveal, suggestions }}
             handlers={{
                 onInputChange: e => setInput(e.target.value),
                 onKeyDown: handleKey,
                 onSubmit: submit,
                 onNewGame: startNew,
+                onGiveUp: () => setPhase('lost'),
                 onReveal: () => setReveal(true)
             }}
         />
