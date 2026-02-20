@@ -41,6 +41,8 @@
 <script src="../js/3d/skeletonEngine.js"></script>
 <script src="../js/ui/pathfindingUI.js"></script>
 <script src="../js/ui/howToPlay.js"></script>
+<script src="../js/ui/boneInfo.js"></script>
+<script src="../js/ui/boneTooltip.js"></script>
 
 <script type="text/babel">
 const { useState, useEffect, useMemo, useCallback } = React;
@@ -179,7 +181,12 @@ function SkeletonGame() {
     );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<SkeletonGame />);
+ReactDOM.createRoot(document.getElementById('root')).render(
+    <>
+        <SkeletonGame />
+        {typeof window.BoneTooltipLayer !== 'undefined' && <window.BoneTooltipLayer />}
+    </>
+);
 </script>
 </body>
 </html>
