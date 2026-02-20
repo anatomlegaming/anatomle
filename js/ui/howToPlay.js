@@ -54,135 +54,127 @@
     }
 
     // ── SKELETON SVG ──────────────────────────────────────────────────────────
-    // Clean anatomical upper-body silhouette — clavicle, scapula, humerus
-    // lit = array of bone ids that are currently highlighted
-    // boneId: 0=clavicle, 1=scapula, 2=humerus
+    // 4 bones: Clavicle(0), Scapula(1), Humerus(2), Radius(3=end)
+    // lit = array of bone ids highlighted green
+    // done = true → end bone (Radius) lights coral
     function SkeletonSVG(props) {
         var lit  = props.lit  || [];
-        var done = props.done || false;  // game won — target turns coral
+        var done = props.done || false;
 
-        function boneColor(id) {
-            if (!lit.includes(id)) return 'rgba(45,31,20,0.13)';
-            if (id === 2 && done) return C.coral;
-            return C.sage;
+        function col(id) {
+            if (id === 3) return done ? C.coral : 'rgba(45,31,20,0.13)';
+            return lit.includes(id) ? C.sage : 'rgba(45,31,20,0.13)';
         }
-        function boneWidth(id) { return lit.includes(id) ? 4.5 : 2.5; }
-        function boneFill(id)  { return lit.includes(id) ? (id===2&&done ? C.coral+'22' : C.sage+'18') : 'none'; }
-
-        var c0 = boneColor(0), c1 = boneColor(1), c2 = boneColor(2);
-        var w0 = boneWidth(0), w1 = boneWidth(1), w2 = boneWidth(2);
+        function w(id) {
+            if (id === 3) return done ? 4.5 : 2;
+            return lit.includes(id) ? 4.5 : 2.5;
+        }
+        function fill(id) {
+            if (id === 3) return done ? C.coral+'22' : 'none';
+            return lit.includes(id) ? C.sage+'18' : 'none';
+        }
 
         return e('svg', {
-            viewBox:'0 0 200 250', width:'100%', height:'100%',
+            viewBox:'0 0 200 260', width:'100%', height:'100%',
             style:{ display:'block' }
         },
-            // Background grid — exact same as game viewport
             e('defs', null,
                 e('pattern', { id:'htpGrid', width:18, height:18, patternUnits:'userSpaceOnUse' },
                     e('path', { d:'M 18 0 L 0 0 0 18', fill:'none', stroke:'rgba(45,31,20,0.045)', strokeWidth:0.5 })
                 )
             ),
-            e('rect', { width:200, height:250, fill:'url(#htpGrid)' }),
+            e('rect', { width:200, height:260, fill:'url(#htpGrid)' }),
 
-            // Spine (dashed centre line)
-            e('line', { x1:100, y1:10, x2:100, y2:230,
+            // Spine
+            e('line', { x1:100, y1:10, x2:100, y2:240,
                 stroke:'rgba(45,31,20,0.09)', strokeWidth:2.5, strokeDasharray:'5 5' }),
 
-            // Ribcage outline (faint)
-            e('ellipse', { cx:100, cy:160, rx:38, ry:48,
+            // Ribcage
+            e('ellipse', { cx:100, cy:155, rx:36, ry:44,
                 fill:'none', stroke:'rgba(45,31,20,0.07)', strokeWidth:1.5 }),
-            e('path', { d:'M 100 112 Q 82 128 76 152 Q 82 174 100 180',
-                fill:'none', stroke:'rgba(45,31,20,0.06)', strokeWidth:1 }),
-            e('path', { d:'M 100 112 Q 118 128 124 152 Q 118 174 100 180',
-                fill:'none', stroke:'rgba(45,31,20,0.06)', strokeWidth:1 }),
 
-            // ── CLAVICLE (id 0) ──────────────────────────────────────────
-            // Left clavicle
+            // ── CLAVICLE (0) ──
             e('path', {
                 d:'M 100 62 C 84 56 72 58 64 64 C 60 67 61 73 66 74 C 72 76 80 72 90 68 L 100 66',
-                fill:'none', stroke:c0, strokeWidth:w0, strokeLinecap:'round',
+                fill:'none', stroke:col(0), strokeWidth:w(0), strokeLinecap:'round',
                 style:{ transition:'stroke 0.35s, stroke-width 0.35s' }
             }),
-            // Right clavicle
             e('path', {
                 d:'M 100 62 C 116 56 128 58 136 64 C 140 67 139 73 134 74 C 128 76 120 72 110 68 L 100 66',
-                fill:'none', stroke:c0, strokeWidth:w0, strokeLinecap:'round',
+                fill:'none', stroke:col(0), strokeWidth:w(0), strokeLinecap:'round',
                 style:{ transition:'stroke 0.35s, stroke-width 0.35s' }
             }),
-            // Clavicle label tag
             lit.includes(0) && e('g', { style:{ animation:'htpFadeIn 0.3s ease' } },
-                e('rect', { x:74, y:42, width:52, height:16, rx:5, fill:C.sage }),
-                e('text', { x:100, y:54, textAnchor:'middle',
-                    fontFamily:'DM Sans,sans-serif', fontSize:9, fontWeight:700,
-                    fill:'white', letterSpacing:'0.05em' }, 'CLAVICLE')
+                e('rect', { x:74, y:42, width:52, height:15, rx:4, fill:C.sage }),
+                e('text', { x:100, y:53, textAnchor:'middle', fontFamily:'DM Sans,sans-serif', fontSize:8, fontWeight:700, fill:'white', letterSpacing:'0.05em' }, 'CLAVICLE')
             ),
 
-            // ── SCAPULA (id 1) ───────────────────────────────────────────
+            // ── SCAPULA (1) ──
             e('path', {
                 d:'M 64 64 C 54 76 50 94 52 112 C 54 126 62 132 70 128 C 78 124 80 112 76 98 C 72 84 68 72 64 64 Z',
-                fill:boneFill(1), stroke:c1, strokeWidth:w1, strokeLinejoin:'round',
+                fill:fill(1), stroke:col(1), strokeWidth:w(1), strokeLinejoin:'round',
                 style:{ transition:'stroke 0.35s, fill 0.35s, stroke-width 0.35s' }
             }),
-            // Spine of scapula
-            e('path', {
-                d:'M 52 112 L 74 106',
-                fill:'none', stroke:c1, strokeWidth: lit.includes(1) ? 3 : 1.5, strokeLinecap:'round',
-                style:{ transition:'stroke 0.35s' }
-            }),
+            e('path', { d:'M 52 112 L 74 106', fill:'none', stroke:col(1), strokeWidth:lit.includes(1)?3:1.5, strokeLinecap:'round', style:{ transition:'stroke 0.35s' } }),
             lit.includes(1) && e('g', { style:{ animation:'htpFadeIn 0.3s ease' } },
-                e('rect', { x:24, y:100, width:50, height:16, rx:5, fill:C.sage }),
-                e('text', { x:49, y:112, textAnchor:'middle',
-                    fontFamily:'DM Sans,sans-serif', fontSize:9, fontWeight:700,
-                    fill:'white', letterSpacing:'0.05em' }, 'SCAPULA')
+                e('rect', { x:22, y:100, width:50, height:15, rx:4, fill:C.sage }),
+                e('text', { x:47, y:111, textAnchor:'middle', fontFamily:'DM Sans,sans-serif', fontSize:8, fontWeight:700, fill:'white', letterSpacing:'0.05em' }, 'SCAPULA')
             ),
 
-            // ── HUMERUS (id 2) ───────────────────────────────────────────
-            // Head
-            e('ellipse', { cx:66, cy:128, rx:10, ry:10,
-                fill:boneFill(2), stroke:c2, strokeWidth: lit.includes(2) ? 4 : 2,
+            // ── HUMERUS (2) ──
+            e('ellipse', { cx:66, cy:128, rx:9, ry:9,
+                fill:fill(2), stroke:col(2), strokeWidth:lit.includes(2)?4:2,
                 style:{ transition:'stroke 0.35s, fill 0.35s' }
+            }),
+            e('path', {
+                d:'M 60 137 C 58 155 57 172 58 188 C 60 193 66 193 68 188 C 70 172 70 155 70 137',
+                fill:fill(2), stroke:col(2), strokeWidth:w(2), strokeLinecap:'round',
+                style:{ transition:'stroke 0.35s, fill 0.35s, stroke-width 0.35s' }
+            }),
+            lit.includes(2) && e('g', { style:{ animation:'htpFadeIn 0.3s ease' } },
+                e('rect', { x:22, y:155, width:52, height:15, rx:4, fill:C.sage }),
+                e('text', { x:48, y:166, textAnchor:'middle', fontFamily:'DM Sans,sans-serif', fontSize:8, fontWeight:700, fill:'white', letterSpacing:'0.05em' }, 'HUMERUS')
+            ),
+
+            // ── RADIUS (3 = end) ──
+            // Elbow joint
+            e('ellipse', { cx:63, cy:192, rx:7, ry:7,
+                fill:fill(3), stroke:col(3), strokeWidth:done?4:1.5,
+                style:{ transition:'stroke 0.4s, fill 0.4s, stroke-width 0.4s' }
             }),
             // Shaft
             e('path', {
-                d:'M 60 138 C 58 158 57 178 58 196 C 60 202 66 202 68 196 C 70 180 70 160 70 138',
-                fill:boneFill(2), stroke:c2, strokeWidth:w2, strokeLinecap:'round',
-                style:{ transition:'stroke 0.35s, fill 0.35s, stroke-width 0.35s' }
+                d:'M 58 199 C 56 214 56 228 58 240 C 60 244 64 244 65 240 C 67 228 67 214 66 199',
+                fill:fill(3), stroke:col(3), strokeWidth:w(3), strokeLinecap:'round',
+                style:{ transition:'stroke 0.4s, fill 0.4s, stroke-width 0.4s' }
             }),
-            // Distal end
-            lit.includes(2) && e('ellipse', { cx:63, cy:197, rx:8, ry:5,
-                fill:done ? C.coral+'44' : C.sage+'44', stroke:done?C.coral:C.sage, strokeWidth:2,
-                style:{ animation:'htpFadeIn 0.3s ease', transition:'stroke 0.35s, fill 0.35s' }
-            }),
-            lit.includes(2) && e('g', { style:{ animation:'htpFadeIn 0.3s ease' } },
-                e('rect', { x:22, y:188, width:56, height:16, rx:5,
-                    fill: done ? C.coral : C.sage }),
-                e('text', { x:50, y:200, textAnchor:'middle',
-                    fontFamily:'DM Sans,sans-serif', fontSize:9, fontWeight:700,
-                    fill:'white', letterSpacing:'0.05em' }, 'HUMERUS')
-            ),
-
-            // Target dashed ring — always visible when humerus not yet lit
-            !lit.includes(2) && e('g', { style:{ opacity:0.45 } },
-                e('ellipse', { cx:63, cy:197, rx:10, ry:7,
+            // Target ring — always show when not yet won
+            !done && e('g', { style:{ opacity:0.5 } },
+                e('ellipse', { cx:63, cy:192, rx:11, ry:11,
                     fill:'none', stroke:C.coral, strokeWidth:1.5, strokeDasharray:'3 2' }),
-                e('text', { x:82, y:201, fontFamily:'DM Sans,sans-serif',
-                    fontSize:8, fill:C.coral, fontWeight:700 }, 'TARGET')
+                e('text', { x:82, y:196, fontFamily:'DM Sans,sans-serif', fontSize:8, fill:C.coral, fontWeight:700 }, 'TARGET')
+            ),
+            done && e('g', { style:{ animation:'htpFadeIn 0.3s ease' } },
+                e('rect', { x:22, y:232, width:48, height:15, rx:4, fill:C.coral }),
+                e('text', { x:46, y:243, textAnchor:'middle', fontFamily:'DM Sans,sans-serif', fontSize:8, fontWeight:700, fill:'white', letterSpacing:'0.05em' }, 'RADIUS')
             )
         );
     }
 
     // ── ANIMATED DEMO ─────────────────────────────────────────────────────────
-    // Pixel-perfect miniature of the real game
-    // Timeline (7s loop):
-    //   0.0  — start state: clavicle green, target dashed ring
-    //   1.0  — search bar types "Scap"
-    //   2.0  — suggestion "Scapula" highlights → user hits enter
-    //   2.6  — scapula appears in chain (green), SVG lights up
-    //   3.8  — types "Hum"
-    //   4.7  — suggestion "Humerus" highlighted
-    //   5.2  — humerus appears → WIN state
-    //   6.0  — "Path Found!" flash
-    //   7.0  — reset
+    // Path: Clavicle(start, given) → Scapula(guess1) → Humerus(guess2) → Radius(end, auto-reveals on win)
+    // The end bone is NEVER typed — it auto-lights when the chain is complete.
+    //
+    // Timeline (9s loop):
+    //   0.0  — start: clavicle green, radius dashed ring, rest hidden
+    //   1.0  — types "Scap"
+    //   1.8  — suggestion highlights
+    //   2.5  — Scapula confirmed → chain row appears green, SVG lights
+    //   4.0  — types "Hum"
+    //   4.8  — suggestion highlights
+    //   5.5  — Humerus confirmed → chain row appears green, SVG lights
+    //   6.2  — WIN: Radius auto-reveals coral, "Path Found!" flash
+    //   8.5  — reset
 
     function PathfindingDemo() {
         var phaseS = useState(0); var phase = phaseS[0]; var setPhase = phaseS[1];
@@ -195,107 +187,121 @@
             clear();
             setPhase(0); setTyped('');
             var seq = [
-                [900,  function(){ setPhase(1); }],           // start typing
-                [1500, function(){ setTyped('Scap'); }],
-                [2200, function(){ setPhase(2); setTyped(''); }], // scapula confirmed
-                [3000, function(){ setPhase(3); }],           // start typing humerus
-                [3700, function(){ setTyped('Hum'); }],
-                [4400, function(){ setPhase(4); setTyped(''); }], // humerus confirmed → win
-                [5000, function(){ setPhase(5); }],           // win banner
-                [6800, function(){ setPhase(0); setTyped(''); }], // reset
+                [900,  function(){ setPhase(1); }],              // cursor appears in input
+                [1500, function(){ setTyped('Scap'); }],          // types Scap
+                [2300, function(){ setPhase(2); setTyped(''); }], // Scapula confirmed
+                [3800, function(){ setPhase(3); }],               // cursor again
+                [4400, function(){ setTyped('Hum'); }],           // types Hum
+                [5200, function(){ setPhase(4); setTyped(''); }], // Humerus confirmed
+                [5900, function(){ setPhase(5); }],               // WIN — radius auto-reveals
+                [8300, function(){ setPhase(0); setTyped(''); }], // reset
             ];
             timers.current = seq.map(function(p){ return setTimeout(p[1], p[0]); });
         }
 
         useEffect(function(){
             run();
-            var loop = setInterval(run, 7200);
+            var loop = setInterval(run, 9000);
             return function(){ clear(); clearInterval(loop); };
         }, []);
 
-        var lit  = [0];
+        // SVG: which bones are lit green
+        var lit = [0]; // clavicle always green (it's the start)
         if (phase >= 2) lit = [0, 1];
         if (phase >= 4) lit = [0, 1, 2];
-        var done = phase >= 4;
+        var done = phase >= 5; // radius auto-reveals coral on win
+
+        // Suggestion text shown above input
         var showSugg = phase === 1 || phase === 3;
         var suggText = phase === 1 ? 'Scapula' : 'Humerus';
 
-        // Exact chain item style from pathfindingUI.js
-        function chainItem(label, state) {
-            // state: 'start' | 'hidden' | 'found' | 'target-dim' | 'target-lit'
-            var shown   = state !== 'hidden' && state !== 'target-dim';
-            var isStart = state === 'start';
-            var isEnd   = state === 'target-lit';
-            var bg  = isStart ? 'rgba(90,138,106,0.12)'
-                    : isEnd   ? 'rgba(232,96,60,0.1)'
-                    : shown   ? 'rgba(90,138,106,0.08)'
+        // Guess count shown in bar (we have 8 guesses, used 1 per correct)
+        var guessesUsed = phase >= 4 ? 2 : phase >= 2 ? 1 : 0;
+        var guessesLeft = 8 - guessesUsed;
+
+        // Chain panel row renderer — matches pathfindingUI.js exactly
+        function chainRow(label, state) {
+            // states: 'start' | 'hidden' | 'found' | 'end-dim' | 'end-lit'
+            var isStart  = state === 'start';
+            var isEndLit = state === 'end-lit';
+            var isEndDim = state === 'end-dim';
+            var shown    = state === 'start' || state === 'found' || state === 'end-lit';
+            var bg  = isStart  ? 'rgba(90,138,106,0.12)'
+                    : isEndLit ? 'rgba(232,96,60,0.1)'
+                    : shown    ? 'rgba(90,138,106,0.08)'
                     : 'rgba(45,31,20,0.02)';
-            var bdr = isStart ? 'rgba(90,138,106,0.35)'
-                    : isEnd   ? 'rgba(232,96,60,0.3)'
-                    : shown   ? 'rgba(90,138,106,0.25)'
+            var bdr = isStart  ? 'rgba(90,138,106,0.35)'
+                    : isEndLit ? 'rgba(232,96,60,0.3)'
+                    : isEndDim ? 'rgba(232,96,60,0.2)'  // always slightly coral-tinted
+                    : shown    ? 'rgba(90,138,106,0.25)'
                     : C.border;
-            var col = isStart ? C.sage
-                    : isEnd   ? C.coral
-                    : shown   ? C.sage
+            var col = isStart  ? C.sage
+                    : isEndLit ? C.coral
+                    : isEndDim ? C.coral
+                    : shown    ? C.sage
                     : C.muted;
-            var ico = isStart ? '📍' : isEnd ? '🎯' : shown ? '✓' : '·';
+            var ico = isStart  ? '📍'
+                    : isEndLit ? '🎯'
+                    : isEndDim ? '🎯'
+                    : shown    ? '✓'
+                    : '·';
             return e('div', { style:{
                 padding:'5px 8px', marginBottom:3, borderRadius:7,
                 fontSize:9, fontWeight:700, fontFamily:'DM Sans,sans-serif',
                 textTransform:'uppercase', letterSpacing:'0.04em',
                 display:'flex', justifyContent:'space-between', alignItems:'center',
-                opacity: (state === 'hidden' || state === 'target-dim') ? 0.2 : 1,
+                opacity: (state === 'hidden') ? 0.2 : isEndDim ? 0.35 : 1,
                 background:bg, border:'1.5px solid '+bdr, color:col,
-                transition:'all 0.35s'
+                transition:'all 0.4s'
             }},
-                e('span', null, shown ? label : '???'),
-                e('span', null, ico)
+                e('span', null, shown || isEndDim ? label : '???'),
+                e('span', { style:{ fontSize:13 } }, ico)
             );
         }
 
-        var scapState  = phase >= 2 ? 'found' : 'hidden';
-        var humState   = phase >= 4 ? 'target-lit' : 'target-dim';
-        var guessCount = phase >= 4 ? 2 : phase >= 2 ? 1 : 0;
+        var scapState = phase >= 2 ? 'found'   : 'hidden';
+        var humState  = phase >= 4 ? 'found'   : 'hidden';
+        var radState  = phase >= 5 ? 'end-lit' : 'end-dim'; // always shown, just dim/lit
 
         return e('div', { style:{
             border:'2px solid '+C.border, borderRadius:14, overflow:'hidden',
             background:C.cream, userSelect:'none'
         }},
 
-            // ── TOP: challenge bar (exact match) ─────────────────────────
+            // ── Challenge bar ─────────────────────────────────────────────
             e('div', { style:{
-                background:C.dark, padding:'7px 14px',
+                background:C.dark, padding:'8px 14px',
                 display:'flex', alignItems:'center', justifyContent:'space-between'
             }},
                 e('div', { style:{ display:'flex', alignItems:'center', gap:8 } },
                     e('span', { style:{
-                        fontFamily:'Fraunces,serif', fontWeight:700, fontSize:12,
+                        fontFamily:'Fraunces,serif', fontWeight:700, fontSize:13,
                         color:'#a8d5b5', fontStyle:'italic'
                     }}, 'Clavicle'),
                     e('span', { style:{ color:'rgba(253,246,236,0.25)', fontSize:9 } }, '→→→'),
                     e('span', { style:{
-                        fontFamily:'Fraunces,serif', fontWeight:700, fontSize:12,
+                        fontFamily:'Fraunces,serif', fontWeight:700, fontSize:13,
                         color:C.coral, fontStyle:'italic'
-                    }}, 'Humerus'),
+                    }}, 'Radius'),
                     e('span', { style:{
                         fontFamily:'DM Sans,sans-serif', fontSize:8,
                         color:'rgba(253,246,236,0.3)', marginLeft:6
                     }}, 'Find the connecting path')
                 ),
-                e('div', { style:{ display:'flex', alignItems:'center', gap:4 } },
+                e('div', { style:{ display:'flex', alignItems:'baseline', gap:4 } },
                     e('span', { style:{
-                        fontFamily:'Fraunces,serif', fontWeight:900, fontSize:18,
+                        fontFamily:'Fraunces,serif', fontWeight:900, fontSize:20,
                         color:'rgba(253,246,236,0.85)'
-                    }}, phase >= 5 ? '🏆' : (8 - guessCount)),
-                    e('span', { style:{
+                    }}, done ? '🏆' : guessesLeft),
+                    !done && e('span', { style:{
                         fontFamily:'DM Sans,sans-serif', fontSize:8,
                         color:'rgba(253,246,236,0.35)', marginLeft:2
                     }}, 'left')
                 )
             ),
 
-            // ── MIDDLE: 3D panel + right panel side by side ───────────────
-            e('div', { style:{ display:'flex', height:240 } },
+            // ── 3D + panel ────────────────────────────────────────────────
+            e('div', { style:{ display:'flex', height:260 } },
 
                 // 3D viewport
                 e('div', { style:{
@@ -304,31 +310,28 @@
                     borderRight:'2px solid '+C.border,
                     display:'flex', alignItems:'center', justifyContent:'center'
                 }},
-                    e('div', { style:{ width:160, height:210 } },
+                    e('div', { style:{ width:160, height:240 } },
                         e(SkeletonSVG, { lit:lit, done:done })
                     ),
-                    // Win overlay
-                    phase === 5 && e('div', { style:{
+                    done && e('div', { style:{
                         position:'absolute', inset:0,
                         display:'flex', alignItems:'center', justifyContent:'center',
                         background:'rgba(90,138,106,0.13)',
                         animation:'htpWin 0.4s ease forwards'
                     }},
                         e('div', { style:{
-                            fontFamily:'Fraunces,serif', fontWeight:900, fontSize:22,
+                            fontFamily:'Fraunces,serif', fontWeight:900, fontSize:20,
                             color:C.sage, letterSpacing:'-0.03em',
                             textShadow:'0 2px 8px rgba(90,138,106,0.3)'
                         }}, 'Path Found! ✓')
                     )
                 ),
 
-                // Right panel (exact structure from pathfindingUI.js)
-                e('div', { style:{
-                    flex:1, display:'flex', flexDirection:'column', background:C.cream
-                }},
-                    // Section header
+                // Right panel
+                e('div', { style:{ flex:1, display:'flex', flexDirection:'column', background:C.cream } },
+                    // Header
                     e('div', { style:{
-                        padding:'8px 12px 6px', borderBottom:'1px solid '+C.border,
+                        padding:'7px 12px 5px', borderBottom:'1px solid '+C.border,
                         display:'flex', justifyContent:'space-between', alignItems:'center', flexShrink:0
                     }},
                         e('div', { style:{ display:'flex', alignItems:'center', gap:5 } },
@@ -340,36 +343,32 @@
                         ),
                         e('span', { style:{
                             fontFamily:'Fraunces,serif', fontSize:12, color:C.sage, fontWeight:900
-                        }}, guessCount+' / 2')
+                        }}, guessesUsed+' / 2')
                     ),
-
-                    // Chain items
+                    // Chain rows — 4 bones, end always visible
                     e('div', { style:{ flex:1, padding:'7px 10px', overflowY:'hidden' } },
-                        chainItem('Clavicle', 'start'),
-                        chainItem('Scapula',  scapState),
-                        chainItem('Humerus',  humState)
+                        chainRow('Clavicle', 'start'),
+                        chainRow('Scapula',  scapState),
+                        chainRow('Humerus',  humState),
+                        chainRow('Radius',   radState)
                     ),
-
-                    // Divider + small detours section
+                    // Detours row
                     e('div', { style:{
-                        borderTop:'1px solid '+C.border, padding:'5px 12px 3px',
-                        flexShrink:0
+                        borderTop:'1px solid '+C.border, padding:'5px 12px 4px', flexShrink:0
                     }},
                         e('div', { style:{
                             fontFamily:'DM Sans,sans-serif', fontSize:8, color:C.golden,
-                            textTransform:'uppercase', letterSpacing:'0.22em', fontWeight:700,
-                            opacity:0.6
+                            textTransform:'uppercase', letterSpacing:'0.22em', fontWeight:700, opacity:0.6
                         }}, '⚠ Detours · 0')
                     )
                 )
             ),
 
-            // ── BOTTOM: search bar (exact match) ─────────────────────────
+            // ── Search bar ────────────────────────────────────────────────
             e('div', { style:{
                 borderTop:'2px solid '+C.border, padding:'9px 12px',
                 background:C.cream, position:'relative'
             }},
-                // Suggestion dropdown
                 showSugg && e('div', { style:{
                     position:'absolute', bottom:'100%', left:12, right:12,
                     background:C.cream, border:'2px solid '+C.border,
@@ -383,7 +382,6 @@
                         background:'linear-gradient(135deg,'+C.coral+','+C.coralDk+')'
                     }}, suggText + ' ↵ Enter')
                 ),
-                // Input row
                 e('div', { style:{ position:'relative' } },
                     e('span', { style:{
                         position:'absolute', left:11, top:'50%', transform:'translateY(-50%)',
@@ -391,25 +389,26 @@
                         color: typed ? C.coral : C.muted
                     }}, '🦴'),
                     e('div', { style:{
-                        width:'100%', background:C.card,
+                        width:'100%', background: done ? 'rgba(45,31,20,0.04)' : C.card,
                         border:'2px solid '+(typed ? C.coral : C.border),
                         borderRadius:9, padding:'8px 12px 8px 32px',
                         fontFamily:'DM Sans,sans-serif', fontSize:11,
                         color: typed ? C.ink : C.muted,
                         minHeight:34, transition:'border-color 0.2s',
-                        display:'flex', alignItems:'center'
+                        display:'flex', alignItems:'center',
+                        opacity: done ? 0.5 : 1
                     }},
-                        typed
-                            ? e('span', null,
-                                typed,
-                                e('span', { style:{
-                                    display:'inline-block', width:1.5, height:13,
-                                    background:C.ink, marginLeft:1, verticalAlign:'middle',
-                                    animation:'htpBlink 0.7s step-end infinite'
-                                }})
-                              )
-                            : e('span', { style:{ fontStyle:'italic', opacity:0.5 } },
-                                phase === 5 ? 'Path complete!' : 'Type a bone name…')
+                        done
+                            ? e('span', { style:{ fontStyle:'italic', opacity:0.6 } }, 'Path complete!')
+                            : typed
+                                ? e('span', null, typed,
+                                    e('span', { style:{
+                                        display:'inline-block', width:1.5, height:13,
+                                        background:C.ink, marginLeft:1, verticalAlign:'middle',
+                                        animation:'htpBlink 0.7s step-end infinite'
+                                    }})
+                                  )
+                                : e('span', { style:{ fontStyle:'italic', opacity:0.5 } }, 'Type a bone name…')
                     )
                 )
             )
@@ -418,10 +417,10 @@
 
     // ── HOW TO STEPS ──────────────────────────────────────────────────────────
     var STEPS = [
-        { icon:'📍', head:'Start & End given',     body:'Each puzzle gives you two bones. Your goal is to find what connects them.' },
-        { icon:'🔗', head:'Guess the stops',        body:'Type any bone that lies on the path. Each correct guess lights up the chain.' },
-        { icon:'⚠️', head:'Detours cost guesses',   body:'Valid but non-optimal bones count as detours. Wrong bones lose a guess.' },
-        { icon:'🏆', head:'Complete the chain',      body:'Reveal every stop between start and end to win. Fewest guesses wins.' },
+        { icon:'📍', head:'Start & End given',    body:'Each puzzle gives you two bones. The start is revealed — the end is shown but locked. Find what connects them.' },
+        { icon:'🔗', head:'Guess the stops',       body:'Type any bone that lies on the connecting path. Each correct guess lights up that step in the chain.' },
+        { icon:'⚠️', head:'Every guess counts',    body:'Straying off the optimal path is penalised — and taking a wildly wrong turn will hit your score hard. Choose carefully.' },
+        { icon:'🏆', head:'Complete the chain',    body:'Fill every stop between start and end to win. The fewer guesses used, the better your result.' },
     ];
 
     // ── MODAL CONTENT ─────────────────────────────────────────────────────────
