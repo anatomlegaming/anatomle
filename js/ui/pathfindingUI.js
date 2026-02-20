@@ -1,5 +1,5 @@
 // ============================================================================
-// ANATOMLE - PATHFINDING UI
+// ANATOMLE - PATHFINDING UIaa
 // Pure React.createElement — no JSX, loads as plain <script> tag
 // Supports: skeleton game, upper limb standard, upper limb nerve challenge
 // Features: mode badge, nerve hint button, nerve supply log, share button
