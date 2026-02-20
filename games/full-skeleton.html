@@ -40,11 +40,13 @@
 
 <script src="../js/3d/skeletonEngine.js"></script>
 <script src="../js/ui/pathfindingUI.js"></script>
+<script src="../js/ui/howToPlay.js"></script>
 
 <script type="text/babel">
 const { useState, useEffect, useMemo, useCallback } = React;
 
 function SkeletonGame() {
+    const [showHtp, dismissHtp] = window.useFirstVisit('full-skeleton');
     const [target, setTarget] = useState({ start: '', end: '', path: [] });
     const [chain, setChain] = useState([]);
     const [left, setLeft] = useState(10);
@@ -150,6 +152,8 @@ function SkeletonGame() {
     };
 
     return (
+        <>
+        <window.HowToModal show={showHtp} onClose={dismissHtp} />
         <window.PathfindingUI
             gameTitle="Osteomle · Full Skeleton"
             mode="standard"
@@ -170,6 +174,11 @@ function SkeletonGame() {
                 }
             }}
         />
+        {/* In-game ⓘ icon — fixed position top-left of right panel */}
+        <div style={{position:'fixed', bottom:80, right:172, zIndex:300}}>
+            <window.HowToIcon gameType="pathfinding" tooltip={false} />
+        </div>
+        </>
     );
 }
 
