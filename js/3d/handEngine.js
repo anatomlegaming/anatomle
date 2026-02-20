@@ -128,6 +128,7 @@ window.addEventListener('DOMContentLoaded', function() {
         cam.position.set(center.x, center.y, center.z+Math.abs(maxDim/2/Math.tan(fov/2))*1.2);
         cam.lookAt(center); ctrl.update();
         window.reset3D();
+        window.dispatchEvent(new CustomEvent('modelReady'));
     });
 
     function animate(){ requestAnimationFrame(animate); ctrl.update(); renderer.render(scene,cam); }
