@@ -174,10 +174,7 @@ function SkeletonGame() {
                 }
             }}
         />
-        {/* In-game ⓘ icon — fixed position top-left of right panel */}
-        <div style={{position:'fixed', bottom:80, right:172, zIndex:300}}>
-            <window.HowToIcon gameType="pathfinding" tooltip={false} />
-        </div>
+        {/* In-game ⓘ icon now rendered inside pathfindingUI navbar */}
         </>
     );
 }
