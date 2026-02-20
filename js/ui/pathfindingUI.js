@@ -100,8 +100,11 @@
                     borderRadius:999, lineHeight:1.4
                 }}, isNerve ? '\uD83E\uDDE0 Nerve Challenge' : '\u26A1 Standard')
             ),
-            // Centre: logo
-            e('div', { style:{ display:'flex', flexDirection:'column', alignItems:'center', gap:2 } },
+            // Centre: logo — clickable back to menu
+            e('a', { href:'../index.html', style:{
+                display:'flex', flexDirection:'column', alignItems:'center', gap:2,
+                textDecoration:'none', cursor:'pointer'
+            }},
                 e('div', { style:{ display:'flex', alignItems:'baseline' } },
                     e('span', { style:{
                         fontFamily:'Fraunces,serif', fontWeight:900, fontSize:22,
@@ -123,7 +126,6 @@
             ),
             // Right: how-to icon + menu button
             e('div', { style:{ display:'flex', justifyContent:'flex-end', alignItems:'center', gap:8 } },
-                // How-to ⓘ — only render if howToPlay.js is loaded
                 typeof window.HowToIcon !== 'undefined'
                     ? e(window.HowToIcon, { gameType:'pathfinding', tooltip:false })
                     : null,
@@ -140,18 +142,21 @@
             )
         );
 
-        // ── CHALLENGE BAR — path centred, bigger text ─────────────────────────
+        // ── CHALLENGE BAR — path centred over 3D area, guesses to its right ──
+        // 3D area occupies: left=0 → right=PW+AW
+        // Centre of 3D area from left edge = (viewport - PW - AW) / 2
+        // Expressed as: left: calc(50% - (PW+AW)/2) then shift back by half of own width
+        var BAR_H = BAR + 8;
         var challengeBar = e('div', { style:{
-            position:'fixed', top:NAV, left:0, right:PW+AW, height:BAR+8,
+            position:'fixed', top:NAV, left:0, right:PW+AW, height:BAR_H,
             zIndex:200, background:C.dark, backdropFilter:'blur(6px)',
             display:'flex', alignItems:'center',
-            justifyContent:'center', padding:'0 20px', gap:0,
-            position:'relative'
+            padding:'0 20px'
         }},
-            // Centred path
+            // Path — centred within this bar (which already only spans the 3D area)
             e('div', { style:{
-                display:'flex', alignItems:'center', gap:12,
-                position:'absolute', left:'50%', transform:'translateX(-50%)'
+                flex:1, display:'flex', alignItems:'center',
+                justifyContent:'center', gap:12
             }},
                 e('span', { style:{
                     fontFamily:'Fraunces,serif', fontWeight:700, fontSize:18,
@@ -165,10 +170,9 @@
                     color:accent, fontStyle:'italic'
                 }}, target.end)
             ),
-            // Right-anchored guess count
+            // Guess count — right side of the bar (right edge of 3D area)
             e('div', { style:{
-                position:'absolute', right:20,
-                display:'flex', alignItems:'baseline', gap:5
+                display:'flex', alignItems:'baseline', gap:5, flexShrink:0
             }},
                 e('span', { style:{
                     fontFamily:'Fraunces,serif', fontWeight:900, fontSize:26,
