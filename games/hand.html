@@ -143,13 +143,21 @@ function HandGame() {
         return f;
     }, [guessed]);
 
+    const highlightRef = React.useRef([]);
     useEffect(() => {
         const h = [];
         guessed.forEach(b => h.push({name:b, type: b===start ? 'start' : 'found'}));
         if (reveal && phase==='lost') HAND_ALL.forEach(b => { if(!guessed.has(b)) h.push({name:b,type:'reveal'}); });
         bad.forEach(b => h.push({name:b,type:'bad'}));
+        highlightRef.current = h;
         try { window.update3D && window.update3D(h); } catch(e) {}
     }, [guessed, bad, reveal, phase]);
+
+    useEffect(() => {
+        const onReady = () => { try { window.update3D && window.update3D(highlightRef.current); } catch(e){} };
+        window.addEventListener('modelReady', onReady);
+        return () => window.removeEventListener('modelReady', onReady);
+    }, []);
 
     const suggestions = useMemo(() => {
         if (!input.trim()) return [];
