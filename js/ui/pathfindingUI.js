@@ -222,13 +222,19 @@
                 }
             }
 
-            return e('div', { key:idx, style:{
+            return e('div', { key:idx,
+                onMouseEnter: function() { if (shown && window.highlight3D) window.highlight3D(item.bone, true); },
+                onMouseLeave: function() { if (window.highlight3D) window.highlight3D(item.bone, false); },
+                onClick:      function() { if (shown && window.boneTooltip) window.boneTooltip.openCard(item.bone); },
+                style:{
                 padding:'6px 10px', marginBottom:3, borderRadius:8,
                 fontSize:11, fontWeight:600, fontFamily:'DM Sans,sans-serif',
                 textTransform:'uppercase', letterSpacing:'0.04em',
                 display:'flex', justifyContent:'space-between', alignItems:'center',
                 opacity: shown ? 1 : 0.2,
-                background:bg, border:'1.5px solid '+bdr, color:col
+                background:bg, border:'1.5px solid '+bdr, color:col,
+                cursor: shown ? 'pointer' : 'default',
+                transition:'filter 0.15s'
             }},
                 e('div', { style:{ display:'flex', alignItems:'center', flexWrap:'wrap' } },
                     e('span', null, shown ? item.bone : '???'),
