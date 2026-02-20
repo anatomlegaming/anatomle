@@ -55,6 +55,7 @@ function SkeletonGame() {
     const [selIdx, setSelIdx] = useState(-1);
     const [phase, setPhase] = useState('playing');
     const [reveal, setReveal] = useState(false);
+    const [shared, setShared] = useState(false);
 
     const startNew = useCallback(() => {
         const g = initializeGame(SKELETON_GRAPH, { minLength: 4, maxLength: 8 });
@@ -63,12 +64,14 @@ function SkeletonGame() {
         const total = calculateGuessCount(g.path.length);
         setLeft(total); setMax(total);
         setBad([]); setDetours([]);
-        setInput(''); setSelIdx(-1); setPhase('playing'); setReveal(false);
+        setInput(''); setSelIdx(-1); setPhase('playing'); setReveal(false); setShared(false);
         try { window.reset3D && window.reset3D(); } catch (e) { }
     }, []);
 
     useEffect(() => { startNew(); }, []);
 
+    // Re-apply highlights whenever state changes OR when model finishes loading
+    const highlightRef = React.useRef([]);
     useEffect(() => {
         const h = [];
         if (reveal && phase === 'lost') {
@@ -87,8 +90,15 @@ function SkeletonGame() {
             detours.forEach(g => h.push({ name: g, type: 'detour' }));
             bad.forEach(g => h.push({ name: g, type: 'bad' }));
         }
+        highlightRef.current = h;
         try { window.update3D && window.update3D(h); } catch (e) { }
     }, [chain, bad, detours, reveal, phase]);
+
+    useEffect(() => {
+        const onReady = () => { try { window.update3D && window.update3D(highlightRef.current); } catch(e){} };
+        window.addEventListener('modelReady', onReady);
+        return () => window.removeEventListener('modelReady', onReady);
+    }, []);
 
     const suggestions = useMemo(() => {
         if (!input.trim()) return [];
@@ -141,16 +151,23 @@ function SkeletonGame() {
 
     return (
         <window.PathfindingUI
-            gameTitle="🦴 Full Skeleton"
-            accentColor="#3b82f6"
-            state={{ target, chain, left, max, bad, detours, input, selIdx, phase, reveal, suggestions }}
+            gameTitle="Osteomle · Full Skeleton"
+            mode="standard"
+            state={{ target, chain, left, max, bad, detours, input, selIdx, phase, reveal, suggestions, hintUsed: false, shared }}
             handlers={{
                 onInputChange: e => setInput(e.target.value),
                 onKeyDown: handleKey,
                 onSubmit: submit,
                 onNewGame: startNew,
                 onGiveUp: () => setPhase('lost'),
-                onReveal: () => setReveal(true)
+                onReveal: () => setReveal(true),
+                onShare: () => {
+                    const d = new Date();
+                    const dateStr = d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+                    const grid = chain.map(c => c.guessed ? (c.type==='start'?'🟢':'🟦') : '⬜').join('');
+                    const text = `Anatomle – Full Skeleton\n${dateStr}\n${phase==='won'?'✅':'❌'}\n${grid}`;
+                    navigator.clipboard.writeText(text).then(() => setShared(true));
+                }
             }}
         />
     );
