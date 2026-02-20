@@ -121,47 +121,63 @@
                     textTransform:'uppercase', letterSpacing:'0.25em'
                 }}, gameTitle)
             ),
-            // Right: menu link
-            e('div', { style:{ display:'flex', justifyContent:'flex-end' } },
+            // Right: how-to icon + menu button
+            e('div', { style:{ display:'flex', justifyContent:'flex-end', alignItems:'center', gap:8 } },
+                // How-to ⓘ — only render if howToPlay.js is loaded
+                typeof window.HowToIcon !== 'undefined'
+                    ? e(window.HowToIcon, { gameType:'pathfinding', tooltip:false })
+                    : null,
                 e('a', { href:'../index.html', style:{
-                    fontFamily:'DM Sans,sans-serif', fontSize:9, color:C.muted,
-                    textDecoration:'none', textTransform:'uppercase', letterSpacing:'0.12em',
-                    padding:'6px 14px', border:'1.5px solid '+C.border, borderRadius:999
+                    fontFamily:'DM Sans,sans-serif', fontSize:10, fontWeight:700,
+                    color:C.inkLight, textDecoration:'none',
+                    textTransform:'uppercase', letterSpacing:'0.1em',
+                    padding:'7px 16px',
+                    background:C.card,
+                    border:'1.5px solid '+C.border,
+                    borderRadius:999,
+                    transition:'all 0.18s'
                 }}, '\u2190 Menu')
             )
         );
 
-        // ── CHALLENGE BAR ─────────────────────────────────────────────────────
+        // ── CHALLENGE BAR — path centred, bigger text ─────────────────────────
         var challengeBar = e('div', { style:{
-            position:'fixed', top:NAV, left:0, right:PW+AW, height:BAR,
+            position:'fixed', top:NAV, left:0, right:PW+AW, height:BAR+8,
             zIndex:200, background:C.dark, backdropFilter:'blur(6px)',
             display:'flex', alignItems:'center',
-            justifyContent:'space-between', padding:'0 20px'
+            justifyContent:'center', padding:'0 20px', gap:0,
+            position:'relative'
         }},
-            e('div', { style:{ display:'flex', alignItems:'center', gap:10 } },
+            // Centred path
+            e('div', { style:{
+                display:'flex', alignItems:'center', gap:12,
+                position:'absolute', left:'50%', transform:'translateX(-50%)'
+            }},
                 e('span', { style:{
-                    fontFamily:'Fraunces,serif', fontWeight:700, fontSize:14,
+                    fontFamily:'Fraunces,serif', fontWeight:700, fontSize:18,
                     color:'#a8d5b5', fontStyle:'italic'
                 }}, target.start),
-                e('span', { style:{ color:'rgba(253,246,236,0.25)', margin:'0 4px' } }, '\u2192\u2192\u2192'),
                 e('span', { style:{
-                    fontFamily:'Fraunces,serif', fontWeight:700, fontSize:14,
+                    color:'rgba(253,246,236,0.3)', fontSize:14, letterSpacing:'0.1em'
+                }}, '\u2192\u2192\u2192'),
+                e('span', { style:{
+                    fontFamily:'Fraunces,serif', fontWeight:700, fontSize:18,
                     color:accent, fontStyle:'italic'
-                }}, target.end),
-                e('span', { style:{
-                    fontFamily:'DM Sans,sans-serif', fontSize:9,
-                    color:'rgba(253,246,236,0.3)', marginLeft:10
-                }}, isNerve ? 'Navigate by nerve territory' : 'Find the connecting path')
+                }}, target.end)
             ),
-            e('div', { style:{ display:'flex', alignItems:'center', gap:6 } },
+            // Right-anchored guess count
+            e('div', { style:{
+                position:'absolute', right:20,
+                display:'flex', alignItems:'baseline', gap:5
+            }},
                 e('span', { style:{
-                    fontFamily:'Fraunces,serif', fontWeight:900, fontSize:22,
-                    color: danger ? accent : 'rgba(253,246,236,0.9)', lineHeight:1
+                    fontFamily:'Fraunces,serif', fontWeight:900, fontSize:26,
+                    color: danger ? accent : 'rgba(253,246,236,0.92)', lineHeight:1
                 }}, left),
                 e('span', { style:{
-                    fontFamily:'DM Sans,sans-serif', fontSize:9,
+                    fontFamily:'DM Sans,sans-serif', fontSize:10,
                     color:'rgba(253,246,236,0.4)', textTransform:'uppercase', letterSpacing:'0.1em'
-                }}, ' left')
+                }}, 'left')
             )
         );
 
@@ -204,7 +220,7 @@
 
             return e('div', { key:idx, style:{
                 padding:'6px 10px', marginBottom:3, borderRadius:8,
-                fontSize:10, fontWeight:600, fontFamily:'DM Sans,sans-serif',
+                fontSize:11, fontWeight:600, fontFamily:'DM Sans,sans-serif',
                 textTransform:'uppercase', letterSpacing:'0.04em',
                 display:'flex', justifyContent:'space-between', alignItems:'center',
                 opacity: shown ? 1 : 0.2,
@@ -214,7 +230,7 @@
                     e('span', null, shown ? item.bone : '???'),
                     supplyTag
                 ),
-                e('span', null, ico)
+                e('span', { style:{ fontSize:16, lineHeight:1 } }, ico)
             );
         });
 
