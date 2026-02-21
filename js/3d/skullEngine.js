@@ -6,7 +6,26 @@
 // ============================================================================
 
 var _sk = null;
-var SKULL_MESH_KEYS = ['Frontal','Parietal','Occipital','Temporal','Sphenoid','Ethmoid','Nasal_boner','Lacrimal_boner','Zygomatic','Maxilla','Palatine','Vomer','Inferior_nasal_concha_boner','Mandible'];
+var SKULL_MESH_KEYS = ['Frontal','Parietal','Occipital','Temporal','Sphenoid','Ethmoid','Nasal_boner','Lacrimal_boner','Zygomatic','Maxilla_boner','Palatine','Vomer','Inferior_nasal_concha_boner','Mandible'];
+
+// Bone display name → mesh name substring
+// Used by update3D to match guessed bones to GLB meshes
+var SKULL_B2M = {
+    'Frontal Bone':          'Frontal',
+    'Parietal Bone':         'Parietal',
+    'Occipital Bone':        'Occipital',
+    'Temporal Bone':         'Temporal_boner',
+    'Sphenoid Bone':         'Sphenoid',
+    'Ethmoid Bone':          'Ethmoid',
+    'Nasal Bone':            'Nasal_boner',
+    'Lacrimal Bone':         'Lacrimal_boner',
+    'Zygomatic Bone':        'Zygomatic',
+    'Maxilla':               'Maxilla_boner',
+    'Palatine Bone':         'Palatine',
+    'Vomer':                 'Vomer',
+    'Inferior Nasal Concha': 'Inferior_nasal_concha_boner',
+    'Mandible':              'Mandible',
+};
 
 function isSkull(n) {
     for(var i=0;i<SKULL_MESH_KEYS.length;i++) {
