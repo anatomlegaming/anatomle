@@ -37,11 +37,11 @@ const BONE_TO_3D_MODEL = {
     "Floating Ribs (11-12)":    "__floating_ribs__",
     "Costal Cartilage (1-7)":   "__costal_true__",
     "Costal Cartilage (8-10)":  "__costal_false__",
-    "Sternum":                  "sternum",
+    "Sternum":                  "__group__Body_of_sternum|Manubrium_of_sternum",
 
     // Upper limb
     "Clavicle":               "Clavicler",
-    "Scapula":                "Scapula",
+    "Scapula":                "Scapular",
     "Humerus":                "Humerusr",
     "Radius":                 "Radiusr",
     "Ulna":                   "Ulnar",
