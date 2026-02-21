@@ -51,6 +51,8 @@ const BONE_WIKI_TITLE = {
     "Distal Phalanx (Foot)":   "Phalanx bone",
 
     // Foot tarsals with awkward names
+    "Cuboid":                  "Cuboid bone",
+    "Trapezoid":               "Trapezoid bone",
     "Medial Cuneiform":        "Medial cuneiform bone",
     "Intermediate Cuneiform":  "Intermediate cuneiform bone",
     "Lateral Cuneiform":       "Lateral cuneiform bone",
