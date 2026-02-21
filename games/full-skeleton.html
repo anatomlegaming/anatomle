@@ -120,27 +120,28 @@ function SkeletonGame() {
 
     const submit = useCallback((guess) => {
         if (phase !== 'playing' || !guess) return;
-        const isOnPath = target.path.includes(guess);
-        let updatedChain = chain, updatedDetours = detours, valid = false;
-        if (isOnPath) {
-            updatedChain = chain.map(item => item.bone === guess ? { ...item, guessed: true } : item);
-            valid = true;
-        } else if (isOnValidPath(guess, target.start, target.end, SKELETON_GRAPH)) {
-            updatedDetours = [...new Set([guess, ...detours])];
-            valid = true;
-        } else {
-            setBad(prev => [...new Set([guess, ...prev])]);
-        }
-        const nl = left - 1; setLeft(nl);
-        if (valid) {
-            if (isOnPath) setChain(updatedChain); else setDetours(updatedDetours);
+        setInput(''); setSelIdx(-1);
+
+        // On optimal path
+        if (target.path.includes(guess)) {
+            const updatedChain = chain.map(item => item.bone === guess ? { ...item, guessed: true } : item);
+            setChain(updatedChain);
             const guessedOptimal = updatedChain.filter(c => c.guessed).map(c => c.bone);
-            if (canReachTargetWithGuessed(target.start, target.end, guessedOptimal, updatedDetours, SKELETON_GRAPH)) {
-                setPhase('won'); setInput(''); return;
+            if (canReachTargetWithGuessed(target.start, target.end, guessedOptimal, detours, SKELETON_GRAPH)) {
+                setPhase('won'); return;
             }
+            return;
+        }
+
+        // Not on optimal — classify via validateGuess (same as upper-limb games)
+        const result = validateGuess(guess, target.path, target.start, target.end, SKELETON_GRAPH);
+        const nl = left - 1; setLeft(nl);
+        if (result.type === 'detour') {
+            setDetours(prev => [...new Set([...prev, guess])]);
+        } else {
+            setBad(prev => [...new Set([...prev, guess])]);
         }
         if (nl <= 0) setPhase('lost');
-        setInput(''); setSelIdx(-1);
     }, [phase, chain, detours, target, left, bad]);
 
     const handleKey = (e) => {
