@@ -65,7 +65,7 @@ function SkeletonGame() {
         const g = initializeGame(SKELETON_GRAPH, { minLength: 4, maxLength: 8 });
         setTarget(g);
         setChain(g.path.map((bone, i) => ({ bone, type: i === 0 ? 'start' : 'path', guessed: i === 0 })));
-        const total = calculateGuessCount(g.path.length);
+        const total = calculateGuessCount(g.path.length, 2);
         setLeft(total); setMax(total);
         setBad([]); setDetours([]);
         setInput(''); setSelIdx(-1); setPhase('playing'); setReveal(false); setShared(false);
@@ -133,14 +133,22 @@ function SkeletonGame() {
             return;
         }
 
-        // Not on optimal — classify via validateGuess (same as upper-limb games)
+        // Not on optimal — classify via validateGuess
         const result = validateGuess(guess, target.path, target.start, target.end, SKELETON_GRAPH);
         const nl = left - 1; setLeft(nl);
+
         if (result.type === 'detour') {
-            setDetours(prev => [...new Set([...prev, guess])]);
+            const updatedDetours = [...new Set([...detours, guess])];
+            setDetours(updatedDetours);
+            // Check win after every detour — path through all guessed bones counts
+            const guessedOptimal = chain.filter(c => c.guessed).map(c => c.bone);
+            if (canReachTargetWithGuessed(target.start, target.end, guessedOptimal, updatedDetours, SKELETON_GRAPH)) {
+                setPhase('won'); return;
+            }
         } else {
             setBad(prev => [...new Set([...prev, guess])]);
         }
+
         if (nl <= 0) setPhase('lost');
     }, [phase, chain, detours, target, left, bad]);
 
