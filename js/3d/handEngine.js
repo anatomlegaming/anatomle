@@ -143,9 +143,9 @@ window.addEventListener('DOMContentLoaded', function() {
     loader.load('../models/overview-skeleton.glb', function(gltf) {
         _sk = gltf.scene; scene.add(_sk);
 
-        // Remove left-side (_1) bones from scene entirely, keep only right
+        // Remove mirrored group (Group_1) entirely from scene
         var toRemove = [];
-        _sk.traverse(function(n){ if(n.isMesh && n.name.slice(-2) === '_1') toRemove.push(n); });
+        _sk.traverse(function(n){ if(n.name === 'Group_1') toRemove.push(n); });
         toRemove.forEach(function(n){ n.parent.remove(n); });
 
         // Hide non-hand bones, collect hand bones
