@@ -73,6 +73,14 @@
 </head>
 <body>
 <div id="cv"></div>
+<button onclick="if(window.resetCamera) window.resetCamera();" style="
+    position:fixed; bottom:80px; left:16px; z-index:50;
+    background:rgba(253,246,236,0.92); border:1.5px solid #e8d5c0;
+    border-radius:8px; padding:7px 10px; cursor:pointer;
+    font-size:16px; line-height:1; color:#9a8070;
+    box-shadow:0 2px 8px rgba(45,31,20,0.1);
+    transition:all 0.15s;
+" title="Reset view" onmouseover="this.style.color='#2d1f14'" onmouseout="this.style.color='#9a8070'">⊙</button>
 <div id="ad-slot">
     <div class="ad-placeholder"></div>
     <span>Coming Soon</span>
