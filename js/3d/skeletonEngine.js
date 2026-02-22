@@ -19,7 +19,7 @@ var FALSE_RIB_NODES    = ['Rib_(8th)r','Rib_(9th)r','Rib_(10th)r'];
 var FLOATING_RIB_NODES = ['Rib_(11th)r','Rib_(12th)r'];
 var COSTAL_TRUE_NODES  = ['Costal_cart_of_1st_rib','Costal_cart_of_2nd_rib','Costal_cart_of_3rd_rib',
                           'Costal_cart_of_4th_rib','Costal_cart_of_5th_rib','Costal_cart_of_6th_rib','Costal_cart_of_7th_rib'];
-var COSTAL_FALSE_NODES = ['Costal_cart_of_8th_rib','Costal_cart_of_9th_rib'];
+var COSTAL_FALSE_NODES = ['Costal_cart_of_8th_rib','Costal_cart_of_9th_rib','Costal_cart_of_10th_rib'];
 
 // ── REVERSE LOOKUP: mesh name → display bone name ────────────────────────────
 var _meshToDisplay = null;
