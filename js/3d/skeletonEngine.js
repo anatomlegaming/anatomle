@@ -239,11 +239,14 @@ window.addEventListener('DOMContentLoaded', function() {
         var t3d;
         if (_skeleton) { var h = ray.intersectObjects([_skeleton], true); if (h.length) t3d = h[0].point.clone(); }
         if (!t3d) t3d = ray.ray.at(_cam.position.distanceTo(ctrl.target), new THREE.Vector3());
-        var dir  = new THREE.Vector3().subVectors(t3d, _cam.position);
         var dist = _cam.position.distanceTo(ctrl.target);
-        var step = dir.length() * 0.12;
-        if (e.deltaY < 0 && dist > ctrl.minDistance) _cam.position.addScaledVector(dir.normalize(), step);
-        else if (e.deltaY > 0 && dist < ctrl.maxDistance) _cam.position.addScaledVector(dir.normalize(), -step);
+        if (e.deltaY < 0 && dist > ctrl.minDistance) {
+            _cam.position.lerp(t3d, 0.12);
+            ctrl.target.lerp(t3d, 0.08);
+        } else if (e.deltaY > 0 && dist < ctrl.maxDistance) {
+            _cam.position.lerp(t3d, -0.12);
+            ctrl.target.lerp(t3d, -0.08);
+        }
         ctrl.update();
     }, { passive:false });
 
