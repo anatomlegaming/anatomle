@@ -32,8 +32,10 @@ var FOOT_B2M = {
 };
 
 var _sk = null;
+var _cam = null;
+var _ctrl = null;
 var _initCenter = null;
-var _initDist   = 1;
+var _initDist = 1;
 var FOOT_MESH_KEYS = [
     'Tibiar','Fibular','Talusr','Calcaneusr',
     'Navicular_boner','Cuboid_boner',
@@ -91,21 +93,23 @@ window.reset3D = function() {
 
 
 window.resetCamera = function() {
-    if (!_initCenter || !cam || !ctrl) return;
-    cam.position.set(_initCenter.x, _initCenter.y, _initCenter.z + _initDist);
-    ctrl.target.copy(_initCenter);
-    cam.lookAt(_initCenter);
-    ctrl.update();
+    if (!_initCenter || !_cam || !_ctrl) return;
+    _cam.position.set(_initCenter.x, _initCenter.y, _initCenter.z + _initDist);
+    _ctrl.target.copy(_initCenter);
+    _cam.lookAt(_initCenter);
+    _ctrl.update();
 };
 window.addEventListener('DOMContentLoaded', function() {
     var cont = document.getElementById('cv');
     var scene = new THREE.Scene();
-    var cam = new THREE.PerspectiveCamera(45, cont.clientWidth/cont.clientHeight, 0.01, 100);
+    _cam = new THREE.PerspectiveCamera(45, cont.clientWidth/cont.clientHeight, 0.01, 100);
+    var cam = _cam;
     var renderer = new THREE.WebGLRenderer({antialias:true,alpha:true});
     renderer.setSize(cont.clientWidth, cont.clientHeight);
     cont.appendChild(renderer.domElement);
 
-    var ctrl = new THREE.OrbitControls(cam, renderer.domElement);
+    _ctrl = new THREE.OrbitControls(cam, renderer.domElement);
+    var ctrl = _ctrl;
     ctrl.enableDamping=true; ctrl.dampingFactor=0.05; ctrl.maxPolarAngle=Math.PI;
     ctrl.minDistance=0.05; ctrl.maxDistance=2; ctrl.enableZoom=false;
 
@@ -157,15 +161,18 @@ window.addEventListener('DOMContentLoaded', function() {
         var center = box.getCenter(new THREE.Vector3());
         var size   = box.getSize(new THREE.Vector3());
 
+        // Shift entire skeleton so foot is at world origin
+        _sk.position.sub(center);
+
         var fov    = cam.fov * (Math.PI / 180);
         var maxDim = Math.max(size.x, size.y, size.z);
         var dist   = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.4;
-        _initCenter = center.clone();
+        _initCenter = new THREE.Vector3(0, 0, 0);
         _initDist   = dist;
 
-        ctrl.target.copy(center);
-        cam.position.set(center.x, center.y, center.z + dist);
-        cam.lookAt(center); ctrl.update();
+        ctrl.target.set(0, 0, 0);
+        cam.position.set(0, 0, dist);
+        cam.lookAt(0, 0, 0); ctrl.update();
         window.reset3D();
         window.dispatchEvent(new CustomEvent('modelReady'));
     });
