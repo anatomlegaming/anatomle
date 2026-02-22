@@ -45,6 +45,7 @@ var FOOT_MESH_KEYS = [
 ];
 
 function isFoot(n) {
+    if (n.slice(-2) === '_1') return false;  // exclude mirrored left-side bones
     for (var i=0;i<FOOT_MESH_KEYS.length;i++) if (n.indexOf(FOOT_MESH_KEYS[i])!==-1) return true;
     return false;
 }
