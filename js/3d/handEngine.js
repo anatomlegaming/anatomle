@@ -17,9 +17,9 @@ var HAND_B2M = {
     'Proximal Phalanx II':'Proximal_phalanx_of_2d_fingerr',
     'Middle Phalanx II':'Middle_phalanx_of_2d_fingerr',
     'Distal Phalanx II':'Distal_phalanx_of_2d_fingerr',
-    'Proximal Phalanx III':'roximal_phalanx_of_3',
-    'Middle Phalanx III':'iddle_phalanx_of_3',
-    'Distal Phalanx III':'istal_phalanx_of_3',
+    'Proximal Phalanx III':'Proximal_phalanx_of_3rd_fingerr',
+    'Middle Phalanx III':'Middle_phalanx_of_3rd_fingerr',
+    'Distal Phalanx III':'Distal_phalanx_of_3d_fingerr',
     'Proximal Phalanx IV':'Proximal_phalanx_of_4th_fingerr',
     'Middle Phalanx IV':'Middle_phalanx_of_4th_fingerr',
     'Distal Phalanx IV':'Distal_phalanx_of_4th_fingerr',
@@ -36,13 +36,14 @@ var HAND_MESH_KEYS = [
     '1st_metacarpal_boner','2nd_metacarpal_boner','3rd_metacarpal_boner','4th_metacarpal_boner','5th_metacarpal_boner',
     'Proximal_phalanx_of_1st_fingerr','Distal_phalanx_of_1st_fingerr',
     'Proximal_phalanx_of_2d_fingerr','Middle_phalanx_of_2d_fingerr','Distal_phalanx_of_2d_fingerr',
-    'roximal_phalanx_of_3','iddle_phalanx_of_3','istal_phalanx_of_3',
+    'Proximal_phalanx_of_3rd_fingerr','Middle_phalanx_of_3rd_fingerr','Distal_phalanx_of_3d_fingerr',
     'Proximal_phalanx_of_4th_fingerr','Middle_phalanx_of_4th_fingerr','Distal_phalanx_of_4th_fingerr',
     'Proximal_phalanx_of_5th_fingerr','Middle_phalanx_of_5th_fingerr','Distal_phalanx_of_5th_fingerr'
 ];
 
 function isHand(n) {
     if (n.indexOf('foot')!==-1 || n.indexOf('_of_foot')!==-1 || n.indexOf('finger_of_foot')!==-1) return false;
+    if (n.slice(-2) === '_1') return false;  // exclude mirrored left-side bones
     for (var i=0;i<HAND_MESH_KEYS.length;i++) if (n.indexOf(HAND_MESH_KEYS[i])!==-1) return true;
     return false;
 }
