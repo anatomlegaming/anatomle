@@ -168,7 +168,7 @@ window.addEventListener('DOMContentLoaded', function() {
         var maxDim = Math.max(size.x, size.y, size.z);
         var dist   = Math.max(Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.8, 0.4);
         _initDist = dist;
-        center.x += 0.3;  // nudge right to visually centre — tweak between 0.1 and 0.5
+        center.x += 0.5;  // nudge right to visually centre — tweak between 0.1 and 0.5
         _initCenter = center.clone();
         ctrl.target.copy(center);
         cam.position.set(center.x, center.y, center.z + dist);
