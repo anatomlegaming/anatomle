@@ -29,6 +29,8 @@ var HAND_B2M = {
 };
 
 var _sk = null;
+var _initCenter = null;
+var _initDist   = 1;
 var HAND_MESH_KEYS = [
     'Radiusr','Ulnar',
     'Scaphoidr','Lunate_boner','Triquetrum','Pisiformr',
@@ -85,6 +87,14 @@ window.reset3D = function() {
     });
 };
 
+
+window.resetCamera = function() {
+    if (!_initCenter || !cam || !ctrl) return;
+    cam.position.set(_initCenter.x, _initCenter.y, _initCenter.z + _initDist);
+    ctrl.target.copy(_initCenter);
+    cam.lookAt(_initCenter);
+    ctrl.update();
+};
 window.addEventListener('DOMContentLoaded', function() {
     var cont = document.getElementById('cv');
     var scene = new THREE.Scene();
@@ -128,20 +138,32 @@ window.addEventListener('DOMContentLoaded', function() {
     var loader=new THREE.GLTFLoader(); loader.setDRACOLoader(draco);
     loader.load('../models/overview-skeleton.glb', function(gltf) {
         _sk = gltf.scene; scene.add(_sk);
-        // First pass: hide everything, collect bounding box of right-side bones only
-        var box = new THREE.Box3();
+
+        // Hide everything first, then show only right-side hand bones
+        _sk.traverse(function(n){ if(n.isMesh) n.visible = false; });
+        var meshes = [];
         _sk.traverse(function(n){
             if(!n.isMesh) return;
-            if(isHand(n.name)) { box.expandByObject(n); n.visible=true; }
-            else n.visible=false;
+            if(isHand(n.name)) { n.visible = true; meshes.push(n); }
         });
+
+        // Manually compute bounding box in world space
+        var box = new THREE.Box3();
+        meshes.forEach(function(n){ box.expandByObject(n); });
+
         if(box.isEmpty()) { console.warn('Hand bounding box empty'); return; }
-        var center=box.getCenter(new THREE.Vector3());
-        var size=box.getSize(new THREE.Vector3());
+        var center = box.getCenter(new THREE.Vector3());
+        var size   = box.getSize(new THREE.Vector3());
+
+        // Store initial camera state for reset
+        var fov    = cam.fov * (Math.PI / 180);
+        var maxDim = Math.max(size.x, size.y, size.z);
+        var dist   = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.4;
+        _initCenter = center.clone();
+        _initDist   = dist;
+
         ctrl.target.copy(center);
-        var fov=cam.fov*(Math.PI/180); var maxDim=Math.max(size.x,size.y,size.z);
-        var dist=Math.abs(maxDim/2/Math.tan(fov/2))*1.4;
-        cam.position.set(center.x, center.y, center.z+dist);
+        cam.position.set(center.x, center.y, center.z + dist);
         cam.lookAt(center); ctrl.update();
         window.reset3D();
         window.dispatchEvent(new CustomEvent('modelReady'));
