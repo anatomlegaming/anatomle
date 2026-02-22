@@ -101,19 +101,26 @@ window.addEventListener('DOMContentLoaded', function() {
 
     renderer.domElement.addEventListener('wheel', function(e) {
         e.preventDefault();
-        var rect=renderer.domElement.getBoundingClientRect();
-        var mouse=new THREE.Vector2(((e.clientX-rect.left)/rect.width)*2-1,-((e.clientY-rect.top)/rect.height)*2+1);
-        var ray=new THREE.Raycaster(); ray.setFromCamera(mouse,cam);
+        var rect  = renderer.domElement.getBoundingClientRect();
+        var mouse = new THREE.Vector2(
+            ((e.clientX - rect.left) / rect.width) * 2 - 1,
+            -((e.clientY - rect.top) / rect.height) * 2 + 1
+        );
+        var ray = new THREE.Raycaster(); ray.setFromCamera(mouse, cam);
         var t3d;
-        if(_sk){var h=ray.intersectObjects([_sk],true);if(h.length)t3d=h[0].point.clone();}
-        if(!t3d)t3d=ray.ray.at(cam.position.distanceTo(ctrl.target),new THREE.Vector3());
-        var dir=new THREE.Vector3().subVectors(t3d,cam.position);
-        var dist=cam.position.distanceTo(ctrl.target);
-        var step=dir.length()*0.12;
-        if(e.deltaY<0&&dist>ctrl.minDistance)cam.position.addScaledVector(dir.normalize(),step);
-        else if(e.deltaY>0&&dist<ctrl.maxDistance)cam.position.addScaledVector(dir.normalize(),-step);
+        if (_sk) { var h = ray.intersectObjects([_sk], true); if (h.length) t3d = h[0].point.clone(); }
+        if (!t3d) t3d = ray.ray.at(cam.position.distanceTo(ctrl.target), new THREE.Vector3());
+        var dist = cam.position.distanceTo(ctrl.target);
+        var step = dist * 0.12;
+        if (e.deltaY < 0 && dist > ctrl.minDistance) {
+            cam.position.lerp(t3d, 0.12);
+            ctrl.target.lerp(t3d, 0.08);
+        } else if (e.deltaY > 0 && dist < ctrl.maxDistance) {
+            cam.position.lerp(t3d, -0.12);
+            ctrl.target.lerp(t3d, -0.08);
+        }
         ctrl.update();
-    },{passive:false});
+    }, {passive:false});
 
     scene.add(new THREE.AmbientLight(0xfff8f0, 0.9));
     var dl=new THREE.DirectionalLight(0xfff4e8, 0.7); dl.position.set(3,8,5); scene.add(dl);
@@ -124,11 +131,18 @@ window.addEventListener('DOMContentLoaded', function() {
     loader.load('../models/overview-skeleton.glb', function(gltf) {
         _sk = gltf.scene; scene.add(_sk);
         var box = new THREE.Box3();
-        _sk.traverse(function(n){ if(!n.isMesh) return; if(isFoot(n.name)) box.expandByObject(n); else n.visible=false; });
-        var center=box.getCenter(new THREE.Vector3()); var size=box.getSize(new THREE.Vector3());
+        _sk.traverse(function(n){
+            if(!n.isMesh) return;
+            if(isFoot(n.name)) { box.expandByObject(n); n.visible=true; }
+            else n.visible=false;
+        });
+        if(box.isEmpty()) { console.warn('Foot bounding box empty'); return; }
+        var center=box.getCenter(new THREE.Vector3());
+        var size=box.getSize(new THREE.Vector3());
         ctrl.target.copy(center);
         var fov=cam.fov*(Math.PI/180); var maxDim=Math.max(size.x,size.y,size.z);
-        cam.position.set(center.x, center.y+size.y*0.2, center.z+Math.abs(maxDim/2/Math.tan(fov/2))*1.2);
+        var dist=Math.abs(maxDim/2/Math.tan(fov/2))*1.4;
+        cam.position.set(center.x, center.y, center.z+dist);
         cam.lookAt(center); ctrl.update();
         window.reset3D();
         window.dispatchEvent(new CustomEvent('modelReady'));
