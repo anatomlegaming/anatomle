@@ -65,9 +65,9 @@ const BONE_TO_3D_MODEL = {
 
     // Hand phalanges — grouped by row, each maps to all 5 finger meshes
     // Engine handles __group__ prefix specially: matches any node containing any of the listed keys
-    "Proximal Phalanx (Hand)": "__group__Proximal_phalanx_of_1st_fingerr|Proximal_phalanx_of_2d_fingerr|roximal_phalanx_of_3|Proximal_phalanx_of_4th_fingerr|Proximal_phalanx_of_5th_fingerr",
-    "Middle Phalanx (Hand)":   "__group__Middle_phalanx_of_2d_fingerr|iddle_phalanx_of_3|Middle_phalanx_of_4th_fingerr|Middle_phalanx_of_5th_fingerr",
-    "Distal Phalanx (Hand)":   "__group__Distal_phalanx_of_1st_fingerr|Distal_phalanx_of_2d_fingerr|istal_phalanx_of_3|Distal_phalanx_of_4th_fingerr|Distal_phalanx_of_5th_fingerr",
+    "Proximal Phalanx (Hand)": "__group__Proximal_phalanx_of_1st_fingerr|Proximal_phalanx_of_2d_fingerr|Proximal_phalanx_of_3rd_fingerr|Proximal_phalanx_of_4th_fingerr|Proximal_phalanx_of_5th_fingerr",
+    "Middle Phalanx (Hand)":   "__group__Middle_phalanx_of_2d_fingerr|Middle_phalanx_of_3rd_fingerr|Middle_phalanx_of_4th_fingerr|Middle_phalanx_of_5th_fingerr",
+    "Distal Phalanx (Hand)":   "__group__Distal_phalanx_of_1st_fingerr|Distal_phalanx_of_2d_fingerr|Distal_phalanx_of_3d_fingerr|Distal_phalanx_of_4th_fingerr|Distal_phalanx_of_5th_fingerr",
 
     // Pelvis — handled by special case in update3D
     "Hip Bone":               "__hip_bone__",
