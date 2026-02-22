@@ -7,6 +7,8 @@
 // ============================================================================
 
 var _skeleton  = null;
+var _initCenter = null;
+var _initDist   = 1;
 var _cam       = null;
 var _renderer  = null;
 var _raycaster = new THREE.Raycaster();
@@ -164,6 +166,14 @@ window.highlight3D = function(displayName, on) {
 };
 
 // ── SCENE INIT ────────────────────────────────────────────────────────────────
+
+window.resetCamera = function() {
+    if (!_initCenter || !_cam || !ctrl) return;
+    _cam.position.set(_initCenter.x, _initCenter.y, _initCenter.z + _initDist);
+    ctrl.target.copy(_initCenter);
+    _cam.lookAt(_initCenter);
+    ctrl.update();
+};
 window.addEventListener('DOMContentLoaded', function() {
     var cont  = document.getElementById('cv');
     var scene = new THREE.Scene();
@@ -270,7 +280,10 @@ window.addEventListener('DOMContentLoaded', function() {
         ctrl.target.copy(center);
         var fov    = _cam.fov * (Math.PI / 180);
         var maxDim = Math.max(size.x, size.y, size.z);
-        _cam.position.set(center.x, center.y, center.z + Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.5);
+        var dist = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.5;
+        _initCenter = center.clone();
+        _initDist   = dist;
+        _cam.position.set(center.x, center.y, center.z + dist);
         _cam.lookAt(center); ctrl.update();
         window.reset3D();
         window.dispatchEvent(new CustomEvent('modelReady'));
