@@ -170,8 +170,9 @@ window.addEventListener('DOMContentLoaded', function() {
         _initCenter = center.clone();
         _initDist   = dist;
 
+        var offset = -0.27;  // shift left to compensate for world-space offset
         ctrl.target.copy(center);
-        cam.position.set(center.x, center.y, center.z + dist);
+        cam.position.set(center.x + offset, center.y, center.z + dist);
         cam.lookAt(center); ctrl.update();
         window.reset3D();
         window.dispatchEvent(new CustomEvent('modelReady'));
