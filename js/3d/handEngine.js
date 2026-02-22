@@ -143,12 +143,17 @@ window.addEventListener('DOMContentLoaded', function() {
     loader.load('../models/overview-skeleton.glb', function(gltf) {
         _sk = gltf.scene; scene.add(_sk);
 
-        // Hide everything first, then show only right-side hand bones
-        _sk.traverse(function(n){ if(n.isMesh) n.visible = false; });
+        // Remove left-side (_1) bones from scene entirely, keep only right
+        var toRemove = [];
+        _sk.traverse(function(n){ if(n.isMesh && n.name.slice(-2) === '_1') toRemove.push(n); });
+        toRemove.forEach(function(n){ n.parent.remove(n); });
+
+        // Hide non-hand bones, collect hand bones
         var meshes = [];
         _sk.traverse(function(n){
             if(!n.isMesh) return;
             if(isHand(n.name)) { n.visible = true; meshes.push(n); }
+            else n.visible = false;
         });
 
         // Manually compute bounding box in world space
@@ -159,18 +164,15 @@ window.addEventListener('DOMContentLoaded', function() {
         var center = box.getCenter(new THREE.Vector3());
         var size   = box.getSize(new THREE.Vector3());
 
-        // Shift the entire skeleton so hand is at world origin - camera stays at z+dist
-        _sk.position.sub(center);
-
         var fov    = cam.fov * (Math.PI / 180);
         var maxDim = Math.max(size.x, size.y, size.z);
         var dist   = Math.max(Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.8, 0.4);
-        _initCenter = new THREE.Vector3(0, 0, 0);
+        _initCenter = center.clone();
         _initDist   = dist;
 
-        ctrl.target.set(0, 0, 0);
-        cam.position.set(0, 0, dist);
-        cam.lookAt(0, 0, 0); ctrl.update();
+        ctrl.target.copy(center);
+        cam.position.set(center.x, center.y, center.z + dist);
+        cam.lookAt(center); ctrl.update();
         window.reset3D();
         window.dispatchEvent(new CustomEvent('modelReady'));
     });
