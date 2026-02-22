@@ -167,12 +167,11 @@ window.addEventListener('DOMContentLoaded', function() {
         var fov    = cam.fov * (Math.PI / 180);
         var maxDim = Math.max(size.x, size.y, size.z);
         var dist   = Math.max(Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.8, 0.4);
+        _initDist = dist;
+        center.x += 0.3;  // nudge right to visually centre — tweak between 0.1 and 0.5
         _initCenter = center.clone();
-        _initDist   = dist;
-
-        var offset = -0.27;  // shift left to compensate for world-space offset
         ctrl.target.copy(center);
-        cam.position.set(center.x + offset, center.y, center.z + dist);
+        cam.position.set(center.x, center.y, center.z + dist);
         cam.lookAt(center); ctrl.update();
         window.reset3D();
         window.dispatchEvent(new CustomEvent('modelReady'));
