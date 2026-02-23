@@ -41,9 +41,11 @@
                     textTransform:'uppercase', letterSpacing:'0.22em', fontWeight:700
                 }}, label)
             ),
-            e('span', { style:{
-                fontFamily:'Fraunces,serif', fontSize:13, color:col, fontWeight:900
-            }}, val)
+            val !== null && val !== undefined
+                ? e('span', { style:{
+                    fontFamily:'Fraunces,serif', fontSize:13, color:col, fontWeight:900
+                  }}, val)
+                : null
         );
     }
 
@@ -172,26 +174,18 @@
                     color:accent, fontStyle:'italic'
                 }}, target.end)
             ),
-            // Guess count — right side of the bar
+            // Guess count — right side of the bar: shows guesses remaining
             e('div', { style:{
-                display:'flex', alignItems:'baseline', gap:3, flexShrink:0
+                display:'flex', alignItems:'baseline', gap:5, flexShrink:0
             }},
                 e('span', { style:{
                     fontFamily:'Fraunces,serif', fontWeight:900, fontSize:26,
                     color: danger ? accent : 'rgba(253,246,236,0.92)', lineHeight:1
-                }}, guessesUsed),
-                e('span', { style:{
-                    fontFamily:'DM Sans,sans-serif', fontSize:14,
-                    color:'rgba(253,246,236,0.4)'
-                }}, '/'),
-                e('span', { style:{
-                    fontFamily:'Fraunces,serif', fontWeight:700, fontSize:16,
-                    color:'rgba(253,246,236,0.5)', lineHeight:1
-                }}, target.path ? target.path.length - 2 : max - 1),
+                }}, left),
                 e('span', { style:{
                     fontFamily:'DM Sans,sans-serif', fontSize:10,
-                    color:'rgba(253,246,236,0.4)', textTransform:'uppercase', letterSpacing:'0.1em', marginLeft:2
-                }}, 'guesses')
+                    color:'rgba(253,246,236,0.4)', textTransform:'uppercase', letterSpacing:'0.1em'
+                }}, 'left')
             )
         );
 
@@ -325,7 +319,7 @@
                 flexDirection:'column', borderBottom:'2px solid '+C.border
             }},
                 SectionHead(isNerve ? '\uD83E\uDDE0' : '\uD83E\uDDB4',
-                    'Path', guessed.length+' / '+(chain.length-1), C.sage),
+                    'Path', null, C.sage),
                 e('div', { className:'scr', style:{ overflowY:'auto', flex:1, padding:'8px 14px' } },
                     chainItems)
             ),
