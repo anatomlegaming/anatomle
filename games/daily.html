@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ANATOMLE | Daily Puzzle</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="../js/data/skeletonGraph.js"></script>
+    <script src="../js/data/boneMappings.js"></script>
+    <script src="../js/data/dailySeeds.js"></script>
+    <script src="../js/core/pathfinding.js"></script>
+    <script src="../js/core/gameLogic.js"></script>
+    <script src="../js/core/seededRandom.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'DM Sans', sans-serif; background: #fdf6ec; color: #2d1f14; margin: 0; overflow: hidden; }
+        #cv { position: fixed; top: 104px; left: 0; right: 580px; bottom: 68px; z-index: 10;
+              background: radial-gradient(ellipse at 50% 40%, #f5e8d0 0%, #ede0c8 60%, #e4d4b8 100%); }
+        #ad-slot { position: fixed; top: 58px; right: 0; width: 160px; bottom: 0; z-index: 150;
+              background: #fff8f0; border-left: 2px solid #e8d5c0;
+              display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+        #ad-slot span { font-family: 'DM Sans', sans-serif; font-size: 9px; color: #c8b8a8;
+              text-transform: uppercase; letter-spacing: 0.2em; writing-mode: vertical-rl; }
+        #ad-slot .ad-placeholder { width: 120px; height: 240px; border: 2px dashed #e8d5c0; border-radius: 8px; }
+        .scr::-webkit-scrollbar { width: 3px; }
+        .scr::-webkit-scrollbar-thumb { background: #e8d5c0; border-radius: 2px; }
+        .shake { animation: shake .3s ease-in-out; }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+        #loading-screen {
+            position: fixed; inset: 0; z-index: 9999;
+            background: #fdf6ec;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+        }
+        #loading-screen .logo { font-family: 'Fraunces', serif; font-size: 2rem; color: #2d1f14; }
+        #loading-screen .sub { font-size: 0.85rem; color: #9a8070; letter-spacing: 0.05em; }
+        #loading-screen .dot-row { display: flex; gap: 6px; }
+        #loading-screen .dot { width: 8px; height: 8px; border-radius: 50%; background: #c8a882; animation: pulse 1.2s infinite; }
+        #loading-screen .dot:nth-child(2) { animation-delay: 0.2s; }
+        #loading-screen .dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
+        #no-puzzle {
+            display: none; position: fixed; inset: 0; z-index: 9999;
+            background: #fdf6ec; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+        }
+        #no-puzzle h2 { font-family: 'Fraunces', serif; font-size: 1.5rem; }
+        #no-puzzle p { color: #9a8070; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+<!-- Loading screen shown while fetching UTC date -->
+<div id="loading-screen">
+    <div class="logo">Anatomle</div>
+    <div class="sub">Loading today's puzzle…</div>
+    <div class="dot-row">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div>
+</div>
+
+<!-- Shown if no seed exists for today's date -->
+<div id="no-puzzle">
+    <h2>No puzzle today</h2>
+    <p>Check back tomorrow — new puzzles added regularly.</p>
+    <a href="../index.html" style="color:#c8a882; font-size:0.9rem;">← Back to home</a>
+</div>
+
+<div id="cv"></div>
+<button onclick="if(window.resetCamera) window.resetCamera();" style="
+    position:fixed; bottom:80px; left:16px; z-index:50;
+    background:rgba(253,246,236,0.92); border:1.5px solid #e8d5c0;
+    border-radius:8px; padding:7px 10px; cursor:pointer;
+    font-size:16px; line-height:1; color:#9a8070;
+    box-shadow:0 2px 8px rgba(45,31,20,0.1); transition:all 0.15s;
+" title="Reset view" onmouseover="this.style.color='#2d1f14'" onmouseout="this.style.color='#9a8070'">⊙</button>
+<div id="ad-slot"><div class="ad-placeholder"></div><span>Coming Soon</span></div>
+<div id="root"></div>
+
+<script src="../js/3d/skeletonEngine.js"></script>
+<script src="../js/ui/pathfindingUI.js"></script>
+<script src="../js/ui/howToPlay.js"></script>
+<script src="../js/ui/boneInfo.js"></script>
+<script src="../js/ui/boneTooltip.js"></script>
+
+<script>
+// ── FETCH UTC DATE FROM SERVER, FALL BACK TO DEVICE DATE ─────────────────────
+// worldtimeapi.org returns real UTC time regardless of system clock.
+// If the fetch fails (offline, API down), we fall back to device date.
+// This prevents clock-manipulation cheating.
+
+window.DAILY_DATE_STR  = null;   // "YYYY-MM-DD" UTC
+window.DAILY_SEED      = null;   // integer seed for today
+window.DAILY_GAME_DATA = null;   // { start, end, path }
+
+function getUTCDateString(isoString) {
+    // Parse "2026-02-23T..." → "2026-02-23"
+    return isoString.slice(0, 10);
+}
+
+function initDailyFromDate(dateStr) {
+    var seed = DAILY_SEEDS[dateStr];
+    if (!seed) {
+        document.getElementById('loading-screen').style.display = 'none';
+        document.getElementById('no-puzzle').style.display = 'flex';
+        return false;
+    }
+    window.DAILY_DATE_STR = dateStr;
+    window.DAILY_SEED     = seed;
+    window.DAILY_GAME_DATA = initializeDailyGame(seed, SKELETON_GRAPH, { minLength: 4, maxLength: 8 });
+    return true;
+}
+
+function startApp() {
+    document.getElementById('loading-screen').style.display = 'none';
+    // Trigger React to render — it reads window.DAILY_GAME_DATA
+    if (window.__dailyAppReady) window.__dailyAppReady();
+}
+
+// Try worldtimeapi first
+fetch('https://worldtimeapi.org/api/timezone/UTC')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        var dateStr = getUTCDateString(data.utc_datetime || data.datetime);
+        if (initDailyFromDate(dateStr)) startApp();
+    })
+    .catch(function() {
+        // Fallback: device UTC date
+        var now = new Date();
+        var dateStr = now.getUTCFullYear() + '-' +
+            String(now.getUTCMonth() + 1).padStart(2, '0') + '-' +
+            String(now.getUTCDate()).padStart(2, '0');
+        if (initDailyFromDate(dateStr)) startApp();
+    });
+</script>
+
+<script type="text/babel">
+const { useState, useEffect, useMemo, useCallback, useRef } = React;
+
+function DailyGame() {
+    const [ready, setReady]     = useState(false);
+    const [target, setTarget]   = useState({ start: '', end: '', path: [] });
+    const [chain, setChain]     = useState([]);
+    const [left, setLeft]       = useState(10);
+    const [max, setMax]         = useState(10);
+    const [bad, setBad]         = useState([]);
+    const [detours, setDetours] = useState([]);
+    const [input, setInput]     = useState('');
+    const [selIdx, setSelIdx]   = useState(-1);
+    const [phase, setPhase]     = useState('playing');
+    const [reveal, setReveal]   = useState(false);
+    const [shared, setShared]   = useState(false);
+    const [showHtp, dismissHtp] = window.useFirstVisit('daily');
+
+    // Called once worldtimeapi fetch resolves and game data is ready
+    window.__dailyAppReady = () => setReady(true);
+
+    useEffect(() => {
+        if (!ready) return;
+        // If fetch already finished before React mounted
+        if (window.DAILY_GAME_DATA) loadGame(window.DAILY_GAME_DATA);
+    }, [ready]);
+
+    // Also handle case where fetch finished before component mounted
+    useEffect(() => {
+        if (window.DAILY_GAME_DATA) { setReady(true); }
+    }, []);
+
+    const loadGame = (g) => {
+        setTarget(g);
+        setChain(g.path.map((bone, i) => ({ bone, type: i === 0 ? 'start' : 'path', guessed: i === 0 })));
+        const total = calculateGuessCount(g.path.length, 2);
+        setLeft(total); setMax(total);
+        setBad([]); setDetours([]);
+        setInput(''); setSelIdx(-1); setPhase('playing'); setReveal(false); setShared(false);
+        try { window.reset3D && window.reset3D(); } catch(e) {}
+    };
+
+    useEffect(() => {
+        if (ready && window.DAILY_GAME_DATA) loadGame(window.DAILY_GAME_DATA);
+    }, [ready]);
+
+    // Highlights
+    const highlightRef = useRef([]);
+    useEffect(() => {
+        const h = [];
+        if (reveal && phase === 'lost') {
+            chain.forEach((item, idx) => {
+                const isLast = idx === chain.length - 1;
+                if (item.guessed && !isLast) h.push({ name: item.bone, type: item.type });
+                else if (!item.guessed && !isLast) h.push({ name: item.bone, type: 'reveal' });
+                else if (isLast) h.push({ name: item.bone, type: 'end' });
+            });
+        } else {
+            chain.forEach((item, idx) => {
+                const isLast = idx === chain.length - 1;
+                if (item.guessed && !isLast) h.push({ name: item.bone, type: item.type });
+                else if (isLast) h.push({ name: item.bone, type: 'end' });
+            });
+            detours.forEach(g => h.push({ name: g, type: 'detour' }));
+            bad.forEach(g => h.push({ name: g, type: 'bad' }));
+        }
+        highlightRef.current = h;
+        try { window.update3D && window.update3D(h); } catch(e) {}
+    }, [chain, bad, detours, reveal, phase]);
+
+    useEffect(() => {
+        const onReady = () => { try { window.update3D && window.update3D(highlightRef.current); } catch(e){} };
+        window.addEventListener('modelReady', onReady);
+        return () => window.removeEventListener('modelReady', onReady);
+    }, []);
+
+    const suggestions = useMemo(() => {
+        if (!input.trim()) return [];
+        const guessedBones = chain.filter(c => c.guessed).map(c => c.bone);
+        return Object.keys(SKELETON_GRAPH).filter(b =>
+            b.toLowerCase().includes(input.toLowerCase()) &&
+            !guessedBones.includes(b) &&
+            b !== target.end &&
+            !bad.includes(b) &&
+            !detours.includes(b)
+        ).slice(0, 7);
+    }, [input, chain, target.end, bad, detours]);
+
+    useEffect(() => { setSelIdx(-1); }, [suggestions.length]);
+
+    const submit = useCallback((guess) => {
+        if (phase !== 'playing' || !guess) return;
+        setInput(''); setSelIdx(-1);
+
+        if (target.path.includes(guess)) {
+            const updatedChain = chain.map(item => item.bone === guess ? { ...item, guessed: true } : item);
+            setChain(updatedChain);
+            const guessedOptimal = updatedChain.filter(c => c.guessed).map(c => c.bone);
+            if (canReachTargetWithGuessed(target.start, target.end, guessedOptimal, detours, SKELETON_GRAPH)) {
+                setPhase('won'); return;
+            }
+            return;
+        }
+
+        const result = validateGuess(guess, target.path, target.start, target.end, SKELETON_GRAPH);
+        const nl = left - 1; setLeft(nl);
+
+        if (result.type === 'detour') {
+            const updatedDetours = [...new Set([...detours, guess])];
+            setDetours(updatedDetours);
+            const guessedOptimal = chain.filter(c => c.guessed).map(c => c.bone);
+            if (canReachTargetWithGuessed(target.start, target.end, guessedOptimal, updatedDetours, SKELETON_GRAPH)) {
+                setPhase('won'); return;
+            }
+        } else {
+            setBad(prev => [...new Set([...prev, guess])]);
+        }
+
+        if (nl <= 0) setPhase('lost');
+    }, [phase, chain, detours, target, left]);
+
+    const handleKey = (e) => {
+        if (e.key === 'ArrowDown') { e.preventDefault(); setSelIdx(i => Math.min(i + 1, suggestions.length - 1)); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); setSelIdx(i => Math.max(i - 1, 0)); }
+        else if (e.key === 'Enter') {
+            if (selIdx >= 0 && suggestions[selIdx]) submit(suggestions[selIdx]);
+            else if (suggestions.length === 1) submit(suggestions[0]);
+        }
+        else if (e.key === 'Escape') { setInput(''); setSelIdx(-1); }
+    };
+
+    const handleShare = () => {
+        const dateStr = window.DAILY_DATE_STR || '';
+        const guesses = max - left;
+        const grid = chain.map(c => c.guessed ? (c.type === 'start' ? '🟢' : '🟦') : '⬜').join('');
+        const text = `Anatomle – Daily Puzzle\n${dateStr}\n${phase === 'won' ? `✅ ${guesses}/${max} guesses` : '❌'}\n${grid}\nanatomle.com`;
+        navigator.clipboard.writeText(text).then(() => setShared(true));
+    };
+
+    if (!ready || !target.start) return null;
+
+    return (
+        <>
+        <window.HowToModal show={showHtp} onClose={dismissHtp} />
+        <window.PathfindingUI
+            gameTitle="Osteomle · Daily Puzzle"
+            mode="standard"
+            state={{ target, chain, left, max, bad, detours, input, selIdx, phase, reveal, suggestions, hintUsed: false, shared }}
+            handlers={{
+                onInputChange: e => setInput(e.target.value),
+                onKeyDown: handleKey,
+                onSubmit: submit,
+                onNewGame: null,
+                onGiveUp: () => setPhase('lost'),
+                onReveal: () => setReveal(true),
+                onShare: handleShare,
+            }}
+        />
+        </>
+    );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+    <>
+        <DailyGame />
+        {typeof window.BoneTooltipLayer !== 'undefined' && <window.BoneTooltipLayer />}
+    </>
+);
+</script>
+</body>
+</html>
