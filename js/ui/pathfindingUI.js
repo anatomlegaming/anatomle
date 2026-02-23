@@ -68,6 +68,7 @@
         var hintUsed    = s.hintUsed   || false;
         var shared      = s.shared     || false;
         var reviewing   = s.reviewing  || false;
+        var guessesUsed = s.guessesUsed || (max - left);
         var supplyLog   = s.supplyLog  || null;
 
         var isNerve  = mode === 'nerve';
@@ -452,8 +453,8 @@
                             : 'Flatline.'),
                     // Scoring block
                     (function() {
-                        var used = max - left;
-                        var optimal = target.path.length - 1; // guesses needed on perfect run
+                        var used = guessesUsed;
+                        var optimal = target.path.length - 1; // guesses needed on perfect run (excl. start)
                         var extra = used - optimal;
                         var stars = phase === 'won'
                             ? (extra === 0 ? 3 : extra <= 2 ? 2 : 1)
