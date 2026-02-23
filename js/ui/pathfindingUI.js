@@ -450,16 +450,32 @@
                         phase === 'won'
                             ? (detours.length === 0 ? 'Perfect Path!' : 'Path Found!')
                             : 'Flatline.'),
-                    // Subtext
-                    e('p', { style:{
-                        fontFamily:'DM Sans,sans-serif', color:C.muted,
-                        fontSize:13, marginBottom:18
-                    }},
-                        phase === 'won'
-                            ? (detours.length === 0
-                                ? 'Optimal route! '+(max-left)+'/'+max+' guesses.'
-                                : 'Via '+detours.length+' detour'+(detours.length !== 1?'s':'')+'. '+(max-left)+'/'+max+'.')
-                            : bad.length+' wrong guess'+(bad.length !== 1?'es':'')+'.'),
+                    // Scoring block
+                    (function() {
+                        var used = max - left;
+                        var optimal = target.path.length - 1; // guesses needed on perfect run
+                        var extra = used - optimal;
+                        var stars = phase === 'won'
+                            ? (extra === 0 ? 3 : extra <= 2 ? 2 : 1)
+                            : 0;
+                        var starRow = ['⭐','⭐','⭐'].map(function(s, i) {
+                            return e('span', { key:i, style:{
+                                fontSize:22, opacity: i < stars ? 1 : 0.2,
+                                filter: i < stars ? 'none' : 'grayscale(1)'
+                            }}, s);
+                        });
+                        return e('div', { style:{ marginBottom:18 } },
+                            e('div', { style:{ display:'flex', justifyContent:'center', gap:4, marginBottom:8 } }, starRow),
+                            e('p', { style:{
+                                fontFamily:'DM Sans,sans-serif', color:C.muted,
+                                fontSize:13, margin:0
+                            }},
+                                phase === 'won'
+                                    ? used+' guess'+(used!==1?'es':'')+' — optimal was '+optimal
+                                    : bad.length+' wrong guess'+(bad.length!==1?'es':'')+' · '+used+' total'
+                            )
+                        );
+                    })(),
                     // Route pill
                     e('div', { style:{
                         display:'inline-flex', alignItems:'center', gap:8, marginBottom:20,
@@ -523,18 +539,38 @@
                             }}, '\uD83E\uDDB4 Review My Path')
                           )
                         : null,
-                    // Share button
+                    // Emoji grid preview + share button
                     h.onShare
                         ? e('div', { style:{ marginBottom:12 } },
+                            // Emoji preview row
+                            e('div', { style:{
+                                fontFamily:'monospace', fontSize:18, letterSpacing:2,
+                                marginBottom:10, lineHeight:1.4, textAlign:'center',
+                                padding:'10px 14px', background:'rgba(45,31,20,0.03)',
+                                borderRadius:10, border:'1.5px solid '+C.border,
+                            }},
+                                // start
+                                '\uD83D\uDFE2',
+                                // chain bones (skip first=start, skip last=end)
+                                chain.slice(1, -1).map(function(item) {
+                                    return item.guessed ? '\uD83D\uDFE6' : '\u2B1C';
+                                }).join(''),
+                                // detours
+                                detours.map(function() { return '\uD83D\uDFE1'; }).join(''),
+                                // wrong
+                                bad.map(function() { return '\uD83D\uDD34'; }).join(''),
+                                // end
+                                '\u2B1B'
+                            ),
                             e('button', { onClick: h.onShare, style:{
-                                padding:'8px 20px',
+                                padding:'8px 20px', width:'100%',
                                 background: shared ? 'rgba(90,138,106,0.1)' : 'transparent',
                                 color: shared ? C.sage : C.muted,
                                 border:'1.5px solid '+(shared ? C.sage : C.border),
                                 borderRadius:999, fontFamily:'DM Sans,sans-serif',
                                 fontWeight:600, fontSize:9, textTransform:'uppercase',
                                 letterSpacing:'0.1em', cursor:'pointer'
-                            }}, shared ? '\u2713 Copied!' : '\uD83D\uDCCB Share Result')
+                            }}, shared ? '\u2713 Copied to clipboard!' : '\uD83D\uDCCB Copy & Share')
                           )
                         : null,
                     // Action buttons — daily mode: only show Back to Home
