@@ -77,11 +77,24 @@ function SkeletonGame() {
         const g = initializeGame(SKELETON_GRAPH, { minLength: 4, maxLength: 8 });
         setTarget(g);
         setChain(g.path.map((bone, i) => ({ bone, type: i === 0 ? 'start' : 'path', guessed: i === 0 })));
-        const total = calculateGuessCount(g.path.length, 1);
+        const total = calculateGuessCount(g.path.length, 2);
         setLeft(total); setMax(total);
         setBad([]); setDetours([]);
         setInput(''); setSelIdx(-1); setPhase('playing'); setReveal(false); setShared(false); setReviewing(false); setGuessOrder([]); setGuessesUsed(0);
         try { window.reset3D && window.reset3D(); } catch (e) { }
+        // Pan camera to midpoint between start and end bones
+        if (window.__modelIsReady) {
+            setTimeout(function() {
+                window.panToGameBones && window.panToGameBones(g.start, g.end, 1800);
+            }, 100);
+        } else {
+            window.addEventListener('modelReady', function onReady() {
+                window.removeEventListener('modelReady', onReady);
+                setTimeout(function() {
+                    window.panToGameBones && window.panToGameBones(g.start, g.end, 1800);
+                }, 400);
+            });
+        }
     }, []);
 
     useEffect(() => { startNew(); }, []);
