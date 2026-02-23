@@ -11,24 +11,50 @@
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="../js/core/replayIndex.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'DM Sans', sans-serif; background: #fdf6ec; color: #2d1f14; overflow: hidden; }
-        #cv { position: fixed; top: 0; left: 0; right: 320px; bottom: 4px; z-index: 1; background: radial-gradient(ellipse at 50% 40%, #f5e8d0 0%, #ede0c8 60%, #e4d4b8 100%); }
-        #navbar { position: fixed; top: 0; left: 0; right: 0; height: 58px; z-index: 100; background: rgba(253,246,236,0.96); backdrop-filter: blur(8px); border-bottom: 1.5px solid #e8d5c0; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
+
+        #cv {
+            position: fixed; top: 0; left: 0; right: 320px; bottom: 4px; z-index: 1;
+            background: radial-gradient(ellipse at 50% 40%, #f5e8d0 0%, #ede0c8 60%, #e4d4b8 100%);
+        }
+
+        /* NAVBAR */
+        #navbar {
+            position: fixed; top: 0; left: 0; right: 0; height: 58px; z-index: 100;
+            background: rgba(253,246,236,0.96); backdrop-filter: blur(8px);
+            border-bottom: 1.5px solid #e8d5c0;
+            display: flex; align-items: center; justify-content: space-between; padding: 0 24px;
+        }
         .nav-logo { font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 900; color: #2d1f14; text-decoration: none; letter-spacing: -0.03em; }
         .nav-logo span { color: #e8603c; font-style: italic; }
         .nav-badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; color: #9a8070; background: rgba(45,31,20,0.05); border: 1.5px solid #e8d5c0; border-radius: 999px; padding: 4px 12px; }
         .nav-btn { background: none; border: 1.5px solid #e8d5c0; border-radius: 8px; padding: 6px 16px; font-family: 'DM Sans', sans-serif; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: #4a3728; cursor: pointer; transition: all 0.15s; text-decoration: none; }
         .nav-btn:hover { background: #2d1f14; color: white; border-color: #2d1f14; }
-        #panel { position: fixed; top: 58px; right: 0; width: 320px; bottom: 0; z-index: 50; background: #fff8f0; border-left: 1.5px solid #e8d5c0; display: flex; flex-direction: column; padding: 20px 16px 16px; gap: 14px; overflow-y: auto; }
+
+        /* SIDE PANEL */
+        #panel {
+            position: fixed; top: 58px; right: 0; width: 320px; bottom: 68px; z-index: 50;
+            background: #fff8f0; border-left: 1.5px solid #e8d5c0;
+            display: flex; flex-direction: column; padding: 20px 16px 16px; gap: 14px;
+            overflow-y: auto;
+        }
         .panel-eyebrow { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; color: #e8603c; }
         .panel-route { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(45,31,20,0.04); border-radius: 10px; border: 1.5px solid #e8d5c0; }
         .route-start { font-family: 'Fraunces', serif; font-weight: 700; font-size: 0.88rem; color: #5a8a6a; }
         .route-end   { font-family: 'Fraunces', serif; font-weight: 700; font-size: 0.88rem; color: #e8603c; }
         .route-arrow { color: #9a8070; flex: 1; text-align: center; }
+
         .guess-list { display: flex; flex-direction: column; gap: 5px; }
-        .guess-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; border: 1.5px solid transparent; font-size: 0.83rem; font-weight: 600; opacity: 0; transform: translateY(6px); transition: opacity 0.3s ease, transform 0.3s ease; }
+        .guess-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 12px; border-radius: 8px; border: 1.5px solid transparent;
+            font-size: 0.83rem; font-weight: 600;
+            opacity: 0; transform: translateY(6px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
         .guess-item.show { opacity: 1; transform: translateY(0); }
+        .guess-item.resetting { opacity: 0 !important; transform: translateY(6px) !important; transition: none !important; }
         .type-start   { background: rgba(90,138,106,0.1);  border-color: rgba(90,138,106,0.25); color: #3d6b4f; }
         .type-end     { background: rgba(45,31,20,0.06);   border-color: rgba(45,31,20,0.15);   color: #2d1f14; }
         .type-optimal { background: rgba(99,102,241,0.08); border-color: rgba(99,102,241,0.25); color: #4f46e5; }
@@ -36,23 +62,85 @@
         .type-bad     { background: rgba(232,96,60,0.08);  border-color: rgba(232,96,60,0.25);  color: #c94d2b; }
         .guess-icon { font-size: 1rem; flex-shrink: 0; width: 20px; text-align: center; }
         .guess-num  { font-size: 0.65rem; color: #9a8070; margin-left: auto; font-weight: 400; }
-        #progress { position: fixed; bottom: 0; left: 0; right: 320px; height: 4px; background: #e8d5c0; z-index: 200; }
+
+        /* PROGRESS */
+        #progress { position: fixed; bottom: 68px; left: 0; right: 320px; height: 4px; background: #e8d5c0; z-index: 200; }
         #progress-fill { height: 100%; background: linear-gradient(90deg, #5a8a6a, #e8603c); width: 0%; transition: width 0.5s ease; }
-        #ticker { position: fixed; top: 70px; left: calc(50% - 160px); transform: translateX(-50%); z-index: 200; white-space: nowrap; background: rgba(253,246,236,0.96); border: 1.5px solid #e8d5c0; border-radius: 999px; padding: 7px 18px; font-size: 0.72rem; color: #9a8070; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; box-shadow: 0 4px 16px rgba(45,31,20,0.08); display: flex; align-items: center; gap: 8px; }
+
+        /* TICKER */
+        #ticker {
+            position: fixed; top: 70px; left: calc(50% - 160px); transform: translateX(-50%);
+            z-index: 200; white-space: nowrap;
+            background: rgba(253,246,236,0.96); border: 1.5px solid #e8d5c0;
+            border-radius: 999px; padding: 7px 18px;
+            font-size: 0.72rem; color: #9a8070; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.12em;
+            box-shadow: 0 4px 16px rgba(45,31,20,0.08);
+            display: flex; align-items: center; gap: 8px;
+        }
         .ticker-dot { width: 7px; height: 7px; border-radius: 50%; background: #e8603c; animation: blink 1s infinite; flex-shrink: 0; }
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-        #end-overlay { display: none; position: fixed; inset: 0; z-index: 600; background: rgba(253,246,236,0.82); backdrop-filter: blur(16px); align-items: center; justify-content: center; }
-        #end-overlay.show { display: flex; }
-        .end-card { background: #fff8f0; border: 2px solid #e8d5c0; border-radius: 24px; padding: 44px 40px; max-width: 420px; width: 90%; text-align: center; box-shadow: 0 32px 64px rgba(45,31,20,0.18); animation: popIn 0.45s cubic-bezier(0.34,1.56,0.64,1); }
+
+        /* BOTTOM BANNER */
+        #bottom-banner {
+            position: fixed; bottom: 0; right: 0; left: 0; height: 68px; z-index: 300;
+            background: #fff8f0; border-top: 1.5px solid #e8d5c0;
+            display: flex; align-items: center; justify-content: center; gap: 20px;
+            padding: 0 24px;
+            transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        #bottom-banner.show { transform: translateY(0); }
+        .banner-text { font-family: 'Fraunces', serif; font-size: 0.95rem; font-weight: 700; color: #2d1f14; font-style: italic; }
+        .banner-cta {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #e8603c, #c94d2b);
+            color: white; border: none; border-radius: 10px;
+            font-family: 'Fraunces', serif; font-weight: 900; font-size: 0.72rem;
+            text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer;
+            text-decoration: none; white-space: nowrap;
+            box-shadow: 0 4px 12px rgba(232,96,60,0.25);
+            transition: opacity 0.15s;
+        }
+        .banner-cta:hover { opacity: 0.88; }
+
+        /* SPOILER GATE */
+        #spoiler-gate {
+            display: none; position: fixed; inset: 0; z-index: 800;
+            background: rgba(45,31,20,0.72); backdrop-filter: blur(20px);
+            align-items: center; justify-content: center;
+        }
+        #spoiler-gate.show { display: flex; }
+        .gate-card {
+            background: #fff8f0; border: 2px solid #e8d5c0; border-radius: 24px;
+            padding: 48px 44px; max-width: 400px; width: 90%; text-align: center;
+            box-shadow: 0 32px 64px rgba(45,31,20,0.24);
+            animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+        }
         @keyframes popIn { from { opacity:0; transform: translateY(20px) scale(0.95); } to { opacity:1; transform: none; } }
-        .end-emoji  { font-size: 3rem; line-height: 1; margin-bottom: 10px; }
-        .end-title  { font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 900; color: #2d1f14; letter-spacing: -0.03em; margin-bottom: 4px; }
-        .end-sub    { font-size: 0.85rem; color: #9a8070; margin-bottom: 16px; }
-        .end-stars  { font-size: 1.4rem; margin-bottom: 12px; }
-        .end-grid   { font-size: 1.3rem; letter-spacing: 3px; margin-bottom: 24px; line-height: 1.8; padding: 12px 16px; background: rgba(45,31,20,0.03); border-radius: 10px; border: 1.5px solid #e8d5c0; }
-        .end-actions { display: flex; flex-direction: column; gap: 10px; }
-        .btn-primary { display: block; padding: 12px; background: linear-gradient(135deg, #e8603c, #c94d2b); color: white; border: none; border-radius: 10px; font-family: 'Fraunces', serif; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; text-decoration: none; box-shadow: 0 4px 12px rgba(232,96,60,0.25); }
-        .btn-secondary { display: block; padding: 12px; background: rgba(45,31,20,0.05); color: #4a3728; border: 1.5px solid #e8d5c0; border-radius: 10px; font-family: 'Fraunces', serif; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; text-decoration: none; }
+        .gate-icon  { font-size: 2.8rem; margin-bottom: 12px; line-height: 1; }
+        .gate-title { font-family: 'Fraunces', serif; font-size: 1.6rem; font-weight: 900; color: #2d1f14; letter-spacing: -0.03em; margin-bottom: 8px; }
+        .gate-sub   { font-size: 0.88rem; color: #9a8070; line-height: 1.6; margin-bottom: 28px; }
+        .gate-actions { display: flex; flex-direction: column; gap: 10px; }
+        .gate-btn-primary {
+            display: block; padding: 14px;
+            background: linear-gradient(135deg, #e8603c, #c94d2b); color: white;
+            border: none; border-radius: 10px; font-family: 'Fraunces', serif;
+            font-weight: 900; font-size: 0.8rem; text-transform: uppercase;
+            letter-spacing: 0.1em; cursor: pointer; text-decoration: none;
+            box-shadow: 0 4px 12px rgba(232,96,60,0.25); transition: opacity 0.15s;
+        }
+        .gate-btn-primary:hover { opacity: 0.88; }
+        .gate-btn-secondary {
+            display: block; padding: 14px;
+            background: transparent; color: #9a8070;
+            border: 1.5px solid #e8d5c0; border-radius: 10px;
+            font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 0.78rem;
+            text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer;
+            transition: all 0.15s;
+        }
+        .gate-btn-secondary:hover { background: rgba(45,31,20,0.05); color: #4a3728; }
+
+        /* ERROR */
         #error { display: none; position: fixed; inset: 0; z-index: 999; background: #fdf6ec; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; padding: 24px; }
         #error.show { display: flex; }
         #error h2 { font-family: 'Fraunces', serif; font-size: 1.8rem; }
@@ -67,7 +155,7 @@
     <a href="index.html" class="nav-logo">Anat<span>om</span>le</a>
     <div style="display:flex;align-items:center;gap:10px;">
         <span class="nav-badge">👁 Replay</span>
-        <a id="play-btn" href="games/daily.html" class="nav-btn">Play Today →</a>
+        <a id="play-btn" href="index.html" class="nav-btn">Play →</a>
     </div>
 </div>
 
@@ -85,16 +173,21 @@
 
 <div id="progress"><div id="progress-fill"></div></div>
 
-<div id="end-overlay">
-    <div class="end-card">
-        <div class="end-emoji" id="end-emoji"></div>
-        <div class="end-title" id="end-title"></div>
-        <div class="end-sub"   id="end-sub"></div>
-        <div class="end-stars" id="end-stars"></div>
-        <div class="end-grid"  id="end-grid"></div>
-        <div class="end-actions">
-            <a id="end-play-btn" href="games/daily.html" class="btn-primary">▶ Play Today's Puzzle</a>
-            <a href="index.html" class="btn-secondary">← Menu</a>
+<!-- Bottom banner — shown after first loop -->
+<div id="bottom-banner">
+    <span class="banner-text">Your next patient awaits.</span>
+    <a id="banner-cta" href="index.html" class="banner-cta">Step into the ward →</a>
+</div>
+
+<!-- Spoiler gate — daily only -->
+<div id="spoiler-gate">
+    <div class="gate-card">
+        <div class="gate-icon">🦴</div>
+        <div class="gate-title">Spoiler warning.</div>
+        <div class="gate-sub">This replay contains today's daily puzzle solution. Want to try it yourself first?</div>
+        <div class="gate-actions">
+            <a href="index.html" class="gate-btn-primary">Try it myself →</a>
+            <button class="gate-btn-secondary" id="watch-anyway">Watch anyway</button>
         </div>
     </div>
 </div>
@@ -107,7 +200,8 @@
 
 <script>
 (function() {
-    var replay = window.decodeReplay(window.location.search);
+    var replay  = window.decodeReplay(window.location.search);
+    var isDaily = new URLSearchParams(window.location.search).get('daily') === '1';
 
     if (!replay) {
         document.getElementById('error').classList.add('show');
@@ -117,166 +211,172 @@
 
     var GAME_LABELS = { fs:'Full Skeleton', h:'Hand', f:'Foot', sk:'Skull' };
     var GAME_LINKS  = { fs:'games/full-skeleton.html', h:'games/hand.html', f:'games/foot.html', sk:'games/skull.html' };
+    var gameLink    = GAME_LINKS[replay.game] || 'index.html';
 
-    document.getElementById('panel-game').textContent    = GAME_LABELS[replay.game] || 'Replay';
-    document.getElementById('route-start').textContent   = replay.start;
-    document.getElementById('route-end').textContent     = replay.end;
-    document.getElementById('play-btn').href             = GAME_LINKS[replay.game] || 'games/daily.html';
-    document.getElementById('end-play-btn').href         = GAME_LINKS[replay.game] || 'games/daily.html';
+    document.getElementById('panel-game').textContent = (isDaily ? 'Daily · ' : '') + (GAME_LABELS[replay.game] || 'Replay');
+    document.getElementById('route-start').textContent = replay.start;
+    document.getElementById('route-end').textContent   = replay.end;
+    document.getElementById('play-btn').href           = gameLink;
+    document.getElementById('banner-cta').href         = 'index.html';
 
-    // Dynamically load the correct 3D engine
-    var engineScripts = {
-        fs: ['../js/data/boneMappings.js', '../js/3d/skeletonEngine.js'],
-        h:  ['../js/data/boneMappings.js', '../js/3d/handEngine.js'],
-        f:  ['../js/data/boneMappings.js', '../js/3d/footEngine.js'],
-        sk: ['../js/3d/skullEngine.js'],
-    };
-    var scripts = engineScripts[replay.game] || engineScripts.fs;
-    var loaded  = 0;
-
-    function loadNext() {
-        if (loaded >= scripts.length) { startReplay(); return; }
-        var s = document.createElement('script');
-        s.src = scripts[loaded++];
-        s.onload = loadNext;
-        s.onerror = function() { document.getElementById('error').classList.add('show'); };
-        document.head.appendChild(s);
+    // Show spoiler gate for daily replays
+    if (isDaily) {
+        document.getElementById('spoiler-gate').classList.add('show');
+        document.getElementById('watch-anyway').addEventListener('click', function() {
+            document.getElementById('spoiler-gate').classList.remove('show');
+            loadEngine();
+        });
+    } else {
+        loadEngine();
     }
-    loadNext();
 
-    // ── REPLAY ────────────────────────────────────────────────────────────────
+    // ── DYNAMICALLY LOAD 3D ENGINE ────────────────────────────────────────────
+    function loadEngine() {
+        var engineScripts = {
+            fs: ['../js/data/boneMappings.js', '../js/3d/skeletonEngine.js'],
+            h:  ['../js/data/boneMappings.js', '../js/3d/handEngine.js'],
+            f:  ['../js/data/boneMappings.js', '../js/3d/footEngine.js'],
+            sk: ['../js/3d/skullEngine.js'],
+        };
+        var scripts = engineScripts[replay.game] || engineScripts.fs;
+        var loaded  = 0;
+        function loadNext() {
+            if (loaded >= scripts.length) { startReplay(); return; }
+            var s = document.createElement('script');
+            s.src = scripts[loaded++];
+            s.onload = loadNext;
+            s.onerror = function() { document.getElementById('error').classList.add('show'); };
+            document.head.appendChild(s);
+        }
+        loadNext();
+    }
+
+    // ── REPLAY ENGINE ─────────────────────────────────────────────────────────
     function startReplay() {
-        var guesses  = replay.guesses;  // [{bone, type:'o'|'d'|'b'}]
-        var path     = replay.path;     // full optimal path incl. start + end
-        var start    = replay.start;
-        var end      = replay.end;
+        var guesses = replay.guesses;
+        var path    = replay.path;
+        var start   = replay.start;
+        var end     = replay.end;
+        var firstLoopDone = false;
 
-        var guessedOptimal = [start];
-        var detours  = [];
-        var bad      = [];
-        var guessIdx = 0;
-        var won      = false;
+        function runLoop() {
+            // Reset state
+            var guessedOptimal = [start];
+            var detours = [];
+            var bad     = [];
+            var guessIdx = 0;
+            var won      = false;
 
-        function updateHighlights() {
-            var h = [{ name: start, type: 'start' }];
-            path.slice(1, -1).forEach(function(b) {
-                if (guessedOptimal.indexOf(b) !== -1) h.push({ name: b, type: 'path' });
+            // Clear panel guess list
+            var list = document.getElementById('guess-list');
+            // Fade all items out
+            Array.from(list.querySelectorAll('.guess-item')).forEach(function(el) {
+                el.classList.add('resetting');
             });
-            h.push({ name: end, type: 'end' });
-            detours.forEach(function(b) { h.push({ name: b, type: 'detour' }); });
-            bad.forEach(function(b)     { h.push({ name: b, type: 'bad' }); });
-            try { window.update3D && window.update3D(h); } catch(e) {}
-        }
 
-        function addRow(bone, cssType, icon, num) {
-            var item = document.createElement('div');
-            item.className = 'guess-item type-' + cssType;
-            item.innerHTML =
-                '<span class="guess-icon">' + icon + '</span>' +
-                '<span>' + bone + '</span>' +
-                (num !== null ? '<span class="guess-num">#' + num + '</span>' : '');
-            document.getElementById('guess-list').appendChild(item);
-            requestAnimationFrame(function() { item.classList.add('show'); });
-            var panel = document.getElementById('panel');
-            panel.scrollTop = panel.scrollHeight;
-        }
+            setTimeout(function() {
+                list.innerHTML = '';
+                document.getElementById('progress-fill').style.width = '0%';
+                // Reset 3D highlights
+                try { window.reset3D && window.reset3D(); } catch(e) {}
+                updateHighlights(guessedOptimal, detours, bad);
 
-        // Start bone row
-        addRow(start, 'start', '\uD83D\uDFE2', null);
-        updateHighlights();
+                // Start bone row
+                addRow(start, 'start', '\uD83D\uDFE2', null);
 
-        // modelReady may have already fired before dynamic script finished loading
-        if (window.__modelIsReady) {
-            updateHighlights();
-            setTimeout(playNext, 1500);
-        } else {
-            window.addEventListener('modelReady', function() {
-                updateHighlights();
-                setTimeout(playNext, 1500);
-            });
-        }
+                setTimeout(function() { playNext(); }, 800);
+            }, 350);
 
-        function playNext() {
-            if (guessIdx >= guesses.length) {
-                setTimeout(showEnd, 900); return;
+            function updateHighlights(go, det, ba) {
+                var h = [{ name: start, type: 'start' }];
+                path.slice(1, -1).forEach(function(b) {
+                    if (go.indexOf(b) !== -1) h.push({ name: b, type: 'path' });
+                });
+                h.push({ name: end, type: 'end' });
+                det.forEach(function(b) { h.push({ name: b, type: 'detour' }); });
+                ba.forEach(function(b)  { h.push({ name: b, type: 'bad' }); });
+                try { window.update3D && window.update3D(h); } catch(e) {}
             }
 
-            var entry  = guesses[guessIdx];
-            var bone   = entry.bone;
-            var type   = entry.type;
-            guessIdx++;
-
-            document.getElementById('ticker-text').textContent =
-                'Guess\u00a0' + guessIdx + '\u00a0of\u00a0' + guesses.length + '\u2002\u00b7\u2002' + bone;
-            document.getElementById('progress-fill').style.width =
-                (guessIdx / guesses.length * 100) + '%';
-
-            if (type === 'o') {
-                guessedOptimal.push(bone);
-                addRow(bone, 'optimal', '\uD83D\uDFE6', guessIdx);
-                updateHighlights();
-                // Won if all mid-path bones are guessed
-                var allDone = path.slice(1, -1).every(function(b) {
-                    return guessedOptimal.indexOf(b) !== -1;
-                });
-                if (allDone) won = true;
-            } else if (type === 'd') {
-                detours.push(bone);
-                addRow(bone, 'detour', '\uD83D\uDFE1', guessIdx);
-                updateHighlights();
-                // Detour could also complete a valid path
-                var allDone2 = path.slice(1, -1).every(function(b) {
-                    return guessedOptimal.indexOf(b) !== -1;
-                });
-                if (allDone2) won = true;
-            } else {
-                bad.push(bone);
-                addRow(bone, 'bad', '\uD83D\uDD34', guessIdx);
-                updateHighlights();
+            function addRow(bone, cssType, icon, num) {
+                var item = document.createElement('div');
+                item.className = 'guess-item type-' + cssType;
+                item.innerHTML =
+                    '<span class="guess-icon">' + icon + '</span>' +
+                    '<span>' + bone + '</span>' +
+                    (num !== null ? '<span class="guess-num">#' + num + '</span>' : '');
+                list.appendChild(item);
+                requestAnimationFrame(function() { item.classList.add('show'); });
+                var panel = document.getElementById('panel');
+                panel.scrollTop = panel.scrollHeight;
             }
 
-            if (guessIdx >= guesses.length) {
-                setTimeout(showEnd, 900);
-            } else {
+            function playNext() {
+                if (guessIdx >= guesses.length) {
+                    // Loop done
+                    addRow(end, 'end', '\u2B1B', null);
+                    document.getElementById('progress-fill').style.width = '100%';
+                    document.getElementById('ticker-text').textContent = 'Replaying\u2026';
+
+                    if (!firstLoopDone) {
+                        firstLoopDone = true;
+                        document.getElementById('bottom-banner').classList.add('show');
+                    }
+
+                    // Wait then loop
+                    setTimeout(runLoop, 3000);
+                    return;
+                }
+
+                var entry  = guesses[guessIdx];
+                var bone   = entry.bone;
+                var type   = entry.type;
+                guessIdx++;
+
+                document.getElementById('ticker-text').textContent =
+                    'Guess\u00a0' + guessIdx + '\u00a0of\u00a0' + guesses.length + '\u2002\u00b7\u2002' + bone;
+                document.getElementById('progress-fill').style.width =
+                    (guessIdx / guesses.length * 100) + '%';
+
+                if (type === 'o') {
+                    guessedOptimal.push(bone);
+                    addRow(bone, 'optimal', '\uD83D\uDFE6', guessIdx);
+                    updateHighlights(guessedOptimal, detours, bad);
+                    var allDone = path.slice(1, -1).every(function(b) { return guessedOptimal.indexOf(b) !== -1; });
+                    if (allDone) won = true;
+                } else if (type === 'd') {
+                    detours.push(bone);
+                    addRow(bone, 'detour', '\uD83D\uDFE1', guessIdx);
+                    updateHighlights(guessedOptimal, detours, bad);
+                } else {
+                    bad.push(bone);
+                    addRow(bone, 'bad', '\uD83D\uDD34', guessIdx);
+                    updateHighlights(guessedOptimal, detours, bad);
+                }
+
                 setTimeout(playNext, 1200);
             }
         }
 
-        function buildGrid() {
-            var grid = ['\uD83D\uDFE2'];
-            path.slice(1, -1).forEach(function(b) {
-                grid.push(guessedOptimal.indexOf(b) !== -1 ? '\uD83D\uDFE6' : '\u2B1C');
-            });
-            detours.forEach(function() { grid.push('\uD83D\uDFE1'); });
-            bad.forEach(function()     { grid.push('\uD83D\uDD34'); });
-            grid.push('\u2B1B');
-            return grid.join('');
+        // Kick off — wait for model, handle race condition
+        function begin() {
+            updateHighlightsInitial();
+            setTimeout(runLoop, 1500);
         }
 
-        function showEnd() {
-            var total   = guesses.length;
-            var optimal = path.length - 1;
-            var extra   = total - optimal;
-            // Final won state — check all non-detour types
-            if (!won) {
-                won = path.slice(1, -1).every(function(b) { return guessedOptimal.indexOf(b) !== -1; });
-            }
-            var stars = won
-                ? (extra === 0 ? '\u2B50\u2B50\u2B50' : extra <= 2 ? '\u2B50\u2B50' : '\u2B50')
-                : '';
+        function updateHighlightsInitial() {
+            try {
+                window.update3D && window.update3D([
+                    { name: start, type: 'start' },
+                    { name: end,   type: 'end' }
+                ]);
+            } catch(e) {}
+        }
 
-            document.getElementById('end-emoji').textContent = won ? (extra === 0 ? '\uD83C\uDFC6' : '\u2705') : '\uD83D\uDCA3';
-            document.getElementById('end-title').textContent = won ? (extra === 0 ? 'Perfect Path!' : 'Path Found!') : 'Flatline.';
-            document.getElementById('end-sub').textContent   = won
-                ? total + ' guess' + (total !== 1 ? 'es' : '') + ' \u2014 optimal was ' + optimal
-                : bad.length + ' wrong \u00b7 ' + total + ' total';
-            document.getElementById('end-stars').textContent = stars;
-            document.getElementById('end-grid').textContent  = buildGrid();
-            document.getElementById('progress-fill').style.width = '100%';
-            document.getElementById('ticker').style.display = 'none';
-
-            addRow(end, 'end', '\u2B1B', null);
-            document.getElementById('end-overlay').classList.add('show');
+        if (window.__modelIsReady) {
+            begin();
+        } else {
+            window.addEventListener('modelReady', begin);
         }
     }
 })();
