@@ -176,7 +176,7 @@ window.resetCamera = function() {
     _ctrl.saveState && _ctrl.saveState();
     _ctrl.update();
 };
-window.addEventListener('DOMContentLoaded', function() {
+function _initSkeletonEngine() {
     var cont  = document.getElementById('cv');
     var scene = new THREE.Scene();
 
@@ -289,6 +289,7 @@ window.addEventListener('DOMContentLoaded', function() {
         _cam.position.set(center.x, center.y, center.z + dist);
         _cam.lookAt(center); ctrl.update();
         window.reset3D();
+        window.__modelIsReady = true;
         window.dispatchEvent(new CustomEvent('modelReady'));
     });
 
@@ -301,4 +302,12 @@ window.addEventListener('DOMContentLoaded', function() {
         _renderer.setSize(cont.clientWidth, cont.clientHeight);
     });
     ro.observe(cont);
-});
+}
+
+// Call immediately if DOM is ready, otherwise wait
+window.__skeletonEngineInit = _initSkeletonEngine;
+if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', _initSkeletonEngine);
+} else {
+    _initSkeletonEngine();
+}
