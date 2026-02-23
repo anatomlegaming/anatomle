@@ -67,6 +67,7 @@
         var suggestions = s.suggestions;
         var hintUsed    = s.hintUsed   || false;
         var shared      = s.shared     || false;
+        var reviewing   = s.reviewing  || false;
         var supplyLog   = s.supplyLog  || null;
 
         var isNerve  = mode === 'nerve';
@@ -341,7 +342,7 @@
             e('div', { style:{ padding:'10px 14px 14px', flexShrink:0 } },
                 hintBtn,
                 e('button', {
-                    onClick: phase === 'playing' ? h.onGiveUp : h.onNewGame,
+                    onClick: reviewing ? h.onStopReview : phase === 'playing' ? h.onGiveUp : h.onNewGame,
                     style:{
                         width:'100%', padding:'12px 0', borderRadius:10,
                         background: phase === 'playing'
@@ -352,7 +353,7 @@
                         fontFamily:'Fraunces,serif', fontWeight:900, fontSize:12,
                         textTransform:'uppercase', letterSpacing:'0.15em', cursor:'pointer'
                     }
-                }, phase === 'playing' ? 'Give Up' : 'Next Case \u2192')
+                }, reviewing ? 'Results' : phase === 'playing' ? 'Give Up' : 'Next Case \u2192')
             )
         );
 
@@ -420,7 +421,7 @@
         );
 
         // ── END OVERLAY ───────────────────────────────────────────────────────
-        var overlay = (phase !== 'playing' && !reveal)
+        var overlay = (phase !== 'playing' && !reveal && !reviewing)
             ? e('div', { style:{
                 position:'fixed', inset:0, zIndex:600,
                 display:'flex', alignItems:'center', justifyContent:'center',
@@ -500,7 +501,7 @@
                             })
                           )
                         : null,
-                    // Reveal button (lost only)
+                    // Reveal path (lost) / Review my path (won)
                     phase === 'lost'
                         ? e('div', { style:{ marginBottom:12 } },
                             e('button', { onClick: h.onReveal, style:{
@@ -510,6 +511,16 @@
                                 fontWeight:600, fontSize:9, textTransform:'uppercase',
                                 letterSpacing:'0.1em', cursor:'pointer'
                             }}, '\uD83D\uDC41 Reveal Path')
+                          )
+                        : phase === 'won'
+                        ? e('div', { style:{ marginBottom:12 } },
+                            e('button', { onClick: h.onReview, style:{
+                                padding:'8px 20px', background:'transparent',
+                                color:C.sage, border:'1.5px solid '+C.sage,
+                                borderRadius:999, fontFamily:'DM Sans,sans-serif',
+                                fontWeight:600, fontSize:9, textTransform:'uppercase',
+                                letterSpacing:'0.1em', cursor:'pointer'
+                            }}, '\uD83E\uDDB4 Review My Path')
                           )
                         : null,
                     // Share button
@@ -557,7 +568,30 @@
               )
             : null;
 
-        return e(React.Fragment, null, navbar, challengeBar, rightPanel, searchBar, overlay);
+        // ── REVIEWING BANNER ─────────────────────────────────────────────────
+        var reviewBar = reviewing
+            ? e('div', { style:{
+                position:'fixed', bottom:0, left:0, right:0, zIndex:700,
+                height:68, background:C.cream,
+                borderTop:'2px solid '+C.sage+'55',
+                display:'flex', alignItems:'center', justifyContent:'center', gap:16,
+                padding:'0 24px',
+              }},
+                e('span', { style:{
+                    fontFamily:'DM Sans,sans-serif', fontSize:'0.78rem',
+                    color:C.muted, textTransform:'uppercase', letterSpacing:'0.12em'
+                }}, '👁 Reviewing your path'),
+                e('button', { onClick: h.onStopReview, style:{
+                    padding:'8px 20px', background:C.sage, color:'white',
+                    border:'none', borderRadius:999,
+                    fontFamily:'DM Sans,sans-serif', fontWeight:700,
+                    fontSize:'0.72rem', textTransform:'uppercase',
+                    letterSpacing:'0.1em', cursor:'pointer'
+                }}, 'Back to Results')
+              )
+            : null;
+
+        return e(React.Fragment, null, navbar, challengeBar, rightPanel, reviewing ? reviewBar : searchBar, overlay);
     }
 
     window.PathfindingUI = PathfindingUI;
