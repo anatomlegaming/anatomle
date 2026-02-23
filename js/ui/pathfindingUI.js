@@ -431,13 +431,15 @@
                 backdropFilter:'blur(16px)',
                 background: phase === 'won'
                     ? 'rgba(253,246,236,0.82)'
-                    : 'rgba(45,31,20,0.78)'
+                    : 'rgba(45,31,20,0.78)',
+                animation:'overlayFadeIn 0.3s ease both'
               }},
                 e('div', { style:{
                     textAlign:'center', padding:'44px 40px',
                     background:C.cream, border:'2px solid '+C.border,
                     borderRadius:24, maxWidth:460, width:'90%',
-                    boxShadow:'0 32px 64px rgba(45,31,20,0.18)'
+                    boxShadow:'0 32px 64px rgba(45,31,20,0.18)',
+                    animation:'cardPopIn 0.45s cubic-bezier(0.34,1.56,0.64,1) both'
                 }},
                     // Emoji
                     e('div', { style:{ fontSize:48, marginBottom:10, lineHeight:1 } },
