@@ -203,12 +203,13 @@
 
 <script src="../js/3d/skeletonEngine.js"></script>
 
+
 <script>
 // ── PARSE URL PARAMS ─────────────────────────────────────────────────────────
 function getParams() {
     var p = new URLSearchParams(window.location.search);
-    var d = p.get('d'); // date string YYYY-MM-DD
-    var g = p.get('g'); // comma-separated guess sequence
+    var d = p.get('d');
+    var g = p.get('g');
     if (!d || !g) return null;
     var guesses = decodeURIComponent(g).split(',').filter(Boolean);
     return { date: d, guesses: guesses };
@@ -228,39 +229,46 @@ if (!params) {
     if (!seed) { showError(); }
     else {
         var gameData = initializeDailyGame(seed, SKELETON_GRAPH, { minLength: 4, maxLength: 8 });
-        var guesses  = params.guesses;
+
+        // Parse typed guesses: "BoneName:o" / "BoneName:d" / "BoneName:b"
+        var typedGuesses = params.guesses.map(function(raw) {
+            var parts = raw.split(':');
+            var bone  = parts[0];
+            var type  = parts[1] || 'o';
+            return { bone: bone, type: type };
+        });
+
+        var total    = calculateGuessCount(gameData.path.length, 2);
+        var used     = 0;
+        var phase    = 'playing';
+        var guessIdx = 0;
+
+        var chain = gameData.path.map(function(bone, i) {
+            return { bone: bone, type: i === 0 ? 'start' : 'path', guessed: i === 0 };
+        });
+        var detours = [];
+        var bad     = [];
 
         // Populate panel header
         document.getElementById('panel-date').textContent = new Date(params.date + 'T00:00:00Z')
             .toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
         document.getElementById('route-start').textContent = gameData.start;
         document.getElementById('route-end').textContent   = gameData.end;
-        document.getElementById('replay-label').textContent = 'Replay · ' + params.date;
+        document.getElementById('replay-label').textContent = 'Replay \u00b7 ' + params.date;
 
-        // Reconstruct game state step by step
-        var chain    = gameData.path.map(function(bone, i) {
-            return { bone: bone, type: i === 0 ? 'start' : 'path', guessed: i === 0 };
-        });
-        var detours  = [];
-        var bad      = [];
-        var total    = calculateGuessCount(gameData.path.length, 2);
-        var left     = total;
-        var phase    = 'playing';
-        var guessIdx = 0;
-
-        // Add start bone row
+        // Start bone row
         var startItem = document.createElement('div');
         startItem.className = 'guess-item start visible';
-        startItem.innerHTML = '<span class="guess-icon">🟢</span><span>' + gameData.start + '</span>';
+        startItem.innerHTML = '<span class="guess-icon">\uD83D\uDFE2</span><span>' + gameData.start + '</span>';
         document.getElementById('guess-list').appendChild(startItem);
 
         function updateHighlights() {
             var h = [];
-            chain.forEach(function(item, idx) {
-                var isLast = idx === chain.length - 1;
-                if (item.guessed && !isLast) h.push({ name: item.bone, type: item.type });
-                else if (isLast) h.push({ name: item.bone, type: 'end' });
+            h.push({ name: gameData.start, type: 'start' });
+            chain.slice(1, -1).forEach(function(item) {
+                if (item.guessed) h.push({ name: item.bone, type: 'path' });
             });
+            h.push({ name: gameData.end, type: 'end' });
             detours.forEach(function(g) { h.push({ name: g, type: 'detour' }); });
             bad.forEach(function(g)     { h.push({ name: g, type: 'bad' }); });
             try { window.update3D && window.update3D(h); } catch(e) {}
@@ -268,67 +276,56 @@ if (!params) {
 
         window.addEventListener('modelReady', updateHighlights);
 
-        function addGuessRow(guess, type) {
-            var icons = { optimal:'🟦', detour:'🟡', bad:'🔴' };
+        function addGuessRow(bone, cssType, icon) {
             var item = document.createElement('div');
-            item.className = 'guess-item ' + type;
-            item.innerHTML = '<span class="guess-icon">' + (icons[type]||'⬜') + '</span><span>' + guess + '</span>';
+            item.className = 'guess-item ' + cssType;
+            item.innerHTML = '<span class="guess-icon">' + icon + '</span><span>' + bone + '</span>';
             document.getElementById('guess-list').appendChild(item);
-            // Trigger animation next frame
             requestAnimationFrame(function() { item.classList.add('visible'); });
         }
 
-        function updateProgress() {
-            var pct = (guessIdx / guesses.length) * 100;
-            document.getElementById('progress-fill').style.width = pct + '%';
-        }
-
         function playNextGuess() {
-            if (guessIdx >= guesses.length || phase !== 'playing') {
-                // Replay done — wait a beat then show end card
+            if (guessIdx >= typedGuesses.length || phase !== 'playing') {
                 setTimeout(showEndCard, 800);
                 return;
             }
 
-            var guess = guesses[guessIdx];
+            var entry = typedGuesses[guessIdx];
+            var bone  = entry.bone;
+            var type  = entry.type;
             guessIdx++;
-            left--;
-            updateProgress();
+            used++;
 
-            // Update replay badge
             document.getElementById('replay-label').textContent =
-                'Guess ' + guessIdx + ' of ' + guesses.length + ' · ' + guess;
+                'Guess ' + guessIdx + ' of ' + typedGuesses.length + ' \u00b7 ' + bone;
+            document.getElementById('progress-fill').style.width =
+                (guessIdx / typedGuesses.length * 100) + '%';
 
-            if (gameData.path.includes(guess)) {
-                // Optimal
+            if (type === 'o') {
                 chain = chain.map(function(item) {
-                    return item.bone === guess ? { bone: item.bone, type: item.type, guessed: true } : item;
+                    return item.bone === bone ? { bone: item.bone, type: item.type, guessed: true } : item;
                 });
-                addGuessRow(guess, 'optimal');
+                addGuessRow(bone, 'optimal', '\uD83D\uDFE6');
                 updateHighlights();
-                var guessedOptimal = chain.filter(function(c) { return c.guessed; }).map(function(c) { return c.bone; });
-                if (canReachTargetWithGuessed(gameData.start, gameData.end, guessedOptimal, detours, SKELETON_GRAPH)) {
+                var guessedBones = chain.filter(function(c){ return c.guessed; }).map(function(c){ return c.bone; });
+                if (canReachTargetWithGuessed(gameData.start, gameData.end, guessedBones, detours, SKELETON_GRAPH)) {
+                    phase = 'won';
+                }
+            } else if (type === 'd') {
+                detours.push(bone);
+                addGuessRow(bone, 'detour', '\uD83D\uDFE1');
+                updateHighlights();
+                var guessedBones2 = chain.filter(function(c){ return c.guessed; }).map(function(c){ return c.bone; });
+                if (canReachTargetWithGuessed(gameData.start, gameData.end, guessedBones2, detours, SKELETON_GRAPH)) {
                     phase = 'won';
                 }
             } else {
-                var result = validateGuess(guess, gameData.path, gameData.start, gameData.end, SKELETON_GRAPH);
-                if (result.type === 'detour') {
-                    detours.push(guess);
-                    addGuessRow(guess, 'detour');
-                    updateHighlights();
-                    var guessedOptimal2 = chain.filter(function(c) { return c.guessed; }).map(function(c) { return c.bone; });
-                    if (canReachTargetWithGuessed(gameData.start, gameData.end, guessedOptimal2, detours, SKELETON_GRAPH)) {
-                        phase = 'won';
-                    }
-                } else {
-                    bad.push(guess);
-                    addGuessRow(guess, 'bad');
-                    updateHighlights();
-                    if (left <= 0) phase = 'lost';
-                }
+                bad.push(bone);
+                addGuessRow(bone, 'bad', '\uD83D\uDD34');
+                updateHighlights();
+                if (used >= total) phase = 'lost';
             }
 
-            // Schedule next guess
             if (phase === 'playing') {
                 setTimeout(playNextGuess, 1200);
             } else {
@@ -337,44 +334,41 @@ if (!params) {
         }
 
         function buildEmojiGrid() {
-            var grid = ['🟢'];
+            var grid = ['\uD83D\uDFE2'];
             chain.slice(1, -1).forEach(function(item) {
-                grid.push(item.guessed ? '🟦' : '⬜');
+                grid.push(item.guessed ? '\uD83D\uDFE6' : '\u2B1C');
             });
-            detours.forEach(function() { grid.push('🟡'); });
-            bad.forEach(function()     { grid.push('🔴'); });
-            grid.push('⬛');
+            detours.forEach(function() { grid.push('\uD83D\uDFE1'); });
+            bad.forEach(function()     { grid.push('\uD83D\uDD34'); });
+            grid.push('\u2B1B');
             return grid.join('');
         }
 
         function showEndCard() {
-            var used   = total - left;
             var optimal = gameData.path.length - 1;
-            var extra  = used - optimal;
-            var stars  = phase === 'won'
-                ? (extra === 0 ? '⭐⭐⭐' : extra <= 2 ? '⭐⭐' : '⭐')
+            var extra   = used - optimal;
+            var stars   = phase === 'won'
+                ? (extra === 0 ? '\u2B50\u2B50\u2B50' : extra <= 2 ? '\u2B50\u2B50' : '\u2B50')
                 : '';
 
-            document.getElementById('end-emoji').textContent  = phase === 'won' ? (extra === 0 ? '🏆' : '✅') : '💣';
-            document.getElementById('end-title').textContent  = phase === 'won' ? (extra === 0 ? 'Perfect Path!' : 'Path Found!') : 'Flatline.';
-            document.getElementById('end-sub').textContent    = phase === 'won'
-                ? used + ' guess' + (used !== 1 ? 'es' : '') + ' — optimal was ' + optimal
-                : bad.length + ' wrong guess' + (bad.length !== 1 ? 'es' : '') + ' · ' + used + ' total';
-            document.getElementById('end-stars').textContent  = stars;
-            document.getElementById('end-grid').textContent   = buildEmojiGrid();
+            document.getElementById('end-emoji').textContent = phase === 'won' ? (extra === 0 ? '\uD83C\uDFC6' : '\u2705') : '\uD83D\uDCA3';
+            document.getElementById('end-title').textContent = phase === 'won' ? (extra === 0 ? 'Perfect Path!' : 'Path Found!') : 'Flatline.';
+            document.getElementById('end-sub').textContent   = phase === 'won'
+                ? used + ' guess' + (used !== 1 ? 'es' : '') + ' \u2014 optimal was ' + optimal
+                : bad.length + ' wrong guess' + (bad.length !== 1 ? 'es' : '') + ' \u00b7 ' + used + ' total';
+            document.getElementById('end-stars').textContent = stars;
+            document.getElementById('end-grid').textContent  = buildEmojiGrid();
             document.getElementById('progress-fill').style.width = '100%';
             document.getElementById('replay-badge').style.display = 'none';
 
-            // Add end bone label to guess list
             var endItem = document.createElement('div');
             endItem.className = 'guess-item start visible';
-            endItem.innerHTML = '<span class="guess-icon">⬛</span><span>' + gameData.end + '</span>';
+            endItem.innerHTML = '<span class="guess-icon">\u2B1B</span><span>' + gameData.end + '</span>';
             document.getElementById('guess-list').appendChild(endItem);
 
             document.getElementById('end-card').classList.add('show');
         }
 
-        // Wait for model to load, then start replay with a brief pause
         window.addEventListener('modelReady', function() {
             setTimeout(playNextGuess, 1500);
         });
