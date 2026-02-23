@@ -213,6 +213,16 @@ function DailyGame() {
         if (!ready || !window.DAILY_GAME_DATA || !window.DAILY_DATE_STR) return;
         const saved = loadSaved(window.DAILY_DATE_STR);
         loadGame(window.DAILY_GAME_DATA, saved);
+        // Pan camera to midpoint between start and end bones
+        const { start, end } = window.DAILY_GAME_DATA;
+        if (window.__modelIsReady) {
+            setTimeout(() => { window.panToGameBones && window.panToGameBones(start, end, 1800); }, 100);
+        } else {
+            window.addEventListener('modelReady', function onReady() {
+                window.removeEventListener('modelReady', onReady);
+                setTimeout(() => { window.panToGameBones && window.panToGameBones(start, end, 1800); }, 400);
+            });
+        }
     }, [ready]);
 
     // Highlights
