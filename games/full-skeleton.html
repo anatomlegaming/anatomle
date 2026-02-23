@@ -68,6 +68,7 @@ function SkeletonGame() {
     const [phase, setPhase] = useState('playing');
     const [reveal, setReveal] = useState(false);
     const [shared, setShared] = useState(false);
+    const [reviewing, setReviewing] = useState(false);
 
     const startNew = useCallback(() => {
         const g = initializeGame(SKELETON_GRAPH, { minLength: 4, maxLength: 8 });
@@ -76,7 +77,7 @@ function SkeletonGame() {
         const total = calculateGuessCount(g.path.length, 2);
         setLeft(total); setMax(total);
         setBad([]); setDetours([]);
-        setInput(''); setSelIdx(-1); setPhase('playing'); setReveal(false); setShared(false);
+        setInput(''); setSelIdx(-1); setPhase('playing'); setReveal(false); setShared(false); setReviewing(false);
         try { window.reset3D && window.reset3D(); } catch (e) { }
     }, []);
 
@@ -176,7 +177,7 @@ function SkeletonGame() {
         <window.PathfindingUI
             gameTitle="Osteomle · Full Skeleton"
             mode="standard"
-            state={{ target, chain, left, max, bad, detours, input, selIdx, phase, reveal, suggestions, hintUsed: false, shared }}
+            state={{ target, chain, left, max, bad, detours, input, selIdx, phase, reveal, suggestions, hintUsed: false, shared, reviewing }}
             handlers={{
                 onInputChange: e => setInput(e.target.value),
                 onKeyDown: handleKey,
@@ -184,6 +185,8 @@ function SkeletonGame() {
                 onNewGame: startNew,
                 onGiveUp: () => setPhase('lost'),
                 onReveal: () => setReveal(true),
+                onReview: () => setReviewing(true),
+                onStopReview: () => setReviewing(false),
                 onShare: () => {
                     const d = new Date();
                     const dateStr = d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
