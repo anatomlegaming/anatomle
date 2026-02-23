@@ -81,12 +81,12 @@ const SKELETON_GRAPH = {
     'Navicular': ['Talus', 'Medial Cuneiform', 'Intermediate Cuneiform', 'Lateral Cuneiform'],
     'Medial Cuneiform': ['Navicular', 'Intermediate Cuneiform', 'Metatarsal I', 'Metatarsal II'],
     'Intermediate Cuneiform': ['Navicular', 'Medial Cuneiform', 'Lateral Cuneiform', 'Metatarsal II'],
-    'Lateral Cuneiform': ['Navicular', 'Intermediate Cuneiform', 'Cuboid', 'Metatarsal III', 'Metatarsal IV'],
+    'Lateral Cuneiform': ['Navicular', 'Intermediate Cuneiform', 'Cuboid', 'Metatarsal II', 'Metatarsal III', 'Metatarsal IV'],
     'Cuboid': ['Calcaneus', 'Lateral Cuneiform', 'Metatarsal IV', 'Metatarsal V'],
 
     // ===== FOOT - METATARSALS =====
     'Metatarsal I': ['Medial Cuneiform', 'Proximal Phalanx (Foot)'],
-    'Metatarsal II': ['Medial Cuneiform', 'Intermediate Cuneiform', 'Proximal Phalanx (Foot)'],
+    'Metatarsal II': ['Medial Cuneiform', 'Intermediate Cuneiform', 'Lateral Cuneiform', 'Proximal Phalanx (Foot)'],
     'Metatarsal III': ['Lateral Cuneiform', 'Proximal Phalanx (Foot)'],
     'Metatarsal IV': ['Lateral Cuneiform', 'Cuboid', 'Proximal Phalanx (Foot)'],
     'Metatarsal V': ['Cuboid', 'Proximal Phalanx (Foot)'],
