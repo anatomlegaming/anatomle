@@ -7,8 +7,9 @@
 // ============================================================================
 
 var _skeleton  = null;
+var _ctrl = null;
 var _initCenter = null;
-var _initDist   = 1;
+var _initDist = 1;
 var _cam       = null;
 var _renderer  = null;
 var _raycaster = new THREE.Raycaster();
@@ -168,11 +169,12 @@ window.highlight3D = function(displayName, on) {
 // ── SCENE INIT ────────────────────────────────────────────────────────────────
 
 window.resetCamera = function() {
-    if (!_initCenter || !_cam || !ctrl) return;
+    if (!_initCenter || !_cam || !_ctrl) return;
     _cam.position.set(_initCenter.x, _initCenter.y, _initCenter.z + _initDist);
-    ctrl.target.copy(_initCenter);
-    _cam.lookAt(_initCenter);
-    ctrl.update();
+    _ctrl.target.set(_initCenter.x, _initCenter.y, _initCenter.z);
+    _cam.lookAt(_initCenter.x, _initCenter.y, _initCenter.z);
+    _ctrl.saveState && _ctrl.saveState();
+    _ctrl.update();
 };
 window.addEventListener('DOMContentLoaded', function() {
     var cont  = document.getElementById('cv');
@@ -184,7 +186,8 @@ window.addEventListener('DOMContentLoaded', function() {
     _renderer.setSize(cont.clientWidth, cont.clientHeight);
     cont.appendChild(_renderer.domElement);
 
-    var ctrl = new THREE.OrbitControls(_cam, _renderer.domElement);
+    _ctrl = new THREE.OrbitControls(_cam, _renderer.domElement);
+    var ctrl = _ctrl;
     ctrl.enableDamping = true; ctrl.dampingFactor = 0.05;
     ctrl.maxPolarAngle = Math.PI;
     ctrl.minDistance = 1; ctrl.maxDistance = 10; ctrl.enableZoom = false;
