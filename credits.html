@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ANATOMLE | Credits</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cream: #fdf6ec;
+            --coral: #e8603c;
+            --coral-dark: #c94d2b;
+            --ink: #2d1f14;
+            --ink-light: #4a3728;
+            --muted: #9a8070;
+            --card-bg: #fff8f0;
+            --border: #e8d5c0;
+            --sage: #5a8a6a;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); min-height: 100vh; }
+
+        nav {
+            position: fixed; top: 0; left: 0; right: 0; height: 58px; z-index: 100;
+            background: rgba(253,246,236,0.95); backdrop-filter: blur(8px);
+            border-bottom: 1.5px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 28px;
+        }
+        .nav-logo { font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 900; color: var(--ink); text-decoration: none; letter-spacing: -0.03em; }
+        .nav-logo span { color: var(--coral); font-style: italic; }
+        .nav-menu { background: none; border: 1.5px solid var(--border); border-radius: 8px; padding: 6px 16px; font-family: 'DM Sans', sans-serif; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-light); cursor: pointer; transition: all 0.15s; text-decoration: none; display: flex; align-items: center; }
+        .nav-menu:hover { background: var(--ink); color: white; border-color: var(--ink); }
+
+        main { max-width: 680px; margin: 0 auto; padding: 100px 24px 80px; }
+        .eyebrow { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.25em; color: var(--coral); margin-bottom: 12px; }
+        h1 { font-family: 'Fraunces', serif; font-size: clamp(2.8rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.95; letter-spacing: -0.04em; color: var(--ink); margin-bottom: 32px; }
+        h1 span { color: var(--coral); font-style: italic; }
+        .divider { height: 1.5px; background: linear-gradient(90deg, var(--border), transparent); margin: 40px 0; }
+        h2 { font-family: 'Fraunces', serif; font-size: 1.3rem; font-weight: 700; color: var(--ink); margin-bottom: 14px; }
+        p { font-size: 0.95rem; line-height: 1.8; color: var(--ink-light); margin-bottom: 14px; }
+        p:last-child { margin-bottom: 0; }
+        a { color: var(--coral); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .credit-card {
+            background: var(--card-bg);
+            border: 1.5px solid var(--border);
+            border-radius: 16px;
+            padding: 24px 28px;
+            margin-bottom: 20px;
+        }
+        .credit-card-header {
+            display: flex; align-items: flex-start; gap: 16px; margin-bottom: 14px;
+        }
+        .credit-icon {
+            width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem;
+        }
+        .credit-icon.model { background: #e8f5ec; }
+        .credit-icon.code  { background: #fce8e4; }
+        .credit-title { font-family: 'Fraunces', serif; font-weight: 700; font-size: 1.05rem; color: var(--ink); margin-bottom: 2px; }
+        .credit-sub { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+        .license-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: #e8f5ec; color: var(--sage); border-radius: 999px;
+            padding: 4px 12px; font-size: 0.72rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.08em; margin-top: 12px;
+        }
+
+        .derivative-note {
+            background: #fff8f0;
+            border: 1.5px solid var(--border);
+            border-left: 4px solid var(--coral);
+            border-radius: 0 12px 12px 0;
+            padding: 16px 20px;
+            margin-top: 16px;
+        }
+        .derivative-note p { font-size: 0.88rem; margin-bottom: 0; }
+
+        footer { border-top: 1.5px solid var(--border); padding: 20px 24px; text-align: center; font-size: 0.72rem; color: var(--muted); line-height: 1.6; max-width: 680px; margin: 0 auto; }
+        footer strong { color: var(--ink-light); }
+    </style>
+</head>
+<body>
+
+<nav>
+    <a href="index.html" class="nav-logo">Anat<span>om</span>le</a>
+    <a href="index.html" class="nav-menu">← Menu</a>
+</nav>
+
+<main>
+    <div class="eyebrow">Credits</div>
+    <h1>Built on the<br>work of <span>others</span></h1>
+
+    <p style="font-size:1rem; line-height:1.75; color:var(--ink-light); margin-bottom:40px;">
+        Anatomle would not exist without the generosity of creators who share their work openly.
+        This page is a full acknowledgment of the assets and resources that make this project possible.
+    </p>
+
+    <h2>3D Skeleton Model</h2>
+
+    <div class="credit-card">
+        <div class="credit-card-header">
+            <div class="credit-icon model">🦴</div>
+            <div>
+                <div class="credit-title">Human Skeleton 3D Model</div>
+                <div class="credit-sub">anatomytool.org</div>
+            </div>
+        </div>
+
+        <p>The interactive 3D skeleton used throughout Anatomle was originally sourced from
+        <strong>AnatomyTool</strong> (anatomytool.org). At the time of download, the model was made
+        freely available under a Creative Commons license. We are deeply grateful to the creators
+        for sharing this resource openly — without it, Anatomle simply would not be possible.</p>
+
+        <p>Note: anatomytool.org is currently unavailable. We are unable to link directly to the
+        original source at this time. Should the site return, we will update this attribution accordingly.</p>
+
+        <div class="license-badge">
+            <span>⚖️</span> CC BY-SA 4.0 — Creative Commons Attribution-ShareAlike
+        </div>
+
+        <div class="derivative-note">
+            <p><strong>Derivative work disclosure:</strong> The original model has been modified for use in Anatomle.
+            Modifications include: mirroring of right-side bones to create a complete bilateral skeleton,
+            re-export and optimisation of the GLB file format, and programmatic mapping of individual mesh nodes
+            to a custom adjacency graph used by Anatomle's game engine. These modifications were made solely
+            to enable the interactive gameplay experience. All derivative work is shared under the same
+            CC BY-SA 4.0 license in accordance with the ShareAlike requirement.</p>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h2>Game Code & Design</h2>
+
+    <div class="credit-card">
+        <div class="credit-card-header">
+            <div class="credit-icon code">💻</div>
+            <div>
+                <div class="credit-title">Anatomle — Game Engine & Interface</div>
+                <div class="credit-sub">Original work</div>
+            </div>
+        </div>
+        <p>All game logic, pathfinding algorithms, UI, 3D rendering engine, bone adjacency graphs,
+        daily puzzle system, and visual design are original work created for Anatomle.
+        This includes the seeded random puzzle generator, the pathfinding game mode,
+        the flood-fill game mode, and all interactive 3D bone highlighting.</p>
+        <p>The game is built using Three.js (3D rendering), React (UI), and standard web technologies.
+        These are used under their respective open-source licenses.</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <h2>Third-Party Libraries</h2>
+    <p>Anatomle makes use of the following open-source libraries:</p>
+    <p>
+        <strong>Three.js</strong> — MIT License — 3D rendering engine<br>
+        <strong>React</strong> — MIT License — UI framework<br>
+        <strong>Google Fonts</strong> — Fraunces &amp; DM Sans, used under the Open Font License
+    </p>
+
+</main>
+
+<footer>
+    <strong>Educational disclaimer:</strong> Anatomle is intended for educational entertainment only.
+    It is not a clinical reference and should not be used as a primary source for medical or anatomical study.
+    While every effort is made to ensure accuracy, errors may be present.
+    Always consult qualified educational resources and licensed professionals.
+    <br><br>
+    © 2026 Anatomle. All rights reserved.
+</footer>
+
+</body>
+</html>

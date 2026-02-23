@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ANATOMLE | Contact</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cream: #fdf6ec;
+            --coral: #e8603c;
+            --coral-dark: #c94d2b;
+            --ink: #2d1f14;
+            --ink-light: #4a3728;
+            --muted: #9a8070;
+            --card-bg: #fff8f0;
+            --border: #e8d5c0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); min-height: 100vh; }
+
+        nav {
+            position: fixed; top: 0; left: 0; right: 0; height: 58px; z-index: 100;
+            background: rgba(253,246,236,0.95); backdrop-filter: blur(8px);
+            border-bottom: 1.5px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 28px;
+        }
+        .nav-logo { font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 900; color: var(--ink); text-decoration: none; letter-spacing: -0.03em; }
+        .nav-logo span { color: var(--coral); font-style: italic; }
+        .nav-menu { background: none; border: 1.5px solid var(--border); border-radius: 8px; padding: 6px 16px; font-family: 'DM Sans', sans-serif; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-light); cursor: pointer; transition: all 0.15s; text-decoration: none; display: flex; align-items: center; }
+        .nav-menu:hover { background: var(--ink); color: white; border-color: var(--ink); }
+
+        main { max-width: 580px; margin: 0 auto; padding: 100px 24px 80px; }
+        .eyebrow { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.25em; color: var(--coral); margin-bottom: 12px; }
+        h1 { font-family: 'Fraunces', serif; font-size: clamp(2.8rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.95; letter-spacing: -0.04em; color: var(--ink); margin-bottom: 32px; }
+        h1 span { color: var(--coral); font-style: italic; }
+        p { font-size: 0.95rem; line-height: 1.8; color: var(--ink-light); margin-bottom: 18px; }
+        .divider { height: 1.5px; background: linear-gradient(90deg, var(--border), transparent); margin: 36px 0; }
+
+        .contact-card {
+            background: var(--card-bg);
+            border: 1.5px solid var(--border);
+            border-radius: 16px;
+            padding: 28px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .contact-icon {
+            width: 48px; height: 48px; border-radius: 12px;
+            background: #fce8e4; display: flex; align-items: center;
+            justify-content: center; font-size: 1.5rem; flex-shrink: 0;
+        }
+        .contact-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); margin-bottom: 4px; }
+        .contact-value { font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 700; color: var(--ink); }
+        .contact-value a { color: var(--coral); text-decoration: none; }
+        .contact-value a:hover { text-decoration: underline; }
+        .contact-note { font-size: 0.82rem; color: var(--muted); margin-top: 4px; }
+
+        .response-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: #e8f5ec; border-radius: 999px;
+            padding: 8px 16px; font-size: 0.8rem; color: #5a8a6a; font-weight: 600;
+            margin-top: 8px;
+        }
+
+        footer { border-top: 1.5px solid var(--border); padding: 20px 24px; text-align: center; font-size: 0.72rem; color: var(--muted); line-height: 1.6; max-width: 580px; margin: 0 auto; }
+        footer strong { color: var(--ink-light); }
+    </style>
+</head>
+<body>
+
+<nav>
+    <a href="index.html" class="nav-logo">Anat<span>om</span>le</a>
+    <a href="index.html" class="nav-menu">← Menu</a>
+</nav>
+
+<main>
+    <div class="eyebrow">Contact</div>
+    <h1>Get in <span>touch</span></h1>
+
+    <p>Have a question, spotted an anatomical error, want to suggest a feature, or just want to say hello?
+    We'd love to hear from you.</p>
+
+    <div class="divider"></div>
+
+    <div class="contact-card">
+        <div class="contact-icon">✉️</div>
+        <div>
+            <div class="contact-label">Email</div>
+            <div class="contact-value">
+                <a href="mailto:contact@anatomle.com">contact@anatomle.com</a>
+            </div>
+            <div class="contact-note">Best for bug reports, feature requests, and general enquiries.</div>
+        </div>
+    </div>
+
+    <div style="display:flex; justify-content:center; margin-bottom:36px;">
+        <div class="response-badge">
+            <span>⏱</span> We aim to respond within a few days
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <p><strong style="color:var(--ink)">Found an anatomical error?</strong><br>
+    We take accuracy seriously. If you spot something that looks wrong — a bone in the wrong place,
+    an incorrect adjacency, a mislabelled structure — please let us know. Include the game, the bone name,
+    and what you believe is incorrect and we'll review it promptly.</p>
+
+    <p><strong style="color:var(--ink)">Want to suggest a feature?</strong><br>
+    Anatomle is actively being developed. We're always interested in hearing what anatomy learners
+    actually want — new game modes, new regions, better explanations. Drop us a line.</p>
+
+</main>
+
+<footer>
+    <strong>Educational disclaimer:</strong> Anatomle is intended for educational entertainment only.
+    It is not a clinical reference and should not be used as a primary source for medical or anatomical study.
+    While every effort is made to ensure accuracy, errors may be present.
+    Always consult qualified educational resources and licensed professionals.
+    <br><br>
+    © 2026 Anatomle. All rights reserved.
+</footer>
+
+</body>
+</html>

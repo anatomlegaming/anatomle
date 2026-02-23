@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ANATOMLE | About</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cream: #fdf6ec;
+            --coral: #e8603c;
+            --coral-dark: #c94d2b;
+            --ink: #2d1f14;
+            --ink-light: #4a3728;
+            --muted: #9a8070;
+            --card-bg: #fff8f0;
+            --border: #e8d5c0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); min-height: 100vh; }
+
+        /* ── NAVBAR ── */
+        nav {
+            position: fixed; top: 0; left: 0; right: 0; height: 58px; z-index: 100;
+            background: rgba(253,246,236,0.95); backdrop-filter: blur(8px);
+            border-bottom: 1.5px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 28px;
+        }
+        .nav-logo {
+            font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 900;
+            color: var(--ink); text-decoration: none; letter-spacing: -0.03em;
+        }
+        .nav-logo span { color: var(--coral); font-style: italic; }
+        .nav-menu {
+            background: none; border: 1.5px solid var(--border); border-radius: 8px;
+            padding: 6px 16px; font-family: 'DM Sans', sans-serif; font-size: 0.72rem;
+            font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em;
+            color: var(--ink-light); cursor: pointer; transition: all 0.15s;
+            text-decoration: none; display: flex; align-items: center;
+        }
+        .nav-menu:hover { background: var(--ink); color: white; border-color: var(--ink); }
+
+        /* ── CONTENT ── */
+        main {
+            max-width: 680px; margin: 0 auto;
+            padding: 100px 24px 80px;
+        }
+        .eyebrow {
+            font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.25em; color: var(--coral); margin-bottom: 12px;
+        }
+        h1 {
+            font-family: 'Fraunces', serif; font-size: clamp(2.8rem, 6vw, 4.5rem);
+            font-weight: 900; line-height: 0.95; letter-spacing: -0.04em;
+            color: var(--ink); margin-bottom: 32px;
+        }
+        h1 span { color: var(--coral); font-style: italic; }
+        .lead {
+            font-size: 1.08rem; line-height: 1.75; color: var(--ink-light);
+            margin-bottom: 40px; border-left: 3px solid var(--coral);
+            padding-left: 20px;
+        }
+        .divider {
+            height: 1.5px; background: linear-gradient(90deg, var(--border), transparent);
+            margin: 40px 0;
+        }
+        h2 {
+            font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 700;
+            color: var(--ink); margin-bottom: 14px;
+        }
+        p { font-size: 0.95rem; line-height: 1.8; color: var(--ink-light); margin-bottom: 18px; }
+        p:last-child { margin-bottom: 0; }
+
+        /* ── FOOTER DISCLAIMER ── */
+        footer {
+            border-top: 1.5px solid var(--border);
+            padding: 20px 24px; text-align: center;
+            font-size: 0.72rem; color: var(--muted); line-height: 1.6;
+            max-width: 680px; margin: 0 auto;
+        }
+        footer strong { color: var(--ink-light); }
+    </style>
+</head>
+<body>
+
+<nav>
+    <a href="index.html" class="nav-logo">Anat<span>om</span>le</a>
+    <a href="index.html" class="nav-menu">← Menu</a>
+</nav>
+
+<main>
+    <div class="eyebrow">About</div>
+    <h1>Learn anatomy<br>by <span>playing</span></h1>
+
+    <p class="lead">
+        Lorem ipsum odor amet, consectetuer adipiscing elit. Blandit per ultrices odio, 
+        montes felis duis. Feugiat nibh vitae tempus facilisi consectetur malesuada 
+        senectus eros. Auctor volutpat consequat platea commodo netus imperdiet.
+    </p>
+
+    <div class="divider"></div>
+
+    <h2>What is Anatomle?</h2>
+    <p>Lorem ipsum odor amet, consectetuer adipiscing elit. Blandit per ultrices odio, montes felis duis. Feugiat nibh vitae tempus facilisi consectetur malesuada senectus eros. Auctor volutpat consequat platea commodo netus imperdiet nascetur.</p>
+    <p>Adipiscing enim cursus etiam tempus cubilia convallis ridiculus. Magnis porta natoque posuere vel habitant. Quisque natoque sit nullam ornare molestie eros vulputate.</p>
+
+    <div class="divider"></div>
+
+    <h2>Who is it for?</h2>
+    <p>Lorem ipsum odor amet, consectetuer adipiscing elit. Blandit per ultrices odio, montes felis duis. Feugiat nibh vitae tempus facilisi consectetur malesuada senectus eros.</p>
+    <p>Adipiscing enim cursus etiam tempus cubilia convallis ridiculus. Magnis porta natoque posuere vel habitant. Quisque natoque sit nullam ornare molestie eros vulputate.</p>
+
+    <div class="divider"></div>
+
+    <h2>The story</h2>
+    <p>Lorem ipsum odor amet, consectetuer adipiscing elit. Blandit per ultrices odio, montes felis duis. Feugiat nibh vitae tempus facilisi consectetur malesuada senectus eros. Auctor volutpat consequat platea commodo netus imperdiet nascetur.</p>
+    <p>Adipiscing enim cursus etiam tempus cubilia convallis ridiculus. Magnis porta natoque posuere vel habitant.</p>
+</main>
+
+<footer>
+    <strong>Educational disclaimer:</strong> Anatomle is intended for educational entertainment only.
+    It is not a clinical reference and should not be used as a primary source for medical or anatomical study.
+    While every effort is made to ensure accuracy, errors may be present.
+    Always consult qualified educational resources and licensed professionals.
+    <br><br>
+    © 2026 Anatomle. All rights reserved.
+</footer>
+
+</body>
+</html>
