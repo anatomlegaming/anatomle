@@ -347,17 +347,27 @@
 
         // ── BONE GAMES ────────────────────────────────────────────────────────
         function BoneGamesMenu({ onBack }) {
-            const modes = [
-                { id:'foot',          name:'Foot Bones',    description:'Flood-fill all 26 foot bones — tarsals, metatarsals, and phalanges.',            difficulty:'Easy',   icon:'🦶', file:'games/foot.html',          disabled:false, accent:'var(--sage)',   accentBg:'#e8f5ec' },
-                { id:'hand',          name:'Hand Bones',    description:'Flood-fill all 27 hand bones — carpals, metacarpals, and phalanges.',             difficulty:'Medium', icon:'✋', file:'games/hand.html',          disabled:false, accent:'var(--coral)',  accentBg:'#fce8e4' },
-                { id:'skull',         name:'Skull Bones',   description:'Flood-fill all 14 cranial and facial bones starting from a random seed.',         difficulty:'Medium', icon:'💀', file:'games/skull.html',         disabled:false, accent:'var(--golden)', accentBg:'#fff3e0' },
-                { id:'full-skeleton', name:'Full Skeleton', description:'Navigate pathfinding challenges across the complete skeletal system.',             difficulty:'Hard',   icon:'🦴', file:'games/full-skeleton.html', disabled:false, accent:'#8b5cf6',       accentBg:'#f3e8ff', howTo:'pathfinding' },
-                { id:'challenge',     name:'Challenge Mode',description:'Invisible skeleton — expert pathfinding with no visual feedback.',                 difficulty:'Expert', icon:'⚡', file:'games/challenge.html',    disabled:true,  accent:'#ec4899',       accentBg:'#fce7f3' },
+            const mainModes = [
+                { id:'full-skeleton', name:'Full Skeleton', description:'Pathfind across the complete skeletal system — from skull to phalanges.',          difficulty:'Hard',   icon:'🦴', file:'games/full-skeleton.html', disabled:false, accent:'var(--coral)',  accentBg:'#fce8e4', howTo:'pathfinding' },
+                { id:'challenge',     name:'Challenge Mode',description:'Invisible skeleton — expert pathfinding with no visual feedback.',                  difficulty:'Expert', icon:'⚡', file:'games/challenge.html',    disabled:true,  accent:'#ec4899',       accentBg:'#fce7f3' },
             ];
+            const quickModes = [
+                { id:'skull', name:'Skull',      description:'Pathfind through the 14 cranial and facial bones.',          difficulty:'Easy',   icon:'💀', file:'games/skull.html', disabled:false, accent:'var(--golden)', accentBg:'#fff3e0' },
+                { id:'hand',  name:'Hand',       description:'Pathfind through the 27 bones of the hand and wrist.',       difficulty:'Medium', icon:'✋', file:'games/hand.html',  disabled:false, accent:'var(--sage)',   accentBg:'#e8f5ec' },
+                { id:'foot',  name:'Foot',       description:'Pathfind through the 26 bones of the foot and ankle.',       difficulty:'Medium', icon:'🦶', file:'games/foot.html',  disabled:false, accent:'#8b5cf6',       accentBg:'#f3e8ff' },
+            ];
+
+            const SectionHeader = ({label}) => (
+                <div style={{display:'flex', alignItems:'center', gap:16, marginBottom:18}}>
+                    <div style={{height:'1.5px', flex:1, background:'linear-gradient(90deg, transparent, var(--border))'}} />
+                    <span style={{fontFamily:'DM Sans, sans-serif', fontSize:'0.68rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.25em', color:'var(--muted)', whiteSpace:'nowrap'}}>{label}</span>
+                    <div style={{height:'1.5px', flex:1, background:'linear-gradient(90deg, var(--border), transparent)'}} />
+                </div>
+            );
 
             return (
                 <div style={{minHeight:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'48px 24px'}}>
-                    <div style={{maxWidth:960, width:'100%', position:'relative', zIndex:1}}>
+                    <div style={{maxWidth:860, width:'100%', position:'relative', zIndex:1}}>
 
                         <header className="fade-up fade-up-1" style={{textAlign:'center', marginBottom:44}}>
                             <BackBtn onBack={onBack} />
@@ -368,20 +378,27 @@
                             <p style={{fontFamily:'DM Sans, sans-serif', fontSize:'0.72rem', color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.3em', margin:0}}>Skeletal Anatomy Challenges</p>
                         </header>
 
-                        <div className="fade-up fade-up-2" style={{display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:18, marginBottom:32}}>
-                            {modes.map((mode, idx) => {
-                                const isLast2 = modes.length === 5 && idx >= 3;
-                                return (
-                                    <div key={mode.id} style={{gridColumn: isLast2 && idx === 3 ? '2 / 3' : undefined}}>
-                                        <ModeCard mode={mode} onClick={m => window.location.href = m.file} />
-                                    </div>
-                                );
-                            })}
+                        <div className="fade-up fade-up-2" style={{marginBottom:36}}>
+                            <SectionHeader label="Head to Toe" />
+                            <div style={{display:'grid', gridTemplateColumns:'repeat(2, 1fr)', gap:18}}>
+                                {mainModes.map(mode => (
+                                    <ModeCard key={mode.id} mode={mode} onClick={m => window.location.href = m.file} />
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="fade-up fade-up-3" style={{marginBottom:32}}>
+                            <SectionHeader label="Tip of the Iceberg" />
+                            <div style={{display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:18}}>
+                                {quickModes.map(mode => (
+                                    <ModeCard key={mode.id} mode={mode} onClick={m => window.location.href = m.file} />
+                                ))}
+                            </div>
                         </div>
 
                         <hr className="fancy" />
-                        <div className="fade-up fade-up-3" style={{textAlign:'center', paddingTop:16, color:'var(--muted)', fontSize:'0.72rem', textTransform:'uppercase', letterSpacing:'0.2em'}}>
-                            Interactive pathfinding & flood-fill challenges
+                        <div className="fade-up fade-up-4" style={{textAlign:'center', paddingTop:16, color:'var(--muted)', fontSize:'0.72rem', textTransform:'uppercase', letterSpacing:'0.2em'}}>
+                            Pathfinding challenges across the skeletal system
                         </div>
                     </div>
                 </div>
