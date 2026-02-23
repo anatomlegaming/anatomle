@@ -16,6 +16,7 @@
     <script src="../js/data/boneMappings.js"></script>
     <script src="../js/core/pathfinding.js"></script>
     <script src="../js/core/gameLogic.js"></script>
+    <script src="../js/core/replayIndex.js"></script>
     <style>
         * { box-sizing: border-box; }
         body { font-family: 'DM Sans', sans-serif; background: #fdf6ec; color: #2d1f14; margin: 0; overflow: hidden; }
@@ -213,18 +214,12 @@ function SkeletonGame() {
                     const grid = guessGrid.join('');
                     const result = phase === 'won' ? `${used}/${max} guesses ${stars}` : `❌ ${bad.length} wrong`;
 
-                    // Encode guess sequence with types: bone:type pairs
-                    // type: o=optimal, d=detour, b=bad
-                    const typedGuesses = guessOrder.map(g => {
-                        if (target.path.includes(g)) return g + ':o';
-                        if (detours.includes(g)) return g + ':d';
-                        return g + ':b';
-                    });
-                    const replayGuesses = encodeURIComponent(typedGuesses.join(','));
-                    const replayDate = window.DAILY_DATE_STR || new Date().toISOString().slice(0,10);
-                    const replayLink = `https://anatomle.com/replay.html?d=${replayDate}&g=${replayGuesses}`;
+                    // Compact replay URL — all game state encoded, no server needed
+                    const qs = window.encodeReplay('fs', target.start, target.end, target.path, guessOrder, detours, bad);
+                    const replayLink = qs ? `https://anatomle.com/replay.html?${qs}` : '';
+                    const replayLine = replayLink ? `\n\n🔁 Watch my path:\n${replayLink}` : '';
 
-                    const text = `Osteomle – Full Skeleton\n${dateStr}\n${result}\n${grid}\n\n🔁 Watch my path:\n${replayLink}`;
+                    const text = `Osteomle – Full Skeleton\n${dateStr}\n${result}\n${grid}${replayLine}`;
                     navigator.clipboard.writeText(text).then(() => setShared(true));
                 }
             }}
