@@ -157,32 +157,58 @@ function DailyGame() {
     const [shared, setShared]   = useState(false);
     const [showHtp, dismissHtp] = window.useFirstVisit('daily');
 
-    // Called once worldtimeapi fetch resolves and game data is ready
+    // ── SAVE / RESTORE progress via localStorage ────────────────────────────
+    const saveKey = () => `anatomle_daily_${window.DAILY_DATE_STR}`;
+
+    const saveProgress = (state) => {
+        try {
+            localStorage.setItem(saveKey(), JSON.stringify(state));
+        } catch(e) {}
+    };
+
+    const loadSaved = (dateStr) => {
+        try {
+            const raw = localStorage.getItem(`anatomle_daily_${dateStr}`);
+            return raw ? JSON.parse(raw) : null;
+        } catch(e) { return null; }
+    };
+
+    // Called once worldtimeapi fetch resolves
     window.__dailyAppReady = () => setReady(true);
 
+    // Handle case where fetch finished before React mounted
     useEffect(() => {
-        if (!ready) return;
-        // If fetch already finished before React mounted
-        if (window.DAILY_GAME_DATA) loadGame(window.DAILY_GAME_DATA);
-    }, [ready]);
-
-    // Also handle case where fetch finished before component mounted
-    useEffect(() => {
-        if (window.DAILY_GAME_DATA) { setReady(true); }
+        if (window.DAILY_GAME_DATA) setReady(true);
     }, []);
 
-    const loadGame = (g) => {
-        setTarget(g);
-        setChain(g.path.map((bone, i) => ({ bone, type: i === 0 ? 'start' : 'path', guessed: i === 0 })));
-        const total = calculateGuessCount(g.path.length, 2);
-        setLeft(total); setMax(total);
-        setBad([]); setDetours([]);
-        setInput(''); setSelIdx(-1); setPhase('playing'); setReveal(false); setShared(false);
+    const loadGame = (g, saved) => {
+        if (saved) {
+            // Restore saved state
+            setTarget(g);
+            setChain(saved.chain);
+            setLeft(saved.left);
+            setMax(saved.max);
+            setBad(saved.bad);
+            setDetours(saved.detours);
+            setPhase(saved.phase);
+            setReveal(saved.reveal || false);
+            setShared(saved.shared || false);
+        } else {
+            setTarget(g);
+            setChain(g.path.map((bone, i) => ({ bone, type: i === 0 ? 'start' : 'path', guessed: i === 0 })));
+            const total = calculateGuessCount(g.path.length, 2);
+            setLeft(total); setMax(total);
+            setBad([]); setDetours([]);
+            setPhase('playing'); setReveal(false); setShared(false);
+        }
+        setInput(''); setSelIdx(-1);
         try { window.reset3D && window.reset3D(); } catch(e) {}
     };
 
     useEffect(() => {
-        if (ready && window.DAILY_GAME_DATA) loadGame(window.DAILY_GAME_DATA);
+        if (!ready || !window.DAILY_GAME_DATA || !window.DAILY_DATE_STR) return;
+        const saved = loadSaved(window.DAILY_DATE_STR);
+        loadGame(window.DAILY_GAME_DATA, saved);
     }, [ready]);
 
     // Highlights
@@ -228,6 +254,12 @@ function DailyGame() {
     }, [input, chain, target.end, bad, detours]);
 
     useEffect(() => { setSelIdx(-1); }, [suggestions.length]);
+
+    // Save progress whenever key state changes
+    useEffect(() => {
+        if (!target.start || !window.DAILY_DATE_STR) return;
+        saveProgress({ chain, left, max, bad, detours, phase, reveal, shared });
+    }, [chain, left, bad, detours, phase, reveal, shared]);
 
     const submit = useCallback((guess) => {
         if (phase !== 'playing' || !guess) return;
@@ -295,6 +327,7 @@ function DailyGame() {
                 onGiveUp: () => setPhase('lost'),
                 onReveal: () => setReveal(true),
                 onShare: handleShare,
+                onHome: () => window.location.href = '../index.html',
             }}
         />
         </>
