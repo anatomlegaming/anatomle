@@ -1,5 +1,5 @@
 // ============================================================================
-// ANATOMLE - PATHFINDING UIaa
+// ANATOMLE - PATHFINDING UI
 // Pure React.createElement — no JSX, loads as plain <script> tag
 // Supports: skeleton game, upper limb standard, upper limb nerve challenge
 // Features: mode badge, nerve hint button, nerve supply log, share button
@@ -341,7 +341,7 @@
             e('div', { style:{ padding:'10px 14px 14px', flexShrink:0 } },
                 hintBtn,
                 e('button', {
-                    onClick: phase === 'playing' ? (h.onGiveUp || h.onNewGame) : h.onNewGame,
+                    onClick: phase === 'playing' ? h.onGiveUp : h.onNewGame,
                     style:{
                         width:'100%', padding:'12px 0', borderRadius:10,
                         background: phase === 'playing'
@@ -526,24 +526,32 @@
                             }}, shared ? '\u2713 Copied!' : '\uD83D\uDCCB Share Result')
                           )
                         : null,
-                    // Action buttons
+                    // Action buttons — daily mode: only show Back to Home
                     e('div', { style:{ display:'flex', gap:10, justifyContent:'center' } },
-                        e('button', { onClick: h.onNewGame, style:{
-                            padding:'12px 26px',
-                            background:'linear-gradient(135deg,'+accent+','+accentDk+')',
-                            color:'white', border:'none', borderRadius:10,
-                            fontFamily:'Fraunces,serif', fontWeight:900, fontSize:12,
-                            textTransform:'uppercase', letterSpacing:'0.1em',
-                            cursor:'pointer',
-                            boxShadow:'0 4px 12px rgba(232,96,60,0.25)'
-                        }}, 'Next Case'),
-                        e('a', { href:'../index.html', style:{
-                            padding:'12px 26px', background:'rgba(45,31,20,0.05)',
-                            color:C.inkLight, border:'1.5px solid '+C.border,
-                            borderRadius:10, fontFamily:'Fraunces,serif', fontWeight:700,
-                            fontSize:12, textTransform:'uppercase', letterSpacing:'0.1em',
-                            textDecoration:'none', display:'flex', alignItems:'center'
-                        }}, 'Menu')
+                        h.onNewGame
+                            ? e('button', { onClick: h.onNewGame, style:{
+                                padding:'12px 26px',
+                                background:'linear-gradient(135deg,'+accent+','+accentDk+')',
+                                color:'white', border:'none', borderRadius:10,
+                                fontFamily:'Fraunces,serif', fontWeight:900, fontSize:12,
+                                textTransform:'uppercase', letterSpacing:'0.1em',
+                                cursor:'pointer',
+                                boxShadow:'0 4px 12px rgba(232,96,60,0.25)'
+                              }}, 'Next Case')
+                            : null,
+                        e('button', {
+                            onClick: h.onHome ? h.onHome : () => window.location.href='../index.html',
+                            style:{
+                                padding:'12px 26px',
+                                background: h.onNewGame ? 'rgba(45,31,20,0.05)' : 'linear-gradient(135deg,'+accent+','+accentDk+')',
+                                color: h.onNewGame ? C.inkLight : 'white',
+                                border: h.onNewGame ? '1.5px solid '+C.border : 'none',
+                                borderRadius:10, fontFamily:'Fraunces,serif', fontWeight:700,
+                                fontSize:12, textTransform:'uppercase', letterSpacing:'0.1em',
+                                cursor:'pointer',
+                                boxShadow: h.onNewGame ? 'none' : '0 4px 12px rgba(232,96,60,0.25)'
+                            }
+                        }, h.onNewGame ? 'Menu' : '← Back to Home')
                     )
                 )
               )
