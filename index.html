@@ -254,18 +254,23 @@
                         </header>
 
                         <div className="fade-up fade-up-2" style={{marginBottom:36}}>
-                            <div className="daily-card">
+                            <div className="daily-card" style={{cursor:'pointer'}} onClick={() => window.location.href='games/daily.html'}>
                                 <div style={{fontSize:'2rem'}}>📅</div>
-                                <div>
+                                <div style={{flex:1}}>
                                     <div style={{fontFamily:'Fraunces, serif', fontWeight:700, fontSize:'1.1rem', marginBottom:2}}>Today's Puzzle is Live!</div>
-                                    <div style={{fontSize:'0.82rem', opacity:0.85}}>A new anatomy challenge refreshes every day at midnight. Come back tomorrow for more!</div>
+                                    <div style={{fontSize:'0.82rem', opacity:0.85}}>One new puzzle every day at midnight UTC — same puzzle for everyone.</div>
                                 </div>
-                                <div style={{marginLeft:'auto', textAlign:'right', flexShrink:0}}>
-                                    <div style={{fontFamily:'Fraunces, serif', fontWeight:900, fontSize:'1.8rem', lineHeight:1}}>
-                                        {new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'})}
+                                <div style={{display:'flex', flexDirection:'column', alignItems:'flex-end', gap:8, flexShrink:0}}>
+                                    <div style={{textAlign:'right'}}>
+                                        <div style={{fontFamily:'Fraunces, serif', fontWeight:900, fontSize:'1.8rem', lineHeight:1}}>
+                                            {new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'})}
+                                        </div>
+                                        <div style={{fontSize:'0.7rem', opacity:0.75, textTransform:'uppercase', letterSpacing:'0.1em'}}>
+                                            {new Date().toLocaleDateString('en-US',{weekday:'long'})}
+                                        </div>
                                     </div>
-                                    <div style={{fontSize:'0.7rem', opacity:0.75, textTransform:'uppercase', letterSpacing:'0.1em'}}>
-                                        {new Date().toLocaleDateString('en-US',{weekday:'long'})}
+                                    <div style={{background:'white', color:'var(--coral)', borderRadius:999, padding:'8px 20px', fontSize:'0.82rem', fontWeight:700, letterSpacing:'0.05em', textTransform:'uppercase', whiteSpace:'nowrap'}}>
+                                        Play Now →
                                     </div>
                                 </div>
                             </div>
@@ -306,7 +311,10 @@
                                     <p style={{color:'var(--muted)', fontSize:'0.83rem', lineHeight:1.6, margin:'0 0 18px'}}>{cat.description}</p>
 
                                     {cat.available && (
-                                        <div style={{display:'inline-block', background:cat.borderColor, color:'white', borderRadius:999, padding:'7px 20px', fontSize:'0.78rem', fontWeight:600, letterSpacing:'0.05em', textTransform:'uppercase'}}>Play Now →</div>
+                                        <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap:8}}>
+                                            <div style={{fontSize:'0.65rem', color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.18em', fontWeight:600}}>∞ Unlimited Play</div>
+                                            <div style={{display:'inline-block', background:cat.borderColor, color:'white', borderRadius:999, padding:'7px 20px', fontSize:'0.78rem', fontWeight:600, letterSpacing:'0.05em', textTransform:'uppercase'}}>Explore →</div>
+                                        </div>
                                     )}
                                 </div>
                             ))}
