@@ -15,6 +15,7 @@
     <script src="../js/data/skeletonGraph.js"></script>
     <script src="../js/data/boneMappings.js"></script>
     <script src="../js/data/dailySeeds.js"></script>
+    <script src="../js/core/replayIndex.js"></script>
     <script src="../js/core/pathfinding.js"></script>
     <script src="../js/core/gameLogic.js"></script>
     <script src="../js/core/seededRandom.js"></script>
@@ -155,6 +156,9 @@ function DailyGame() {
     const [phase, setPhase]     = useState('playing');
     const [reveal, setReveal]   = useState(false);
     const [shared, setShared]   = useState(false);
+    const [guessesUsed, setGuessesUsed] = useState(0);
+    const [guessOrder, setGuessOrder]   = useState([]);
+    const [reviewing, setReviewing]     = useState(false);
     const [showHtp, dismissHtp] = window.useFirstVisit('daily');
 
     // ── SAVE / RESTORE progress via localStorage ────────────────────────────
@@ -264,6 +268,8 @@ function DailyGame() {
     const submit = useCallback((guess) => {
         if (phase !== 'playing' || !guess) return;
         setInput(''); setSelIdx(-1);
+        setGuessesUsed(u => u + 1);
+        setGuessOrder(o => [...o, guess]);
 
         if (target.path.includes(guess)) {
             const updatedChain = chain.map(item => item.bone === guess ? { ...item, guessed: true } : item);
@@ -304,9 +310,26 @@ function DailyGame() {
 
     const handleShare = () => {
         const dateStr = window.DAILY_DATE_STR || '';
-        const guesses = max - left;
-        const grid = chain.map(c => c.guessed ? (c.type === 'start' ? '🟢' : '🟦') : '⬜').join('');
-        const text = `Anatomle – Daily Puzzle\n${dateStr}\n${phase === 'won' ? `✅ ${guesses}/${max} guesses` : '❌'}\n${grid}\nanatomle.com`;
+        const used    = guessesUsed;
+        const optimal = target.path.length - 2;
+        const extra   = used - optimal;
+        const stars   = phase === 'won' ? (extra === 0 ? '⭐⭐⭐' : extra <= 2 ? '⭐⭐' : '⭐') : '';
+        const result  = phase === 'won' ? `${used}/${optimal} guesses ${stars}` : `❌ ${bad.length} wrong`;
+
+        // Emoji grid
+        const guessGrid = ['🟢'];
+        chain.slice(1,-1).forEach(item => guessGrid.push(item.guessed ? '🟦' : '⬜'));
+        detours.forEach(() => guessGrid.push('🟡'));
+        bad.forEach(() => guessGrid.push('🔴'));
+        guessGrid.push('⬛');
+        const grid = guessGrid.join('');
+
+        // Replay link with daily=1 flag for spoiler gate
+        const qs = window.encodeReplay && window.encodeReplay('fs', target.start, target.end, target.path, guessOrder, detours, bad);
+        const replayLink = qs ? `https://anatomle.com/replay.html?${qs}&daily=1` : '';
+        const replayLine = replayLink ? `\n\n🔁 Watch my path:\n${replayLink}` : '';
+
+        const text = `Osteomle – Daily Puzzle\n${dateStr}\n${result}\n${grid}${replayLine}`;
         navigator.clipboard.writeText(text).then(() => setShared(true));
     };
 
@@ -318,7 +341,7 @@ function DailyGame() {
         <window.PathfindingUI
             gameTitle="Osteomle · Daily Puzzle"
             mode="standard"
-            state={{ target, chain, left, max, bad, detours, input, selIdx, phase, reveal, suggestions, hintUsed: false, shared }}
+            state={{ target, chain, left, max, bad, detours, input, selIdx, phase, reveal, suggestions, hintUsed: false, shared, guessesUsed, reviewing }}
             handlers={{
                 onInputChange: e => setInput(e.target.value),
                 onKeyDown: handleKey,
@@ -326,6 +349,8 @@ function DailyGame() {
                 onNewGame: null,
                 onGiveUp: () => setPhase('lost'),
                 onReveal: () => setReveal(true),
+                onReview: () => setReviewing(true),
+                onStopReview: () => setReviewing(false),
                 onShare: handleShare,
                 onHome: () => window.location.href = '../index.html',
             }}
