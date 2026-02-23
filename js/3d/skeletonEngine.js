@@ -176,6 +176,88 @@ window.resetCamera = function() {
     _ctrl.saveState && _ctrl.saveState();
     _ctrl.update();
 };
+
+// ── GET WORLD-SPACE CENTER OF A NAMED BONE ────────────────────────────────────
+window.getMeshCenter = function(displayName) {
+    if (!_skeleton) return null;
+    var box = new THREE.Box3();
+    var found = false;
+    _skeleton.traverse(function(node) {
+        if (!node.isMesh) return;
+        // Use same matching logic as update3D
+        var key = BONE_TO_3D_MODEL[displayName];
+        var matches = false;
+        if (displayName === 'True Ribs (1-7)')        matches = TRUE_RIB_NODES.some(function(t)   { return node.name.indexOf(t) !== -1; });
+        else if (displayName === 'False Ribs (8-10)')  matches = FALSE_RIB_NODES.some(function(f)  { return node.name.indexOf(f) !== -1; });
+        else if (displayName === 'Floating Ribs (11-12)') matches = FLOATING_RIB_NODES.some(function(l) { return node.name.indexOf(l) !== -1; });
+        else if (displayName === 'Costal Cartilage (1-7)')  matches = COSTAL_TRUE_NODES.some(function(c)  { return node.name.indexOf(c) !== -1; });
+        else if (displayName === 'Costal Cartilage (8-10)') matches = COSTAL_FALSE_NODES.some(function(d) { return node.name.indexOf(d) !== -1; });
+        else if (displayName === 'Hip Bone') matches = node.name.indexOf('Hip_boner') !== -1;
+        else if (key) {
+            if (key.indexOf('__group__') === 0) {
+                matches = key.slice(9).split('|').some(function(p) { return node.name.indexOf(p) !== -1; });
+            } else {
+                matches = node.name.indexOf(key) !== -1;
+            }
+        }
+        if (matches) {
+            node.geometry.computeBoundingBox();
+            var nb = node.geometry.boundingBox.clone().applyMatrix4(node.matrixWorld);
+            box.union(nb);
+            found = true;
+        }
+    });
+    if (!found) return null;
+    return box.getCenter(new THREE.Vector3());
+};
+
+// ── SMOOTH PAN CAMERA TO MIDPOINT BETWEEN TWO BONES ──────────────────────────
+window.panToGameBones = function(startBone, endBone, duration) {
+    if (!_cam || !_ctrl || !_skeleton) return;
+    duration = duration || 1800;
+
+    var startPos = window.getMeshCenter(startBone);
+    var endPos   = window.getMeshCenter(endBone);
+    if (!startPos || !endPos) return;
+
+    // Midpoint between the two bones
+    var mid = new THREE.Vector3().addVectors(startPos, endPos).multiplyScalar(0.5);
+
+    // Distance — zoom in relative to how far apart the bones are
+    var spread = startPos.distanceTo(endPos);
+    var targetDist = Math.max(1.5, Math.min(spread * 2.2, _initDist * 0.85));
+
+    // Current camera state
+    var fromTarget = _ctrl.target.clone();
+    var fromPos    = _cam.position.clone();
+
+    // Destination
+    var toTarget = mid.clone();
+    // Keep same horizontal angle, just move closer
+    var dir = fromPos.clone().sub(fromTarget).normalize();
+    var toPos = mid.clone().add(dir.multiplyScalar(targetDist));
+
+    var start = performance.now();
+    var _panRaf;
+
+    function easeInOut(t) { return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; }
+
+    function step(now) {
+        var t = Math.min((now - start) / duration, 1);
+        var e = easeInOut(t);
+
+        _cam.position.lerpVectors(fromPos, toPos, e);
+        _ctrl.target.lerpVectors(fromTarget, toTarget, e);
+        _ctrl.update();
+
+        if (t < 1) {
+            _panRaf = requestAnimationFrame(step);
+        } else {
+            _ctrl.saveState && _ctrl.saveState();
+        }
+    }
+    _panRaf = requestAnimationFrame(step);
+};
 function _initSkeletonEngine() {
     var cont  = document.getElementById('cv');
     var scene = new THREE.Scene();
