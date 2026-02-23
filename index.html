@@ -321,13 +321,24 @@
                         </div>
 
                         <hr className="fancy" />
-                        <div className="fade-up fade-up-4" style={{display:'flex', justifyContent:'center', gap:32, paddingTop:20}}>
-                            {['Settings','About Us','Contact'].map(label => (
-                                <button key={label} style={{background:'none', border:'none', cursor:'pointer', color:'var(--muted)', fontSize:'0.72rem', textTransform:'uppercase', letterSpacing:'0.15em', fontFamily:'DM Sans, sans-serif', padding:0, transition:'color 0.2s'}}
-                                onMouseEnter={e => e.target.style.color='var(--ink)'}
-                                onMouseLeave={e => e.target.style.color='var(--muted)'}
-                                >{label}</button>
-                            ))}
+                        <div className="fade-up fade-up-4" style={{display:'flex', flexDirection:'column', alignItems:'center', gap:16, paddingTop:20}}>
+                            <div style={{display:'flex', justifyContent:'center', gap:32}}>
+                                {[
+                                    {label:'About Us', href:'about.html'},
+                                    {label:'Credits',  href:'credits.html'},
+                                    {label:'Contact',  href:'contact.html'},
+                                ].map(({label, href}) => (
+                                    <a key={label} href={href} style={{color:'var(--muted)', fontSize:'0.72rem', textTransform:'uppercase', letterSpacing:'0.15em', fontFamily:'DM Sans, sans-serif', textDecoration:'none', transition:'color 0.2s'}}
+                                    onMouseEnter={e => e.target.style.color='var(--ink)'}
+                                    onMouseLeave={e => e.target.style.color='var(--muted)'}
+                                    >{label}</a>
+                                ))}
+                            </div>
+                            <div style={{fontSize:'0.68rem', color:'var(--muted)', maxWidth:520, textAlign:'center', lineHeight:1.6, padding:'0 12px'}}>
+                                <strong style={{color:'var(--ink-light)'}}>Disclaimer:</strong> Anatomle is for educational entertainment only and is not a clinical reference.
+                                Always consult qualified resources and licensed professionals. Errors may be present.
+                            </div>
+                            <div style={{fontSize:'0.65rem', color:'var(--muted)', opacity:0.7}}>© 2026 Anatomle</div>
                         </div>
                     </div>
                 </div>
