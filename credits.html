@@ -113,7 +113,7 @@
         <p>The interactive 3D skeleton used throughout Anatomle was originally sourced from
         <strong>AnatomyTool</strong> (anatomytool.org). At the time of download, the model was made
         freely available under a Creative Commons license. We are deeply grateful to the creators
-        for sharing this resource openly — without it, Anatomle simply would not be possible.</p>
+        for sharing this resource openly. Without it, Anatomle would not be possible.</p>
 
         <p>Note: anatomytool.org is currently unavailable. We are unable to link directly to the
         original source at this time. Should the site return, we will update this attribution accordingly.</p>
@@ -129,38 +129,24 @@
             to a custom adjacency graph used by Anatomle's game engine. These modifications were made solely
             to enable the interactive gameplay experience. All derivative work is shared under the same
             CC BY-SA 4.0 license in accordance with the ShareAlike requirement.</p>
-        </div>
-    </div>
-
-    <div class="divider"></div>
-
-    <h2>Game Code & Design</h2>
-
-    <div class="credit-card">
-        <div class="credit-card-header">
-            <div class="credit-icon code">💻</div>
-            <div>
-                <div class="credit-title">Anatomle — Game Engine & Interface</div>
-                <div class="credit-sub">Original work</div>
+        <div style="margin-top:20px; padding-top:16px; border-top:1.5px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-wrap:gap;">
+            <div style="font-size:0.82rem; color:var(--muted); line-height:1.5;">
+                In compliance with CC BY-SA 4.0, the modified GLB file<br>is made available for download below.
             </div>
+            <a href="../models/overview-skeleton.glb" download="anatomle-skeleton-derivative.glb" style="
+                display:inline-flex; align-items:center; gap:8px;
+                background:var(--ink); color:white; border-radius:10px;
+                padding:10px 18px; font-size:0.78rem; font-weight:600;
+                text-transform:uppercase; letter-spacing:0.08em;
+                text-decoration:none; white-space:nowrap; flex-shrink:0; margin-left:16px;
+                transition:background 0.15s;
+            " onmouseover="this.style.background='var(--coral)'" onmouseout="this.style.background='var(--ink)'">
+                ↓ Download GLB
+            </a>
         </div>
-        <p>All game logic, pathfinding algorithms, UI, 3D rendering engine, bone adjacency graphs,
-        daily puzzle system, and visual design are original work created for Anatomle.
-        This includes the seeded random puzzle generator, the pathfinding game mode,
-        the flood-fill game mode, and all interactive 3D bone highlighting.</p>
-        <p>The game is built using Three.js (3D rendering), React (UI), and standard web technologies.
-        These are used under their respective open-source licenses.</p>
+        </div>
     </div>
 
-    <div class="divider"></div>
-
-    <h2>Third-Party Libraries</h2>
-    <p>Anatomle makes use of the following open-source libraries:</p>
-    <p>
-        <strong>Three.js</strong> — MIT License — 3D rendering engine<br>
-        <strong>React</strong> — MIT License — UI framework<br>
-        <strong>Google Fonts</strong> — Fraunces &amp; DM Sans, used under the Open Font License
-    </p>
 
 </main>
 
