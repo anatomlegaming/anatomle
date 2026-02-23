@@ -172,18 +172,26 @@
                     color:accent, fontStyle:'italic'
                 }}, target.end)
             ),
-            // Guess count — right side of the bar (right edge of 3D area)
+            // Guess count — right side of the bar
             e('div', { style:{
-                display:'flex', alignItems:'baseline', gap:5, flexShrink:0
+                display:'flex', alignItems:'baseline', gap:3, flexShrink:0
             }},
                 e('span', { style:{
                     fontFamily:'Fraunces,serif', fontWeight:900, fontSize:26,
                     color: danger ? accent : 'rgba(253,246,236,0.92)', lineHeight:1
-                }}, left),
+                }}, guessesUsed),
+                e('span', { style:{
+                    fontFamily:'DM Sans,sans-serif', fontSize:14,
+                    color:'rgba(253,246,236,0.4)'
+                }}, '/'),
+                e('span', { style:{
+                    fontFamily:'Fraunces,serif', fontWeight:700, fontSize:16,
+                    color:'rgba(253,246,236,0.5)', lineHeight:1
+                }}, target.path ? target.path.length - 2 : max - 1),
                 e('span', { style:{
                     fontFamily:'DM Sans,sans-serif', fontSize:10,
-                    color:'rgba(253,246,236,0.4)', textTransform:'uppercase', letterSpacing:'0.1em'
-                }}, 'left')
+                    color:'rgba(253,246,236,0.4)', textTransform:'uppercase', letterSpacing:'0.1em', marginLeft:2
+                }}, 'guesses')
             )
         );
 
@@ -454,7 +462,7 @@
                     // Scoring block
                     (function() {
                         var used = guessesUsed;
-                        var optimal = target.path.length - 1; // guesses needed on perfect run (excl. start)
+                        var optimal = target.path.length - 2; // start + end are free, only mid bones count
                         var extra = used - optimal;
                         var stars = phase === 'won'
                             ? (extra === 0 ? 3 : extra <= 2 ? 2 : 1)
@@ -472,7 +480,7 @@
                                 fontSize:13, margin:0
                             }},
                                 phase === 'won'
-                                    ? used+' guess'+(used!==1?'es':'')+' — optimal was '+optimal
+                                    ? used+' guess'+(used!==1?'es':'')+' — optimal is '+optimal
                                     : bad.length+' wrong guess'+(bad.length!==1?'es':'')+' · '+used+' total'
                             )
                         );
