@@ -70,6 +70,7 @@ function SkeletonGame() {
     const [shared, setShared] = useState(false);
     const [reviewing, setReviewing] = useState(false);
     const [guessOrder, setGuessOrder] = useState([]);
+    const [guessesUsed, setGuessesUsed] = useState(0);
 
     const startNew = useCallback(() => {
         const g = initializeGame(SKELETON_GRAPH, { minLength: 4, maxLength: 8 });
@@ -78,7 +79,7 @@ function SkeletonGame() {
         const total = calculateGuessCount(g.path.length, 2);
         setLeft(total); setMax(total);
         setBad([]); setDetours([]);
-        setInput(''); setSelIdx(-1); setPhase('playing'); setReveal(false); setShared(false); setReviewing(false); setGuessOrder([]);
+        setInput(''); setSelIdx(-1); setPhase('playing'); setReveal(false); setShared(false); setReviewing(false); setGuessOrder([]); setGuessesUsed(0);
         try { window.reset3D && window.reset3D(); } catch (e) { }
     }, []);
 
@@ -137,6 +138,8 @@ function SkeletonGame() {
         // Track guess order for shareable replay
         const updatedOrder = [...guessOrder, guess];
         setGuessOrder(updatedOrder);
+        const usedNow = guessesUsed + 1;
+        setGuessesUsed(usedNow);
 
         // On optimal path
         if (target.path.includes(guess)) {
@@ -183,7 +186,7 @@ function SkeletonGame() {
         <window.PathfindingUI
             gameTitle="Osteomle · Full Skeleton"
             mode="standard"
-            state={{ target, chain, left, max, bad, detours, input, selIdx, phase, reveal, suggestions, hintUsed: false, shared, reviewing }}
+            state={{ target, chain, left, max, bad, detours, input, selIdx, phase, reveal, suggestions, hintUsed: false, shared, reviewing, guessesUsed }}
             handlers={{
                 onInputChange: e => setInput(e.target.value),
                 onKeyDown: handleKey,
@@ -196,7 +199,7 @@ function SkeletonGame() {
                 onShare: () => {
                     const d = new Date();
                     const dateStr = d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-                    const used = max - left;
+                    const used = guessesUsed;
                     const optimal = target.path.length - 1;
                     const extra = used - optimal;
                     const stars = phase === 'won' ? (extra === 0 ? '⭐⭐⭐' : extra <= 2 ? '⭐⭐' : '⭐') : '';
@@ -210,8 +213,14 @@ function SkeletonGame() {
                     const grid = guessGrid.join('');
                     const result = phase === 'won' ? `${used}/${max} guesses ${stars}` : `❌ ${bad.length} wrong`;
 
-                    // Replay link — encode date + ordered guesses
-                    const replayGuesses = encodeURIComponent(guessOrder.join(','));
+                    // Encode guess sequence with types: bone:type pairs
+                    // type: o=optimal, d=detour, b=bad
+                    const typedGuesses = guessOrder.map(g => {
+                        if (target.path.includes(g)) return g + ':o';
+                        if (detours.includes(g)) return g + ':d';
+                        return g + ':b';
+                    });
+                    const replayGuesses = encodeURIComponent(typedGuesses.join(','));
                     const replayDate = window.DAILY_DATE_STR || new Date().toISOString().slice(0,10);
                     const replayLink = `https://anatomle.com/replay.html?d=${replayDate}&g=${replayGuesses}`;
 
