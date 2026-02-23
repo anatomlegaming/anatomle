@@ -185,10 +185,16 @@
         addRow(start, 'start', '\uD83D\uDFE2', null);
         updateHighlights();
 
-        window.addEventListener('modelReady', function() {
+        // modelReady may have already fired before dynamic script finished loading
+        if (window.__modelIsReady) {
             updateHighlights();
             setTimeout(playNext, 1500);
-        });
+        } else {
+            window.addEventListener('modelReady', function() {
+                updateHighlights();
+                setTimeout(playNext, 1500);
+            });
+        }
 
         function playNext() {
             if (guessIdx >= guesses.length) {
