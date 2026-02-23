@@ -77,7 +77,7 @@ function SkeletonGame() {
         const g = initializeGame(SKELETON_GRAPH, { minLength: 4, maxLength: 8 });
         setTarget(g);
         setChain(g.path.map((bone, i) => ({ bone, type: i === 0 ? 'start' : 'path', guessed: i === 0 })));
-        const total = calculateGuessCount(g.path.length, 2);
+        const total = calculateGuessCount(g.path.length, 1);
         setLeft(total); setMax(total);
         setBad([]); setDetours([]);
         setInput(''); setSelIdx(-1); setPhase('playing'); setReveal(false); setShared(false); setReviewing(false); setGuessOrder([]); setGuessesUsed(0);
@@ -201,7 +201,7 @@ function SkeletonGame() {
                     const d = new Date();
                     const dateStr = d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
                     const used = guessesUsed;
-                    const optimal = target.path.length - 1;
+                    const optimal = target.path.length - 2; // start + end are free
                     const extra = used - optimal;
                     const stars = phase === 'won' ? (extra === 0 ? '⭐⭐⭐' : extra <= 2 ? '⭐⭐' : '⭐') : '';
 
