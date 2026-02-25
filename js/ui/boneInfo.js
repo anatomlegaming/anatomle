@@ -70,81 +70,26 @@ const BONE_WIKI_TITLE = {
     "Metatarsal V":            "Metatarsal bones",
 };
 
-const BONE_FALLBACK_DESC = {
-    "True Ribs (1-7)":         "The true ribs (1st–7th) attach directly to the sternum via their own costal cartilage, forming the rigid anterior wall of the thorax.",
-    "False Ribs (8-10)":       "The false ribs (8th–10th) connect to the sternum indirectly, sharing costal cartilage with the 7th rib rather than attaching independently.",
-    "Floating Ribs (11-12)":   "The floating ribs (11th–12th) have no anterior attachment at all — they are anchored only at the thoracic vertebrae, giving them freedom of movement.",
-    "Costal Cartilage (1-7)":  "Costal cartilages are bars of hyaline cartilage that connect the ribs to the sternum, providing flexible yet strong support for the thoracic cage.",
-    "Costal Cartilage (8-10)": "The false rib costal cartilages fuse together and join the 7th costal cartilage rather than attaching directly to the sternum.",
-    "Proximal Phalanx (Hand)": "The proximal phalanges are the first (and largest) set of finger bones, articulating with the metacarpals at the knuckle joints.",
-    "Middle Phalanx (Hand)":   "The middle phalanges are the intermediate finger bones, absent in the thumb, sitting between the proximal and distal phalanges.",
-    "Distal Phalanx (Hand)":   "The distal phalanges are the terminal finger bones, forming the bony support for the fingertips and nail beds.",
-    "Proximal Phalanx (Foot)": "The proximal phalanges of the foot are the largest toe bones, articulating with the metatarsals at the metatarsophalangeal joints.",
-    "Middle Phalanx (Foot)":   "The middle phalanges of the foot are absent in the great toe and present in the lesser toes, forming the mid-section of each digit.",
-    "Distal Phalanx (Foot)":   "The distal phalanges are the terminal bones of the toes, providing structural support beneath each toenail.",
-    "Metacarpal I":            "The first metacarpal supports the thumb and is the shortest and most robust of the five metacarpals, allowing the wide range of thumb motion.",
-    "Metacarpal II":           "The second metacarpal, the longest, anchors the index finger and forms a key part of the rigid central column of the hand.",
-    "Metacarpal III":          "The third metacarpal supports the middle finger and features a distinctive styloid process at its base.",
-    "Metacarpal IV":           "The fourth metacarpal supports the ring finger and is closely associated with the hamate bone at the wrist.",
-    "Metacarpal V":            "The fifth metacarpal supports the little finger and is a common site of fracture ('boxer's fracture') from direct impact.",
-    "Metatarsal I":            "The first metatarsal is the shortest and thickest, bearing significant weight during the push-off phase of walking.",
-    "Metatarsal II":           "The second metatarsal is the longest and most commonly stressed during running, making it prone to stress fractures.",
-    "Metatarsal III":          "The third metatarsal sits centrally in the foot and transmits forces between the cuneiform bones and the middle toe.",
-    "Metatarsal IV":           "The fourth metatarsal articulates with the cuboid and lateral cuneiform, contributing to the lateral arch of the foot.",
-    "Metatarsal V":            "The fifth metatarsal has a prominent tuberosity at its base where the peroneus brevis muscle inserts — a common site of avulsion fracture.",
-    "Hip Bone":                "The hip bone (os coxae) is formed by the fusion of the ilium, ischium and pubis. Together, the paired hip bones and sacrum form the pelvis.",
-    "Atlas (C1)":              "The atlas is the first cervical vertebra, forming the atlanto-occipital joint with the skull. Uniquely, it has no vertebral body, functioning as a ring that supports the head.",
-    "Axis (C2)":               "The axis is the second cervical vertebra, distinguished by its dens (odontoid process) — a tooth-like projection around which the atlas rotates to allow head turning.",
-};
 
-// ── WIKIPEDIA API FETCH ───────────────────────────────────────────────────────
-// Returns { title, description, url } or null on failure.
-// Caches results in memory to avoid duplicate requests.
-var _wikiCache = {};
+// ── BONE INFO LOOKUP ─────────────────────────────────────────────────────────
+// Reads from the static BONE_DESCRIPTIONS (boneDescriptions.js).
+// No live API calls — safe from vandalism, works offline.
+// Wikipedia URL still generated for the "Read more" link.
 
 async function fetchBoneInfo(displayName) {
-    if (_wikiCache[displayName]) return _wikiCache[displayName];
-
     var wikiTitle = BONE_WIKI_TITLE[displayName] || displayName;
     var encoded   = encodeURIComponent(wikiTitle.replace(/ /g, '_'));
-    var url       = 'https://en.wikipedia.org/api/rest_v1/summary/' + encoded;
+    var wikiUrl   = 'https://en.wikipedia.org/wiki/' + encoded;
 
-    try {
-        var res  = await fetch(url, {
-            headers: { 'User-Agent': 'Anatomle/1.0 (anatomle.com; educational anatomy game)' }
-        });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        var data = await res.json();
+    // Primary: static descriptions (boneDescriptions.js)
+    var desc = (typeof BONE_DESCRIPTIONS !== 'undefined' && BONE_DESCRIPTIONS[displayName])
+        || 'No description available.';
 
-        var desc = data.extract || '';
-        // Trim to first 2 sentences max for the card
-        var sentences = desc.match(/[^.!?]+[.!?]+/g) || [desc];
-        var trimmed   = sentences.slice(0, 2).join(' ').trim();
-
-        // Fall back to our curated text if Wikipedia's summary is too short
-        if (trimmed.length < 60 && BONE_FALLBACK_DESC[displayName]) {
-            trimmed = BONE_FALLBACK_DESC[displayName];
-        }
-
-        var result = {
-            title:       data.title || displayName,
-            description: trimmed || BONE_FALLBACK_DESC[displayName] || 'No description available.',
-            url:         data.content_urls && data.content_urls.desktop
-                             ? data.content_urls.desktop.page
-                             : 'https://en.wikipedia.org/wiki/' + encoded,
-        };
-        _wikiCache[displayName] = result;
-        return result;
-    } catch (err) {
-        // Network failure or title mismatch — use fallback
-        var fallback = {
-            title:       displayName,
-            description: BONE_FALLBACK_DESC[displayName] || 'No description available.',
-            url:         'https://en.wikipedia.org/wiki/' + encoded,
-        };
-        _wikiCache[displayName] = fallback;
-        return fallback;
-    }
+    return {
+        title:       displayName,
+        description: desc,
+        url:         wikiUrl,
+    };
 }
 
 window.fetchBoneInfo = fetchBoneInfo;
