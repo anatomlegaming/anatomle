@@ -363,7 +363,7 @@ function DailyGame() {
                 onGiveUp: () => setPhase('lost'),
                 onReveal: () => setReveal(true),
                 onReview: () => setReviewing(true),
-                onStopReview: () => setReviewing(false),
+                onStopReview: () => { setReviewing(false); setReveal(false); },
                 onShare: handleShare,
                 onHome: () => window.location.href = '../index.html',
             }}
