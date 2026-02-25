@@ -50,8 +50,16 @@ const BONE_WIKI_TITLE = {
     "Middle Phalanx (Foot)":   "Phalanx bone",
     "Distal Phalanx (Foot)":   "Phalanx bone",
 
+    // Forearm bones
+    "Radius":                  "Radius (bone)",
+
+    // Carpal bones with ambiguous names
+    "Trapezium":               "Trapezium (bone)",
+
     // Foot tarsals with awkward names
     "Cuboid":                  "Cuboid bone",
+    "Talus":                   "Talus (bone)",
+    "Lunate":                  "Lunate bone",
     "Trapezoid":               "Trapezoid bone",
     "Medial Cuneiform":        "Medial cuneiform bone",
     "Intermediate Cuneiform":  "Intermediate cuneiform bone",
