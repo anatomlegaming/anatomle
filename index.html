@@ -212,7 +212,7 @@
                     id:'bone-games',
                     prefix:'Oste', suffix:'omle', suffixColor:'var(--coral)',
                     tagline:'Skeletal Anatomy',
-                    description:'Flood-fill individual bones or pathfind across the complete skeleton — skull to phalanges.',
+                    description:'Trace a path through the human skeleton, bone by bone.',
                     icon:'🦴', glowClass:'card-glow-coral', borderColor:'var(--coral)',
                     available: true,
                 },
@@ -220,7 +220,7 @@
                     id:'muscle-games',
                     prefix:'Myo', suffix:'mle', suffixColor:'var(--sage)',
                     tagline:'Muscle Anatomy',
-                    description:'Navigate upper limb muscles by bone attachment or nerve territory — two distinct challenge modes.',
+                    description:'Navigate upper limb muscles by bone attachment or nerve territory.',
                     icon:'💪', glowClass:'card-glow-sage', borderColor:'var(--sage)',
                     available: true,
                 },
@@ -342,13 +342,13 @@
         // ── BONE GAMES ────────────────────────────────────────────────────────
         function BoneGamesMenu({ onBack }) {
             const mainModes = [
-                { id:'full-skeleton', name:'Full Skeleton', description:'Pathfind across the complete skeletal system — from skull to phalanges.',          difficulty:'Hard',   icon:'🦴', file:'games/full-skeleton.html', disabled:false, accent:'var(--coral)',  accentBg:'#fce8e4', howTo:'pathfinding' },
+                { id:'full-skeleton', name:'Full Skeleton', description:'The full skeleton. Start at one bone, find your way to another.',          difficulty:'Hard',   icon:'🦴', file:'games/full-skeleton.html', disabled:false, accent:'var(--coral)',  accentBg:'#fce8e4', howTo:'pathfinding' },
                 { id:'challenge',     name:'Challenge Mode',description:'Invisible skeleton — expert pathfinding with no visual feedback.',                  difficulty:'Expert', icon:'⚡', file:'games/challenge.html',    disabled:true,  accent:'#ec4899',       accentBg:'#fce7f3' },
             ];
             const quickModes = [
-                { id:'skull', name:'Skull',      description:'Pathfind through the 14 cranial and facial bones.',          difficulty:'Easy',   icon:'💀', file:'games/skull.html', disabled:false, accent:'var(--golden)', accentBg:'#fff3e0' },
-                { id:'hand',  name:'Hand',       description:'Pathfind through the 27 bones of the hand and wrist.',       difficulty:'Medium', icon:'✋', file:'games/hand.html',  disabled:false, accent:'var(--sage)',   accentBg:'#e8f5ec' },
-                { id:'foot',  name:'Foot',       description:'Pathfind through the 26 bones of the foot and ankle.',       difficulty:'Medium', icon:'🦶', file:'games/foot.html',  disabled:false, accent:'#8b5cf6',       accentBg:'#f3e8ff' },
+                { id:'skull', name:'Skull',      description:'Find the path through the bones of the skull.',          difficulty:'Easy',   icon:'💀', file:'games/skull.html', disabled:false, accent:'var(--golden)', accentBg:'#fff3e0' },
+                { id:'hand',  name:'Hand',       description:'Find the path through the bones of the hand.',       difficulty:'Medium', icon:'✋', file:'games/hand.html',  disabled:false, accent:'var(--sage)',   accentBg:'#e8f5ec' },
+                { id:'foot',  name:'Foot',       description:'Find the path through the bones of the foot.',       difficulty:'Medium', icon:'🦶', file:'games/foot.html',  disabled:false, accent:'#8b5cf6',       accentBg:'#f3e8ff' },
             ];
 
             const SectionHeader = ({label}) => (
@@ -369,7 +369,7 @@
                                 <span style={{fontFamily:'Fraunces, serif', fontWeight:900, fontSize:'clamp(4rem, 10vw, 7rem)', color:'var(--ink)', letterSpacing:'-0.04em'}}>Oste</span>
                                 <span style={{fontFamily:'Fraunces, serif', fontWeight:900, fontSize:'clamp(4rem, 10vw, 7rem)', color:'var(--coral)', letterSpacing:'-0.04em', fontStyle:'italic'}}>omle</span>
                             </div>
-                            <p style={{fontFamily:'DM Sans, sans-serif', fontSize:'0.72rem', color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.3em', margin:0}}>Skeletal Anatomy Challenges</p>
+                            <p style={{fontFamily:'DM Sans, sans-serif', fontSize:'0.72rem', color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.3em', margin:0}}>Skeletal Anatomy</p>
                         </header>
 
                         <div className="fade-up fade-up-2" style={{marginBottom:36}}>
