@@ -345,7 +345,7 @@
             e('div', { style:{ padding:'10px 14px 14px', flexShrink:0 } },
                 hintBtn,
                 e('button', {
-                    onClick: reviewing ? h.onStopReview : phase === 'playing' ? h.onGiveUp : h.onNewGame,
+                    onClick: reviewing ? h.onStopReview : phase === 'playing' ? h.onGiveUp : h.onNewGame ? h.onNewGame : h.onStopReview,
                     style:{
                         width:'100%', padding:'12px 0', borderRadius:10,
                         background: phase === 'playing'
@@ -356,7 +356,7 @@
                         fontFamily:'Fraunces,serif', fontWeight:900, fontSize:12,
                         textTransform:'uppercase', letterSpacing:'0.15em', cursor:'pointer'
                     }
-                }, reviewing ? 'Results' : phase === 'playing' ? 'Give Up' : 'Next Case \u2192')
+                }, reviewing ? 'Results' : phase === 'playing' ? 'Give Up' : h.onNewGame ? 'Next Case \u2192' : 'Results')
             )
         );
 
@@ -409,7 +409,7 @@
                         disabled: phase !== 'playing',
                         placeholder: phase === 'playing'
                             ? 'Type a name\u2026 select from list \u2191'
-                            : 'Game over \u2014 click Next Case \u2192',
+                            : (h.onNewGame ? 'Game over \u2014 click Next Case \u2192' : 'Game over \u2014 tap Results to review'),
                         style:{
                             width:'100%',
                             background: phase !== 'playing' ? 'rgba(45,31,20,0.04)' : C.card,
