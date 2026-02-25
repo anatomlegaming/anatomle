@@ -9,6 +9,7 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="js/ui/howToPlay.js"></script>
+    <script src="js/core/streak.js"></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -205,6 +206,44 @@
             );
         }
 
+        // ── STREAK BADGE ─────────────────────────────────────────────────────
+        function StreakBadge() {
+            const [streak, setStreak] = React.useState({ count: 0, best: 0 });
+            const [hovered, setHovered] = React.useState(false);
+            React.useEffect(() => {
+                if (window.StreakManager) setStreak(window.StreakManager.get());
+            }, []);
+            const alive = streak.count > 0;
+            return (
+                <div style={{display:'flex', justifyContent:'center', marginTop:20, position:'relative'}}
+                    onMouseEnter={() => setHovered(true)}
+                    onMouseLeave={() => setHovered(false)}>
+                    <div style={{
+                        display:'inline-flex', alignItems:'center', gap:8,
+                        padding:'7px 18px', borderRadius:999,
+                        background: alive ? 'rgba(240,165,0,0.1)' : 'rgba(45,31,20,0.04)',
+                        border: `1.5px solid ${alive ? 'rgba(240,165,0,0.3)' : 'var(--border)'}`,
+                        cursor:'default', transition:'all 0.2s',
+                    }}>
+                        <span style={{fontSize:18, lineHeight:1, filter: alive ? 'none' : 'grayscale(1)', opacity: alive ? 1 : 0.35}}>🔥</span>
+                        <span style={{fontFamily:'Fraunces, serif', fontWeight:900, fontSize:15, color: alive ? 'var(--golden)' : 'var(--muted)', letterSpacing:'-0.01em'}}>{alive ? streak.count : '—'}</span>
+                        {alive && <span style={{fontFamily:'DM Sans, sans-serif', fontSize:11, color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.1em'}}>day streak</span>}
+                    </div>
+                    {hovered && (
+                        <div style={{
+                            position:'absolute', top:'calc(100% + 8px)', left:'50%', transform:'translateX(-50%)',
+                            background:'var(--ink)', color:'white', borderRadius:8, padding:'8px 14px',
+                            fontSize:12, fontFamily:'DM Sans, sans-serif', whiteSpace:'nowrap', zIndex:100,
+                            boxShadow:'0 4px 16px rgba(45,31,20,0.2)',
+                        }}>
+                            {alive ? `${streak.count} day streak · best: ${streak.best} · play daily to keep it going` : 'Complete the daily puzzle to start your streak'}
+                            <div style={{position:'absolute', top:-5, left:'50%', transform:'translateX(-50%)', width:10, height:10, background:'var(--ink)', borderRadius:2, rotate:'45deg'}} />
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
         // ── CATEGORY MENU ─────────────────────────────────────────────────────
         function CategoryMenu({ onSelectCategory }) {
             const categories = [
@@ -245,6 +284,7 @@
                             <p style={{color:'var(--ink-light)', fontSize:'1rem', maxWidth:480, margin:'16px auto 0', lineHeight:1.6, fontFamily:'Fraunces, serif', fontWeight:700, fontStyle:'italic', letterSpacing:'-0.01em'}}>
                                 Think you know the human body? Prove it.
                             </p>
+                            <StreakBadge />
                         </header>
 
                         <div className="fade-up fade-up-2" style={{marginBottom:36}}>
@@ -404,7 +444,7 @@
             const modes = [
                 {
                     id:'upper-limb', name:'Upper Limb',
-                    badge:'⚡ Standard', badgeColor:'var(--sage)', badgeBg:'#e8f5ec',
+                    badge:null, badgeColor:'var(--sage)', badgeBg:'#e8f5ec',
                     description:'Navigate 58 muscles from shoulder to fingertip — guided by shared bony attachment.',
                     difficulty:'Medium', icon:'💪', file:'games/upper-limb.html',
                     disabled:false, accent:'var(--sage)', accentBg:'#e8f5ec', howTo:'pathfinding',
