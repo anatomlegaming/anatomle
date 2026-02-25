@@ -71,6 +71,7 @@
         var shared      = s.shared     || false;
         var reviewing   = s.reviewing  || false;
         var guessesUsed = s.guessesUsed || (max - left);
+        var streak      = s.streak || null;
         var supplyLog   = s.supplyLog  || null;
 
         var isNerve  = mode === 'nerve';
@@ -481,6 +482,41 @@
                             )
                         );
                     })(),
+                    // Streak block — only shown on daily (when streak prop exists)
+                    streak ? (function() {
+                        var won      = phase === 'won';
+                        var count    = streak.count || 0;
+                        var isNew    = streak.isNew && won;
+                        var flameCol = won && count > 0 ? '#f0a500' : '#9a8070';
+                        return e('div', { style:{
+                            display:'flex', alignItems:'center', justifyContent:'center', gap:10,
+                            marginBottom:20, padding:'12px 20px',
+                            background: won && count > 0 ? 'rgba(240,165,0,0.08)' : 'rgba(45,31,20,0.04)',
+                            border:'1.5px solid '+(won && count > 0 ? 'rgba(240,165,0,0.25)' : 'rgba(45,31,20,0.1)'),
+                            borderRadius:12,
+                            animation: isNew ? 'streakPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both' : 'none',
+                            animationDelay: '0.3s'
+                        }},
+                            e('span', { style:{
+                                fontSize:26, lineHeight:1,
+                                animation: won && count > 0 ? 'flameDance 1.2s ease-in-out infinite' : 'none',
+                                filter: won && count > 0 ? 'none' : 'grayscale(1)',
+                                opacity: won && count > 0 ? 1 : 0.4,
+                            }}, '\uD83D\uDD25'),
+                            e('div', { style:{ textAlign:'left' } },
+                                e('div', { style:{
+                                    fontFamily:'Fraunces,serif', fontWeight:900, fontSize:20,
+                                    color: flameCol, lineHeight:1, letterSpacing:'-0.02em'
+                                }}, count+' day streak'+(count !== 1 ? '' : '')),
+                                e('div', { style:{
+                                    fontFamily:'DM Sans,sans-serif', fontSize:11, color:C.muted, marginTop:2
+                                }}, won && count > 0
+                                    ? (isNew ? 'Keep it going!' : 'Already counted today')
+                                    : 'Play tomorrow to start a new streak'
+                                )
+                            )
+                        );
+                    })() : null,
                     // Route pill
                     e('div', { style:{
                         display:'inline-flex', alignItems:'center', gap:8, marginBottom:20,
