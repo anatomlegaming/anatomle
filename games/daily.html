@@ -16,6 +16,7 @@
     <script src="../js/data/boneMappings.js"></script>
     <script src="../js/data/dailySeeds.js"></script>
     <script src="../js/core/replayIndex.js"></script>
+    <script src="../js/core/streak.js"></script>
     <script src="../js/core/pathfinding.js"></script>
     <script src="../js/core/gameLogic.js"></script>
     <script src="../js/core/seededRandom.js"></script>
@@ -36,6 +37,8 @@
         @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
         @keyframes overlayFadeIn { from { opacity:0; } to { opacity:1; } }
         @keyframes cardPopIn { from { opacity:0; transform:translateY(28px) scale(0.94); } to { opacity:1; transform:translateY(0) scale(1); } }
+        @keyframes streakPop { 0% { opacity:0; transform:scale(0.4) translateY(10px); } 60% { transform:scale(1.2) translateY(-4px); } 80% { transform:scale(0.95); } 100% { opacity:1; transform:scale(1) translateY(0); } }
+        @keyframes flameDance { 0%,100% { transform:rotate(-4deg) scale(1); } 50% { transform:rotate(4deg) scale(1.08); } }
         #loading-screen {
             position: fixed; inset: 0; z-index: 9999;
             background: #fdf6ec;
@@ -162,6 +165,7 @@ function DailyGame() {
     const [guessesUsed, setGuessesUsed] = useState(0);
     const [guessOrder, setGuessOrder]   = useState([]);
     const [reviewing, setReviewing]     = useState(false);
+    const [streak, setStreak]           = useState({ count: 0, best: 0, isNew: false });
     const [showHtp, dismissHtp] = window.useFirstVisit('daily');
 
     // ── SAVE / RESTORE progress via localStorage ────────────────────────────
@@ -182,6 +186,14 @@ function DailyGame() {
 
     // Called once worldtimeapi fetch resolves
     window.__dailyAppReady = () => setReady(true);
+
+    // Load current streak on mount
+    useEffect(() => {
+        if (window.StreakManager) {
+            const s = window.StreakManager.get();
+            setStreak({ count: s.count, best: s.best, isNew: false });
+        }
+    }, []);
 
     // Handle case where fetch finished before React mounted
     useEffect(() => {
@@ -278,6 +290,15 @@ function DailyGame() {
         saveProgress({ chain, left, max, bad, detours, phase, reveal, shared });
     }, [chain, left, bad, detours, phase, reveal, shared]);
 
+    // Record streak when game ends
+    useEffect(() => {
+        if (phase === 'playing' || !window.DAILY_DATE_STR) return;
+        if (window.StreakManager) {
+            const result = window.StreakManager.record(window.DAILY_DATE_STR, phase === 'won');
+            setStreak(result);
+        }
+    }, [phase]);
+
     const submit = useCallback((guess) => {
         if (phase !== 'playing' || !guess) return;
         setInput(''); setSelIdx(-1);
@@ -354,7 +375,7 @@ function DailyGame() {
         <window.PathfindingUI
             gameTitle="Osteomle · Daily Puzzle"
             mode="standard"
-            state={{ target, chain, left, max, bad, detours, input, selIdx, phase, reveal, suggestions, hintUsed: false, shared, guessesUsed, reviewing }}
+            state={{ target, chain, left, max, bad, detours, input, selIdx, phase, reveal, suggestions, hintUsed: false, shared, guessesUsed, reviewing, streak }}
             handlers={{
                 onInputChange: e => setInput(e.target.value),
                 onKeyDown: handleKey,
