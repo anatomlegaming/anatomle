@@ -93,16 +93,16 @@
             alignItems:'center', padding:'0 20px',
             boxShadow:'0 2px 16px rgba(45,31,20,0.07)'
         }},
-            // Left: mode badge
+            // Left: mode badge — only show for nerve mode
             e('div', { style:{ display:'flex', alignItems:'center' } },
-                e('span', { style:{
+                isNerve ? e('span', { style:{
                     fontFamily:'DM Sans,sans-serif', fontSize:9, fontWeight:700,
                     textTransform:'uppercase', letterSpacing:'0.12em',
-                    color: isNerve ? C.cyan : C.muted,
+                    color: C.cyan,
                     padding:'4px 12px',
-                    border:'1.5px solid '+(isNerve ? C.cyan : C.border),
+                    border:'1.5px solid '+C.cyan,
                     borderRadius:999, lineHeight:1.4
-                }}, isNerve ? '\uD83E\uDDE0 Nerve Challenge' : '\u26A1 Standard')
+                }}, '\uD83E\uDDE0 Nerve Challenge') : null
             ),
             // Centre: logo — clickable back to menu
             e('a', { href:'../index.html', style:{
