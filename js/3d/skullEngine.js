@@ -1,36 +1,26 @@
 // ============================================================================
-// ANATOMLE — Skull 3D Engine
-// Same architecture as skeletonEngine: modelReady event, resetCamera,
-// panToGameBones, modern color palette.
-// Paired bones: Left = base mesh, Right = base mesh + '_1'
+// ANATOMLE — Skull 3D Engine (14 bones)
+// Modern architecture: modelReady event, resetCamera, panToGameBones
 // ============================================================================
 
 var _cam, _ctrl, _renderer, _skeleton;
 var _initCenter, _initDist;
 
 var SKULL_B2M = {
-    'Frontal Bone':               'Frontal',
-    'Occipital Bone':             'Occipital',
-    'Sphenoid Bone':              'Sphenoid',
-    'Ethmoid Bone':               'Ethmoid',
-    'Vomer':                      'Vomer',
-    'Mandible':                   'Mandible',
-    'Left Parietal Bone':         'Parietal',
-    'Left Temporal Bone':         'Temporal',
-    'Left Nasal Bone':            'Nasal_boner',
-    'Left Lacrimal Bone':         'Lacrimal_boner',
-    'Left Zygomatic Bone':        'Zygomatic',
-    'Left Maxilla':               'Maxilla',
-    'Left Palatine Bone':         'Palatine',
-    'Left Inferior Nasal Concha': 'Inferior_nasal_concha_boner',
-    'Right Parietal Bone':        'Parietal_1',
-    'Right Temporal Bone':        'Temporal_1',
-    'Right Nasal Bone':           'Nasal_boner_1',
-    'Right Lacrimal Bone':        'Lacrimal_boner_1',
-    'Right Zygomatic Bone':       'Zygomatic_1',
-    'Right Maxilla':              'Maxilla_1',
-    'Right Palatine Bone':        'Palatine_1',
-    'Right Inferior Nasal Concha':'Inferior_nasal_concha_boner_1',
+    'Frontal Bone':           'Frontal',
+    'Parietal Bone':          'Parietal',
+    'Occipital Bone':         'Occipital',
+    'Temporal Bone':          'Temporal',
+    'Sphenoid Bone':          'Sphenoid',
+    'Ethmoid Bone':           'Ethmoid',
+    'Nasal Bone':             'Nasal_boner',
+    'Lacrimal Bone':          'Lacrimal_boner',
+    'Zygomatic Bone':         'Zygomatic',
+    'Maxilla':                'Maxilla',
+    'Palatine Bone':          'Palatine',
+    'Vomer':                  'Vomer',
+    'Inferior Nasal Concha':  'Inferior_nasal_concha_boner',
+    'Mandible':               'Mandible',
 };
 
 var SKULL_MESH_KEYS = Object.values(SKULL_B2M);
@@ -42,9 +32,7 @@ function isSkull(meshName) {
     return false;
 }
 
-function meshKeyForBone(boneName) {
-    return SKULL_B2M[boneName] || null;
-}
+function meshKeyForBone(boneName) { return SKULL_B2M[boneName] || null; }
 
 window.update3D = function(bones) {
     if (!_skeleton) return;
@@ -132,10 +120,10 @@ window.panToGameBones = function(startBone, endBone, duration) {
     var fromTarget = _ctrl.target.clone(), fromPos = _cam.position.clone();
     var dir = fromPos.clone().sub(fromTarget).normalize();
     var toTarget = mid.clone(), toPos = mid.clone().add(dir.multiplyScalar(targetDist));
-    var start = performance.now();
+    var t0 = performance.now();
     function ease(t) { return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; }
     function step(now) {
-        var t = Math.min((now - start) / duration, 1), e = ease(t);
+        var t = Math.min((now - t0) / duration, 1), e = ease(t);
         _cam.position.lerpVectors(fromPos, toPos, e);
         _ctrl.target.lerpVectors(fromTarget, toTarget, e);
         _ctrl.update();
@@ -186,7 +174,7 @@ function _initSkullEngine() {
         var center = box.getCenter(new THREE.Vector3());
         var size   = box.getSize(new THREE.Vector3());
         _ctrl.target.copy(center);
-        var fov = _cam.fov * (Math.PI / 180);
+        var fov  = _cam.fov * (Math.PI / 180);
         var dist = Math.abs(Math.max(size.x,size.y,size.z) / 2 / Math.tan(fov/2)) * 1.8;
         _initCenter = center.clone(); _initDist = dist;
         _cam.position.set(center.x, center.y, center.z + dist);
