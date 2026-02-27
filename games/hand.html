@@ -10,66 +10,32 @@
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
-
+    <script src="../js/data/handGraph.js"></script>
+    <script src="../js/core/pathfinding.js"></script>
+    <script src="../js/core/gameLogic.js"></script>
+    <script src="../js/core/replayIndex.js"></script>
     <style>
-    * { box-sizing: border-box; }
-    body {
-        font-family: 'DM Sans', sans-serif;
-        background: #fdf6ec;
-        color: #2d1f14;
-        margin: 0;
-        overflow: hidden;
-    }
-    #cv {
-        position: fixed;
-        top: 104px;
-        left: 0;
-        right: 580px;
-        bottom: 68px;
-        z-index: 10;
-        background: radial-gradient(ellipse at 50% 40%, #f5e8d0 0%, #ede0c8 60%, #e4d4b8 100%);
-    }
-    #ad-slot {
-        position: fixed;
-        top: 58px;
-        right: 0;
-        width: 160px;
-        bottom: 0;
-        z-index: 150;
-        background: #fff8f0;
-        border-left: 2px solid #e8d5c0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-    }
-    #ad-slot span {
-        font-family: 'DM Sans', sans-serif;
-        font-size: 9px;
-        color: #c8b8a8;
-        text-transform: uppercase;
-        letter-spacing: 0.2em;
-        writing-mode: vertical-rl;
-    }
-    #ad-slot .ad-placeholder {
-        width: 120px;
-        height: 240px;
-        border: 2px dashed #e8d5c0;
-        border-radius: 8px;
-    }
-    .scr::-webkit-scrollbar { width: 3px; }
-    .scr::-webkit-scrollbar-thumb { background: #e8d5c0; border-radius: 2px; }
-    .shake { animation: shake 0.3s ease-in-out; }
-    @keyframes shake {
-        0%,100% { transform: translateX(0); }
-        25%      { transform: translateX(-4px); }
-        75%      { transform: translateX(4px); }
-    }
-</style>
+        * { box-sizing: border-box; }
+        body { font-family: 'DM Sans', sans-serif; background: #fdf6ec; color: #2d1f14; margin: 0; overflow: hidden; }
+        #cv { position: fixed; top: 104px; left: 0; right: 580px; bottom: 68px; z-index: 10;
+              background: radial-gradient(ellipse at 50% 40%, #f5e8d0 0%, #ede0c8 60%, #e4d4b8 100%); }
+        #ad-slot { position: fixed; top: 58px; right: 0; width: 160px; bottom: 0; z-index: 150;
+              background: #fff8f0; border-left: 2px solid #e8d5c0;
+              display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+        #ad-slot span { font-family: 'DM Sans', sans-serif; font-size: 9px; color: #c8b8a8;
+              text-transform: uppercase; letter-spacing: 0.2em; writing-mode: vertical-rl; }
+        #ad-slot .ad-placeholder { width: 120px; height: 240px; border: 2px dashed #e8d5c0; border-radius: 8px; }
+        .scr::-webkit-scrollbar { width: 3px; }
+        .scr::-webkit-scrollbar-thumb { background: #e8d5c0; border-radius: 2px; }
+        .shake { animation: shake .3s ease-in-out; }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+        @keyframes overlayFadeIn { from { opacity:0; } to { opacity:1; } }
+        @keyframes cardPopIn { from { opacity:0; transform:translateY(28px) scale(0.94); } to { opacity:1; transform:translateY(0) scale(1); } }
+        @keyframes streakPop { 0% { opacity:0; transform:scale(0.4) translateY(10px); } 60% { transform:scale(1.2) translateY(-4px); } 80% { transform:scale(0.95); } 100% { opacity:1; transform:scale(1) translateY(0); } }
+        @keyframes flameDance { 0%,100% { transform:rotate(-4deg) scale(1); } 50% { transform:rotate(4deg) scale(1.08); } }
+    </style>
 </head>
 <body>
 <div id="cv"></div>
@@ -81,85 +47,85 @@
     box-shadow:0 2px 8px rgba(45,31,20,0.1);
     transition:all 0.15s;
 " title="Reset view" onmouseover="this.style.color='#2d1f14'" onmouseout="this.style.color='#9a8070'">⊙</button>
-<div id="ad-slot">
-    <div class="ad-placeholder"></div>
-    <span>Coming Soon</span>
-</div>
+<div id="ad-slot"><div class="ad-placeholder"></div><span>Coming Soon</span></div>
 <div id="root"></div>
 
-<script>
-const HAND_GRAPH = {
-    'Radius':['Ulna','Scaphoid','Lunate'],'Ulna':['Radius','Triquetrum','Pisiform'],
-    'Scaphoid':['Radius','Lunate','Trapezium','Trapezoid','Capitate'],
-    'Lunate':['Radius','Scaphoid','Triquetrum','Capitate','Hamate'],
-    'Triquetrum':['Ulna','Lunate','Pisiform','Hamate'],'Pisiform':['Ulna','Triquetrum'],
-    'Trapezium':['Scaphoid','Trapezoid','Metacarpal I'],
-    'Trapezoid':['Scaphoid','Trapezium','Capitate','Metacarpal II'],
-    'Capitate':['Scaphoid','Lunate','Trapezoid','Hamate','Metacarpal II','Metacarpal III'],
-    'Hamate':['Lunate','Triquetrum','Capitate','Metacarpal IV','Metacarpal V'],
-    'Metacarpal I':['Trapezium','Proximal Phalanx I'],
-    'Metacarpal II':['Trapezoid','Capitate','Proximal Phalanx II'],
-    'Metacarpal III':['Capitate','Proximal Phalanx III'],
-    'Metacarpal IV':['Hamate','Proximal Phalanx IV'],
-    'Metacarpal V':['Hamate','Proximal Phalanx V'],
-    'Proximal Phalanx I':['Metacarpal I','Distal Phalanx I'],'Distal Phalanx I':['Proximal Phalanx I'],
-    'Proximal Phalanx II':['Metacarpal II','Middle Phalanx II'],
-    'Middle Phalanx II':['Proximal Phalanx II','Distal Phalanx II'],'Distal Phalanx II':['Middle Phalanx II'],
-    'Proximal Phalanx III':['Metacarpal III','Middle Phalanx III'],
-    'Middle Phalanx III':['Proximal Phalanx III','Distal Phalanx III'],'Distal Phalanx III':['Middle Phalanx III'],
-    'Proximal Phalanx IV':['Metacarpal IV','Middle Phalanx IV'],
-    'Middle Phalanx IV':['Proximal Phalanx IV','Distal Phalanx IV'],'Distal Phalanx IV':['Middle Phalanx IV'],
-    'Proximal Phalanx V':['Metacarpal V','Middle Phalanx V'],
-    'Middle Phalanx V':['Proximal Phalanx V','Distal Phalanx V'],'Distal Phalanx V':['Middle Phalanx V'],
-};
-const HAND_ALL = Object.keys(HAND_GRAPH);
-const HAND_TOTAL = HAND_ALL.length;
-</script>
-
 <script src="../js/3d/handEngine.js"></script>
-<script src="../js/ui/floodFillUI.js"></script>
+<script src="../js/ui/pathfindingUI.js"></script>
+<script src="../js/ui/howToPlay.js"></script>
+<script src="../js/core/boneDescriptions.js"></script>
+<script src="../js/ui/boneInfo.js"></script>
+<script src="../js/ui/boneTooltip.js"></script>
 
 <script type="text/babel">
 const { useState, useEffect, useMemo, useCallback } = React;
 
 function HandGame() {
-    const [guessed, setGuessed] = useState(() => new Set());
-    const [bad, setBad] = useState([]); // not-adjacent attempts (can retry)
-    const [left, setLeft] = useState((HAND_TOTAL - 1) + 5);
-    const [max, setMax] = useState((HAND_TOTAL - 1) + 5);
+    const [showHtp, dismissHtp] = window.useFirstVisit('hand');
+    const [target, setTarget] = useState({ start: '', end: '', path: [] });
+    const [chain, setChain] = useState([]);
+    const [left, setLeft] = useState(10);
+    const [max, setMax] = useState(10);
+    const [bad, setBad] = useState([]);
+    const [detours, setDetours] = useState([]);
     const [input, setInput] = useState('');
     const [selIdx, setSelIdx] = useState(-1);
     const [phase, setPhase] = useState('playing');
-    const [start, setStart] = useState('');
     const [reveal, setReveal] = useState(false);
+    const [shared, setShared] = useState(false);
+    const [reviewing, setReviewing] = useState(false);
+    const [guessOrder, setGuessOrder] = useState([]);
+    const [guessesUsed, setGuessesUsed] = useState(0);
 
     const startNew = useCallback(() => {
-        const total = (HAND_TOTAL - 1) + 5;
-        const newStart = HAND_ALL[Math.floor(Math.random() * HAND_ALL.length)];
-        setStart(newStart);
-        setGuessed(new Set([newStart]));
-        setBad([]); setLeft(total); setMax(total);
-        setInput(''); setSelIdx(-1); setPhase('playing'); setReveal(false);
-        try { window.reset3D && window.reset3D(); } catch(e) {}
+        const g = initializeGame(HAND_GRAPH, { minLength: 5, maxLength: 8 });
+        setTarget(g);
+        setChain(g.path.map((bone, i) => ({ bone, type: i === 0 ? 'start' : 'path', guessed: i === 0 })));
+        const total = calculateGuessCount(g.path.length, 2);
+        setLeft(total); setMax(total);
+        setBad([]); setDetours([]);
+        setInput(''); setSelIdx(-1); setPhase('playing'); setReveal(false); setShared(false); setReviewing(false); setGuessOrder([]); setGuessesUsed(0);
+        try { window.reset3D && window.reset3D(); } catch (e) { }
+        // Pan camera to midpoint between start and end bones
+        if (window.__modelIsReady) {
+            setTimeout(function() {
+                window.panToGameBones && window.panToGameBones(g.start, g.end, 1800);
+            }, 100);
+        } else {
+            window.addEventListener('modelReady', function onReady() {
+                window.removeEventListener('modelReady', onReady);
+                setTimeout(function() {
+                    window.panToGameBones && window.panToGameBones(g.start, g.end, 1800);
+                }, 400);
+            });
+        }
     }, []);
 
     useEffect(() => { startNew(); }, []);
 
-    const frontier = useMemo(() => {
-        const f = new Set();
-        guessed.forEach(b => { (HAND_GRAPH[b]||[]).forEach(n => { if(!guessed.has(n)) f.add(n); }); });
-        return f;
-    }, [guessed]);
-
+    // Re-apply highlights whenever state changes OR when model finishes loading
     const highlightRef = React.useRef([]);
     useEffect(() => {
         const h = [];
-        guessed.forEach(b => h.push({name:b, type: b===start ? 'start' : 'found'}));
-        if (reveal && phase==='lost') HAND_ALL.forEach(b => { if(!guessed.has(b)) h.push({name:b,type:'reveal'}); });
-        bad.forEach(b => h.push({name:b,type:'bad'}));
+        if (reveal && phase === 'lost') {
+            chain.forEach((item, idx) => {
+                const isLast = idx === chain.length - 1;
+                if (item.guessed && !isLast) h.push({ name: item.bone, type: item.type });
+                else if (!item.guessed && !isLast) h.push({ name: item.bone, type: 'reveal' });
+                else if (isLast) h.push({ name: item.bone, type: 'end' });
+            });
+        } else {
+            chain.forEach((item, idx) => {
+                const isLast = idx === chain.length - 1;
+                if (item.guessed && !isLast) h.push({ name: item.bone, type: item.type });
+                else if (isLast) h.push({ name: item.bone, type: 'end' });
+            });
+            detours.forEach(g => h.push({ name: g, type: 'detour' }));
+            bad.forEach(g => h.push({ name: g, type: 'bad' }));
+        }
         highlightRef.current = h;
-        try { window.update3D && window.update3D(h); } catch(e) {}
-    }, [guessed, bad, reveal, phase]);
+        try { window.update3D && window.update3D(h); } catch (e) { }
+    }, [chain, bad, detours, reveal, phase]);
 
     useEffect(() => {
         const onReady = () => { try { window.update3D && window.update3D(highlightRef.current); } catch(e){} };
@@ -169,53 +135,123 @@ function HandGame() {
 
     const suggestions = useMemo(() => {
         if (!input.trim()) return [];
-        return HAND_ALL.filter(b =>
+        const guessedBones = chain.filter(c => c.guessed).map(c => c.bone);
+        return Object.keys(HAND_GRAPH).filter(b =>
             b.toLowerCase().includes(input.toLowerCase()) &&
-            !guessed.has(b)
+            !guessedBones.includes(b) &&
+            b !== target.end &&
+            !bad.includes(b) &&
+            !detours.includes(b)
         ).slice(0, 7);
-    }, [input, guessed, bad]);
+    }, [input, chain, target.end, bad, detours]);
 
     useEffect(() => { setSelIdx(-1); }, [suggestions.length]);
 
-    const submit = useCallback((g) => {
-        if (phase !== 'playing' || !g || !HAND_ALL.includes(g) || guessed.has(g)) return;
-        const nl = left - 1; setLeft(nl);
-        if (frontier.has(g)) {
-            const ng = new Set(guessed); ng.add(g); setGuessed(ng);
-            if (ng.size === HAND_TOTAL) { setPhase('won'); setInput(''); return; }
-            if (nl <= 0) { setPhase('lost'); setInput(''); return; }
-        } else {
-            setBad(p => p.includes(g) ? p : [g, ...p]); // track for display, bone stays guessable
-            if (nl <= 0) { setPhase('lost'); setInput(''); return; }
-        }
+    const submit = useCallback((guess) => {
+        if (phase !== 'playing' || !guess) return;
         setInput(''); setSelIdx(-1);
-    }, [phase, guessed, frontier, left, bad]);
 
-    const handleKey = (ev) => {
-        if (ev.key === 'ArrowDown') { ev.preventDefault(); setSelIdx(i => Math.min(i+1, suggestions.length-1)); }
-        else if (ev.key === 'ArrowUp') { ev.preventDefault(); setSelIdx(i => Math.max(i-1, 0)); }
-        else if (ev.key === 'Enter') {
+        // Every guess costs one — correct or not
+        const nl = left - 1; setLeft(nl);
+        // Track guess order for shareable replay
+        const updatedOrder = [...guessOrder, guess];
+        setGuessOrder(updatedOrder);
+        const usedNow = guessesUsed + 1;
+        setGuessesUsed(usedNow);
+
+        // On optimal path
+        if (target.path.includes(guess)) {
+            const updatedChain = chain.map(item => item.bone === guess ? { ...item, guessed: true } : item);
+            setChain(updatedChain);
+            const guessedOptimal = updatedChain.filter(c => c.guessed).map(c => c.bone);
+            if (canReachTargetWithGuessed(target.start, target.end, guessedOptimal, detours, HAND_GRAPH)) {
+                setPhase('won'); return;
+            }
+            return;
+        }
+
+        // Not on optimal — classify via validateGuess
+        const result = validateGuess(guess, target.path, target.start, target.end, HAND_GRAPH);
+
+        if (result.type === 'detour') {
+            const updatedDetours = [...new Set([...detours, guess])];
+            setDetours(updatedDetours);
+            const guessedOptimal = chain.filter(c => c.guessed).map(c => c.bone);
+            if (canReachTargetWithGuessed(target.start, target.end, guessedOptimal, updatedDetours, HAND_GRAPH)) {
+                setPhase('won'); return;
+            }
+        } else {
+            setBad(prev => [...new Set([...prev, guess])]);
+        }
+
+        // Only wrong guesses can cause a loss
+        if (nl <= 0 && result.type !== 'optimal') setPhase('lost');
+    }, [phase, chain, detours, target, left, bad]);
+
+    const handleKey = (e) => {
+        if (e.key === 'ArrowDown') { e.preventDefault(); setSelIdx(i => Math.min(i + 1, suggestions.length - 1)); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); setSelIdx(i => Math.max(i - 1, 0)); }
+        else if (e.key === 'Enter') {
             if (selIdx >= 0 && suggestions[selIdx]) submit(suggestions[selIdx]);
             else if (suggestions.length === 1) submit(suggestions[0]);
         }
-        else if (ev.key === 'Escape') { setInput(''); setSelIdx(-1); }
+        else if (e.key === 'Escape') { setInput(''); setSelIdx(-1); }
     };
 
     return (
-        <window.FloodFillUI
-            gameTitle="✋ Hand"
-            state={{ start: start, total: HAND_TOTAL, guessed, bad, left, max, input, selIdx, phase, reveal, suggestions }}
+        <>
+        <window.HowToModal show={showHtp} onClose={dismissHtp} />
+        <window.PathfindingUI
+            gameTitle="Osteomle · Hand"
+            mode="standard"
+            state={{ target, chain, left, max, bad, detours, input, selIdx, phase, reveal, suggestions, hintUsed: false, shared, reviewing, guessesUsed }}
             handlers={{
-                onInputChange: ev => setInput(ev.target.value),
+                onInputChange: e => setInput(e.target.value),
                 onKeyDown: handleKey,
                 onSubmit: submit,
                 onNewGame: startNew,
-                onReveal: () => setReveal(true)
+                onGiveUp: () => setPhase('lost'),
+                onReveal: () => setReveal(true),
+                onReview: () => setReviewing(true),
+                onStopReview: () => setReviewing(false),
+                onShare: () => {
+                    const d = new Date();
+                    const dateStr = d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+                    const used = guessesUsed;
+                    const optimal = target.path.length - 2; // start + end are free
+                    const extra = used - optimal;
+                    const stars = phase === 'won' ? (extra === 0 ? '⭐⭐⭐' : extra <= 2 ? '⭐⭐' : '⭐') : '';
+
+                    // Emoji grid
+                    const guessGrid = ['🟢'];
+                    chain.slice(1,-1).forEach(item => guessGrid.push(item.guessed ? '🟦' : '⬜'));
+                    detours.forEach(() => guessGrid.push('🟡'));
+                    bad.forEach(() => guessGrid.push('🔴'));
+                    guessGrid.push('⬛');
+                    const grid = guessGrid.join('');
+                    const result = phase === 'won' ? `${used}/${max} guesses ${stars}` : `❌ ${bad.length} wrong`;
+
+                    // Compact replay URL — all game state encoded, no server needed
+                    const qs = window.encodeReplay('h', target.start, target.end, target.path, guessOrder, detours, bad);
+                    const replayLink = qs ? `https://anatomle.com/replay.html?${qs}` : '';
+                    const replayLine = replayLink ? `\n\n🔁 Watch my path:\n${replayLink}` : '';
+
+                    const text = `Osteomle – Hand\n${dateStr}\n${result}\n${grid}${replayLine}`;
+                    navigator.clipboard.writeText(text).then(() => setShared(true));
+                }
             }}
         />
+        {/* In-game ⓘ icon now rendered inside pathfindingUI navbar */}
+        </>
     );
 }
-ReactDOM.createRoot(document.getElementById('root')).render(<HandGame />);
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+    <>
+        <HandGame />
+        {typeof window.BoneTooltipLayer !== 'undefined' && <window.BoneTooltipLayer />}
+    </>
+);
 </script>
 </body>
 </html>
