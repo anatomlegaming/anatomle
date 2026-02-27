@@ -78,7 +78,7 @@ function SkullGame() {
     const [guessesUsed, setGuessesUsed] = useState(0);
 
     const startNew = useCallback(() => {
-        const g = initializeGame(SKULL_GRAPH, { minLength: 4, maxLength: 6 });
+        const g = initializeGame(SKULL_GRAPH, { minLength: 4, maxLength: 4 });
         setTarget(g);
         setChain(g.path.map((bone, i) => ({ bone, type: i === 0 ? 'start' : 'path', guessed: i === 0 })));
         const total = calculateGuessCount(g.path.length, 2);
