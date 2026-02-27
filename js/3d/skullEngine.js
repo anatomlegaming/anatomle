@@ -25,14 +25,70 @@ var SKULL_B2M = {
 
 var SKULL_MESH_KEYS = Object.values(SKULL_B2M);
 
+// Sorted longest-key-first to prevent short keys matching before long ones
+// e.g. 'Palatine' before 'Parietal' both contain 'Pa' — indexOf would pick wrong one
+var SKULL_MESH_KEYS_SORTED = SKULL_MESH_KEYS.slice().sort(function(a,b){ return b.length - a.length; });
+var SKULL_BONES_SORTED     = Object.keys(SKULL_B2M).sort(function(a,b){
+    return SKULL_B2M[b].length - SKULL_B2M[a].length;
+});
+
 function isSkull(meshName) {
-    for (var i = 0; i < SKULL_MESH_KEYS.length; i++) {
-        if (meshName.indexOf(SKULL_MESH_KEYS[i]) !== -1) return true;
+    for (var i = 0; i < SKULL_MESH_KEYS_SORTED.length; i++) {
+        if (meshName.indexOf(SKULL_MESH_KEYS_SORTED[i]) !== -1) return true;
     }
     return false;
 }
 
 function meshKeyForBone(boneName) { return SKULL_B2M[boneName] || null; }
+
+// Reverse: mesh name → display bone name (longest key first to avoid substring collision)
+function meshNameToDisplay(meshName) {
+    for (var i = 0; i < SKULL_BONES_SORTED.length; i++) {
+        if (meshName.indexOf(SKULL_B2M[SKULL_BONES_SORTED[i]]) !== -1) return SKULL_BONES_SORTED[i];
+    }
+    return null;
+}
+
+// ── RAYCASTING ────────────────────────────────────────────────────────────────
+var _raycaster = null;
+var _lastHover = null;
+var _rafPending = false;
+
+function raycastAt(clientX, clientY) {
+    if (!_skeleton || !_cam || !_renderer) return null;
+    var rect  = _renderer.domElement.getBoundingClientRect();
+    var mouse = new THREE.Vector2(
+        ((clientX - rect.left) / rect.width) * 2 - 1,
+        -((clientY - rect.top) / rect.height) * 2 + 1
+    );
+    _raycaster.setFromCamera(mouse, _cam);
+    var hits = _raycaster.intersectObjects([_skeleton], true);
+    if (!hits.length) return null;
+    var obj = hits[0].object;
+    while (obj && !obj.isMesh) obj = obj.parent;
+    return obj || null;
+}
+
+function handleHover(clientX, clientY) {
+    var mesh = raycastAt(clientX, clientY);
+    if (!mesh || !mesh.material || mesh.material.transparent) {
+        _lastHover = null;
+        if (window.boneTooltip) window.boneTooltip.hide();
+        return;
+    }
+    var display = meshNameToDisplay(mesh.name);
+    if (!display) { _lastHover = null; if (window.boneTooltip) window.boneTooltip.hide(); return; }
+    _lastHover = display;
+    if (window.boneTooltip) window.boneTooltip.show(display, clientX, clientY);
+}
+
+function handleClick(clientX, clientY) {
+    var mesh = raycastAt(clientX, clientY);
+    if (!mesh || !mesh.material || mesh.material.transparent) return;
+    var display = meshNameToDisplay(mesh.name);
+    if (!display) return;
+    if (window.boneTooltip) { window.boneTooltip.hide(); window.boneTooltip.openCard(display); }
+}
 
 window.update3D = function(bones) {
     if (!_skeleton) return;
@@ -141,6 +197,47 @@ function _initSkullEngine() {
     _renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     _renderer.setSize(cont.clientWidth, cont.clientHeight);
     cont.appendChild(_renderer.domElement);
+    _raycaster = new THREE.Raycaster();
+
+    // ── Mouse hover ──
+    _renderer.domElement.addEventListener('mousemove', function(e) {
+        if (_rafPending) return;
+        _rafPending = true;
+        var cx = e.clientX, cy = e.clientY;
+        requestAnimationFrame(function() { _rafPending = false; handleHover(cx, cy); });
+    });
+    _renderer.domElement.addEventListener('mouseleave', function() {
+        _lastHover = null; if (window.boneTooltip) window.boneTooltip.hide();
+    });
+    // ── Mouse click ──
+    _renderer.domElement.addEventListener('click', function(e) { handleClick(e.clientX, e.clientY); });
+    // ── Touch tap ──
+    var _touchStart = null;
+    _renderer.domElement.addEventListener('touchstart', function(e) {
+        if (e.touches.length !== 1) return;
+        _touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() };
+    }, { passive: true });
+    _renderer.domElement.addEventListener('touchend', function(e) {
+        if (!_touchStart || e.changedTouches.length !== 1) return;
+        var dx = e.changedTouches[0].clientX - _touchStart.x;
+        var dy = e.changedTouches[0].clientY - _touchStart.y;
+        var dt = Date.now() - _touchStart.t;
+        var x = e.changedTouches[0].clientX, y = e.changedTouches[0].clientY;
+        _touchStart = null;
+        if (Math.sqrt(dx*dx+dy*dy) > 10 || dt > 350) return;
+        var mesh = raycastAt(x, y);
+        if (!mesh || !mesh.material || mesh.material.transparent) return;
+        var display = meshNameToDisplay(mesh.name);
+        if (!display) return;
+        if (window.boneTooltip) {
+            window.boneTooltip.show(display, x, y);
+            setTimeout(function() {
+                if (window.boneTooltip) { window.boneTooltip.hide(); window.boneTooltip.openCard(display); }
+            }, 500);
+        }
+        e.preventDefault();
+    }, { passive: false });
+
     _ctrl = new THREE.OrbitControls(_cam, _renderer.domElement);
     _ctrl.enableDamping = true; _ctrl.dampingFactor = 0.05;
     _ctrl.maxPolarAngle = Math.PI; _ctrl.minDistance = 0.3; _ctrl.maxDistance = 8; _ctrl.enableZoom = false;
