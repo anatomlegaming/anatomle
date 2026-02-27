@@ -1,133 +1,214 @@
 // ============================================================================
-// SKULL 3D ENGINE
-// ============================================================================
-// Requires: THREE.js, OrbitControls, GLTFLoader, DRACOLoader
-// Requires: SKULL_B2M mapping defined in game file
+// ANATOMLE — Skull 3D Engine
+// Same architecture as skeletonEngine: modelReady event, resetCamera,
+// panToGameBones, modern color palette.
+// Paired bones: Left = base mesh, Right = base mesh + '_1'
 // ============================================================================
 
-var _sk = null;
-var SKULL_MESH_KEYS = ['Frontal','Parietal','Occipital','Temporal','Sphenoid','Ethmoid','Nasal_boner','Lacrimal_boner','Zygomatic','Maxilla_boner','Palatine','Vomer','Inferior_nasal_concha_boner','Mandible'];
+var _cam, _ctrl, _renderer, _skeleton;
+var _initCenter, _initDist;
 
-// Bone display name → mesh name substring
-// Used by update3D to match guessed bones to GLB meshes
 var SKULL_B2M = {
-    'Frontal Bone':          'Frontal',
-    'Parietal Bone':         'Parietal',
-    'Occipital Bone':        'Occipital',
-    'Temporal Bone':         'Temporal_boner',
-    'Sphenoid Bone':         'Sphenoid',
-    'Ethmoid Bone':          'Ethmoid',
-    'Nasal Bone':            'Nasal_boner',
-    'Lacrimal Bone':         'Lacrimal_boner',
-    'Zygomatic Bone':        'Zygomatic',
-    'Maxilla':               'Maxilla_boner',
-    'Palatine Bone':         'Palatine',
-    'Vomer':                 'Vomer',
-    'Inferior Nasal Concha': 'Inferior_nasal_concha_boner',
-    'Mandible':              'Mandible',
+    'Frontal Bone':               'Frontal',
+    'Occipital Bone':             'Occipital',
+    'Sphenoid Bone':              'Sphenoid',
+    'Ethmoid Bone':               'Ethmoid',
+    'Vomer':                      'Vomer',
+    'Mandible':                   'Mandible',
+    'Left Parietal Bone':         'Parietal',
+    'Left Temporal Bone':         'Temporal',
+    'Left Nasal Bone':            'Nasal_boner',
+    'Left Lacrimal Bone':         'Lacrimal_boner',
+    'Left Zygomatic Bone':        'Zygomatic',
+    'Left Maxilla':               'Maxilla',
+    'Left Palatine Bone':         'Palatine',
+    'Left Inferior Nasal Concha': 'Inferior_nasal_concha_boner',
+    'Right Parietal Bone':        'Parietal_1',
+    'Right Temporal Bone':        'Temporal_1',
+    'Right Nasal Bone':           'Nasal_boner_1',
+    'Right Lacrimal Bone':        'Lacrimal_boner_1',
+    'Right Zygomatic Bone':       'Zygomatic_1',
+    'Right Maxilla':              'Maxilla_1',
+    'Right Palatine Bone':        'Palatine_1',
+    'Right Inferior Nasal Concha':'Inferior_nasal_concha_boner_1',
 };
 
-function isSkull(n) {
-    for(var i=0;i<SKULL_MESH_KEYS.length;i++) {
-        if(n.indexOf(SKULL_MESH_KEYS[i])!==-1) return true;
+var SKULL_MESH_KEYS = Object.values(SKULL_B2M);
+
+function isSkull(meshName) {
+    for (var i = 0; i < SKULL_MESH_KEYS.length; i++) {
+        if (meshName.indexOf(SKULL_MESH_KEYS[i]) !== -1) return true;
     }
     return false;
 }
 
+function meshKeyForBone(boneName) {
+    return SKULL_B2M[boneName] || null;
+}
+
 window.update3D = function(bones) {
-    if(!_sk) return;
-    _sk.traverse(function(node){
-        if(!node.isMesh) return;
-        if(!isSkull(node.name)){node.visible=false;return;}
-        node.visible=true;
-        var m=null;
-        for(var i=0;i<bones.length;i++){
-            var k=SKULL_B2M[bones[i].name];
-            if(k&&node.name.indexOf(k)!==-1){m=bones[i];break;}
+    if (!_skeleton) return;
+    _skeleton.traverse(function(node) {
+        if (!node.isMesh) return;
+        if (!isSkull(node.name)) { node.visible = false; return; }
+        node.visible = true;
+        var matched = null;
+        for (var i = 0; i < bones.length; i++) {
+            var key = meshKeyForBone(bones[i].name);
+            if (key && node.name.indexOf(key) !== -1) { matched = bones[i]; break; }
         }
-        if(m){
-            var c=0x5a8a6a, e=0.55;
-            if(m.type==='start'){c=0x10b981;e=0.6;}
-            if(m.type==='bad'){c=0xef4444;e=0.8;}
-            if(m.type==='reveal'){c=0xd946ef;e=0.8;}
-            node.material=new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:e,transparent:false,opacity:1});
+        var mat;
+        if (matched) {
+            var col = 0x5a8a6a, em = 0.55;
+            if (matched.type === 'start')  { col = 0x5a8a6a; em = 0.6; }
+            if (matched.type === 'end')    { col = 0xe8603c; em = 0.6; }
+            if (matched.type === 'path')   { col = 0x5a8a6a; em = 0.5; }
+            if (matched.type === 'detour') { col = 0xf0a500; em = 0.6; }
+            if (matched.type === 'bad')    { col = 0xc94d2b; em = 0.75; }
+            if (matched.type === 'reveal') { col = 0x8b5cf6; em = 0.7; }
+            mat = new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: em });
         } else {
-            node.material=new THREE.MeshStandardMaterial({color:0x8B7355,transparent:true,opacity:0.55});
+            mat = new THREE.MeshStandardMaterial({ color: 0x8B7355, transparent: true, opacity: 0.25 });
         }
+        node.material = mat; node._baseMaterial = mat;
     });
 };
 
-window.reset3D = function(){
-    if(!_sk) return;
-    _sk.traverse(function(node){
-        if(!node.isMesh) return;
-        if(isSkull(node.name)){
-            node.material=new THREE.MeshStandardMaterial({color:0x8B7355,transparent:true,opacity:0.55});
-            node.visible=true;
-        } else {
-            node.visible=false;
-        }
+window.reset3D = function() {
+    if (!_skeleton) return;
+    _skeleton.traverse(function(node) {
+        if (!node.isMesh) return;
+        if (isSkull(node.name)) {
+            var mat = new THREE.MeshStandardMaterial({ color: 0x8B7355, transparent: true, opacity: 0.25 });
+            node.material = mat; node._baseMaterial = mat; node.visible = true;
+        } else { node.visible = false; }
     });
 };
 
-window.addEventListener('DOMContentLoaded',function(){
-    var cont=document.getElementById('cv');
-    var scene=new THREE.Scene();
-    var cam=new THREE.PerspectiveCamera(45,cont.clientWidth/cont.clientHeight,0.1,1000);
-    var renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
-    renderer.setSize(cont.clientWidth,cont.clientHeight);
-    cont.appendChild(renderer.domElement);
-    
-    var ctrl=new THREE.OrbitControls(cam,renderer.domElement);
-    ctrl.enableDamping=true;ctrl.dampingFactor=0.05;
-    ctrl.minDistance=0.3;ctrl.maxDistance=6;ctrl.maxPolarAngle=Math.PI;ctrl.enableZoom=false;
-    
-    renderer.domElement.addEventListener('wheel',function(e){
+window.highlight3D = function(boneName, on) {
+    if (!_skeleton) return;
+    var key = meshKeyForBone(boneName);
+    if (!key) return;
+    _skeleton.traverse(function(node) {
+        if (!node.isMesh || !node._baseMaterial || node._baseMaterial.transparent) return;
+        if (node.name.indexOf(key) === -1) return;
+        if (on) {
+            var hl = node._baseMaterial.clone();
+            hl.emissive = new THREE.Color(0xffffff); hl.emissiveIntensity = 0.4;
+            hl.color = new THREE.Color(0xffffff); node.material = hl;
+        } else { node.material = node._baseMaterial; }
+    });
+};
+
+window.resetCamera = function() {
+    if (!_initCenter || !_cam || !_ctrl) return;
+    _cam.position.set(_initCenter.x, _initCenter.y, _initCenter.z + _initDist);
+    _ctrl.target.copy(_initCenter); _cam.lookAt(_initCenter);
+    _ctrl.saveState && _ctrl.saveState(); _ctrl.update();
+};
+
+window.getMeshCenter = function(boneName) {
+    if (!_skeleton) return null;
+    var key = meshKeyForBone(boneName);
+    if (!key) return null;
+    var box = new THREE.Box3(); var found = false;
+    _skeleton.traverse(function(node) {
+        if (!node.isMesh || node.name.indexOf(key) === -1) return;
+        node.geometry.computeBoundingBox();
+        box.union(node.geometry.boundingBox.clone().applyMatrix4(node.matrixWorld));
+        found = true;
+    });
+    return found ? box.getCenter(new THREE.Vector3()) : null;
+};
+
+window.panToGameBones = function(startBone, endBone, duration) {
+    if (!_cam || !_ctrl || !_skeleton) return;
+    duration = duration || 1500;
+    var sp = window.getMeshCenter(startBone), ep = window.getMeshCenter(endBone);
+    if (!sp || !ep) return;
+    var mid = new THREE.Vector3().addVectors(sp, ep).multiplyScalar(0.5);
+    var spread = sp.distanceTo(ep);
+    var targetDist = Math.max(0.4, Math.min(spread * 2.5, _initDist * 0.9));
+    var fromTarget = _ctrl.target.clone(), fromPos = _cam.position.clone();
+    var dir = fromPos.clone().sub(fromTarget).normalize();
+    var toTarget = mid.clone(), toPos = mid.clone().add(dir.multiplyScalar(targetDist));
+    var start = performance.now();
+    function ease(t) { return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; }
+    function step(now) {
+        var t = Math.min((now - start) / duration, 1), e = ease(t);
+        _cam.position.lerpVectors(fromPos, toPos, e);
+        _ctrl.target.lerpVectors(fromTarget, toTarget, e);
+        _ctrl.update();
+        if (t < 1) requestAnimationFrame(step);
+        else { _ctrl.saveState && _ctrl.saveState(); }
+    }
+    requestAnimationFrame(step);
+};
+
+function _initSkullEngine() {
+    var cont = document.getElementById('cv');
+    var scene = new THREE.Scene();
+    _cam = new THREE.PerspectiveCamera(45, cont.clientWidth / cont.clientHeight, 0.1, 1000);
+    _renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    _renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    _renderer.setSize(cont.clientWidth, cont.clientHeight);
+    cont.appendChild(_renderer.domElement);
+    _ctrl = new THREE.OrbitControls(_cam, _renderer.domElement);
+    _ctrl.enableDamping = true; _ctrl.dampingFactor = 0.05;
+    _ctrl.maxPolarAngle = Math.PI; _ctrl.minDistance = 0.3; _ctrl.maxDistance = 8; _ctrl.enableZoom = false;
+
+    _renderer.domElement.addEventListener('wheel', function(e) {
         e.preventDefault();
-        var rect=renderer.domElement.getBoundingClientRect();
-        var mouse=new THREE.Vector2(((e.clientX-rect.left)/rect.width)*2-1,-((e.clientY-rect.top)/rect.height)*2+1);
-        var ray=new THREE.Raycaster();ray.setFromCamera(mouse,cam);
+        var rect = _renderer.domElement.getBoundingClientRect();
+        var mouse = new THREE.Vector2(((e.clientX-rect.left)/rect.width)*2-1,-((e.clientY-rect.top)/rect.height)*2+1);
+        var ray = new THREE.Raycaster(); ray.setFromCamera(mouse, _cam);
         var t3d;
-        if(_sk){var h=ray.intersectObjects([_sk],true);if(h.length)t3d=h[0].point.clone();}
-        if(!t3d)t3d=ray.ray.at(cam.position.distanceTo(ctrl.target),new THREE.Vector3());
-        var dir=new THREE.Vector3().subVectors(t3d,cam.position);
-        var dist=cam.position.distanceTo(ctrl.target);
-        var step=dir.length()*0.12;
-        if(e.deltaY<0&&dist>ctrl.minDistance)cam.position.addScaledVector(dir.normalize(),step);
-        else if(e.deltaY>0&&dist<ctrl.maxDistance)cam.position.addScaledVector(dir.normalize(),-step);
-        ctrl.update();
-    },{passive:false});
-    
+        if (_skeleton) { var h = ray.intersectObjects([_skeleton], true); if (h.length) t3d = h[0].point.clone(); }
+        if (!t3d) t3d = ray.ray.at(_cam.position.distanceTo(_ctrl.target), new THREE.Vector3());
+        var dist = _cam.position.distanceTo(_ctrl.target);
+        if (e.deltaY < 0 && dist > _ctrl.minDistance) { _cam.position.lerp(t3d, 0.12); _ctrl.target.lerp(t3d, 0.08); }
+        else if (e.deltaY > 0 && dist < _ctrl.maxDistance) { _cam.position.lerp(t3d, -0.12); _ctrl.target.lerp(t3d, -0.08); }
+        _ctrl.update();
+    }, { passive: false });
+
     scene.add(new THREE.AmbientLight(0xfff8f0, 0.9));
-    var dl=new THREE.DirectionalLight(0xfff4e8, 0.7);dl.position.set(5,10,7.5);scene.add(dl);
-    var dl2=new THREE.DirectionalLight(0xfff4e8, 0.7);dl2.position.set(-5,-5,-5);scene.add(dl2);
-    
-    var draco=new THREE.DRACOLoader();draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
-    var loader=new THREE.GLTFLoader();loader.setDRACOLoader(draco);
-    loader.load('../models/overview-skeleton.glb',function(gltf){
-        _sk=gltf.scene;scene.add(_sk);
-        var box=new THREE.Box3();
-        _sk.traverse(function(n){
-            if(!n.isMesh)return;
-            if(isSkull(n.name))box.expandByObject(n);
-            else n.visible=false;
+    var dl = new THREE.DirectionalLight(0xfff4e8, 0.7); dl.position.set(5, 10, 7.5); scene.add(dl);
+
+    var draco = new THREE.DRACOLoader(); draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
+    var loader = new THREE.GLTFLoader(); loader.setDRACOLoader(draco);
+    loader.load('../../models/overview-skeleton.glb', function(gltf) {
+        _skeleton = gltf.scene; scene.add(_skeleton);
+        var box = new THREE.Box3();
+        _skeleton.traverse(function(n) {
+            if (!n.isMesh) return;
+            if (isSkull(n.name)) box.expandByObject(n); else n.visible = false;
         });
-        var center=box.getCenter(new THREE.Vector3());
-        ctrl.target.copy(center);
-        var fov=cam.fov*(Math.PI/180);
-        var size=box.getSize(new THREE.Vector3());
-        var maxDim=Math.max(size.x,size.y,size.z);
-        cam.position.set(center.x,center.y,center.z+Math.abs(maxDim/2/Math.tan(fov/2))*0.9);
-        cam.lookAt(center);ctrl.update();
+        var center = box.getCenter(new THREE.Vector3());
+        var size   = box.getSize(new THREE.Vector3());
+        _ctrl.target.copy(center);
+        var fov = _cam.fov * (Math.PI / 180);
+        var dist = Math.abs(Math.max(size.x,size.y,size.z) / 2 / Math.tan(fov/2)) * 1.8;
+        _initCenter = center.clone(); _initDist = dist;
+        _cam.position.set(center.x, center.y, center.z + dist);
+        _cam.lookAt(center); _ctrl.update();
         window.reset3D();
+        window.__modelIsReady = true;
         window.dispatchEvent(new CustomEvent('modelReady'));
     });
-    
-    function animate(){requestAnimationFrame(animate);ctrl.update();renderer.render(scene,cam);}animate();
-    var ro=new ResizeObserver(function(){
-        cam.aspect=cont.clientWidth/cont.clientHeight;
-        cam.updateProjectionMatrix();
-        renderer.setSize(cont.clientWidth,cont.clientHeight);
+
+    function animate() { requestAnimationFrame(animate); _ctrl.update(); _renderer.render(scene, _cam); }
+    animate();
+
+    var ro = new ResizeObserver(function() {
+        _cam.aspect = cont.clientWidth / cont.clientHeight;
+        _cam.updateProjectionMatrix(); _renderer.setSize(cont.clientWidth, cont.clientHeight);
     });
     ro.observe(cont);
-});
+}
+
+window.__skullEngineInit = _initSkullEngine;
+if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', _initSkullEngine);
+} else {
+    _initSkullEngine();
+}
