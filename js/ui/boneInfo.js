@@ -50,6 +50,24 @@ const BONE_WIKI_TITLE = {
     "Middle Phalanx (Foot)":   "Phalanx bone",
     "Distal Phalanx (Foot)":   "Phalanx bone",
 
+    // Paired skull bones — Left/Right point to same Wikipedia article
+    "Left Parietal Bone":          "Parietal bone",
+    "Right Parietal Bone":         "Parietal bone",
+    "Left Temporal Bone":          "Temporal bone",
+    "Right Temporal Bone":         "Temporal bone",
+    "Left Nasal Bone":             "Nasal bone",
+    "Right Nasal Bone":            "Nasal bone",
+    "Left Lacrimal Bone":          "Lacrimal bone",
+    "Right Lacrimal Bone":         "Lacrimal bone",
+    "Left Zygomatic Bone":         "Zygomatic bone",
+    "Right Zygomatic Bone":        "Zygomatic bone",
+    "Left Maxilla":                "Maxilla",
+    "Right Maxilla":               "Maxilla",
+    "Left Palatine Bone":          "Palatine bone",
+    "Right Palatine Bone":         "Palatine bone",
+    "Left Inferior Nasal Concha":  "Inferior nasal concha",
+    "Right Inferior Nasal Concha": "Inferior nasal concha",
+
     // Forearm bones
     "Radius":                  "Radius (bone)",
 
