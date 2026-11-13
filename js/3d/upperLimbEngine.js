@@ -6,6 +6,7 @@
 // ============================================================================
 
 var _model = null;
+if (window.HL) HL.ghostScale = 0.7; // muscles overlap a lot, keep the unguessed ones lighter
 
 // ── MATERIAL HELPERS ─────────────────────────────────────────────────────────
 function mat(color, emissive, opacity, transparent) {
@@ -19,8 +20,6 @@ function mat(color, emissive, opacity, transparent) {
     });
 }
 
-var REST_MAT  = function(){ return mat(0xE3BFB6, 0, 1, false); }; // soft pencil-pink muscle tone, no emissive
-var GHOST_MAT = function(){ return new THREE.MeshStandardMaterial({ color:0xB7A4C4, transparent:true, opacity:0.12, depthWrite:false }); };
 
 // ── MESH LOOKUP ──────────────────────────────────────────────────────────────
 // Build a flat map of meshName → THREE.Mesh on model load
@@ -77,7 +76,7 @@ window.reset3D = function() {
     if (!_model) return;
     hideNonMuscle();
     _model.traverse(function(n) {
-        if (n.isMesh) n.material = GHOST_MAT();
+        if (n.isMesh) HL.apply(n, null, { instant: true, force: true });
     });
 };
 
@@ -103,19 +102,8 @@ window.update3D = function(bones) {
     hideNonMuscle();
     _model.traverse(function(node) {
         if (!node.isMesh) return;
-        var type = highlighted[node.name];
-        if (type) {
-            var col = 0x22D36B, em = 0x22D36B, ei = 0.55;
-            if (type === 'start')  { col = 0x17B857; em = 0x17B857; ei = 0.45; }
-            if (type === 'end')    { col = 0xFF4FA3; em = 0xFF4FA3; ei = 0.6; }
-            if (type === 'path')   { col = 0x34D16E; em = 0x34D16E; ei = 0.32; }
-            if (type === 'detour') { col = 0xFFD21F; em = 0xFFD21F; ei = 0.6; }
-            if (type === 'bad')    { col = 0xF0283C; em = 0xF0283C; ei = 0.75; }
-            if (type === 'reveal') { col = 0x9A6BFF; em = 0x9A6BFF; ei = 0.7; }
-            node.material = new THREE.MeshStandardMaterial({ color:col, emissive:em, emissiveIntensity:ei, transparent:false, opacity:1 });
-        } else {
-            node.material = GHOST_MAT();
-        }
+        if (_hiddenMeshes.indexOf(node) !== -1) return;
+        HL.apply(node, highlighted[node.name] || null);
     });
 };
 
@@ -151,6 +139,15 @@ window.clearNerveHint = function() {
     // Just re-run update3D with current state — caller handles this
 };
 
+// Repaint with the other theme's colours
+window.addEventListener('anatomle-theme', function () {
+    if (!_model) return;
+    _model.traverse(function(n) {
+        if (!n.isMesh || !n._hlType || _hiddenMeshes.indexOf(n) !== -1) return;
+        HL.apply(n, n._hlType === 'ghost' ? null : n._hlType, { force: true, instant: true });
+    });
+});
+
 // ── SCENE SETUP ──────────────────────────────────────────────────────────────
 function _initUpperLimbEngine() {
     var cont = document.getElementById('cv');
@@ -159,6 +156,7 @@ function _initUpperLimbEngine() {
     var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(cont.clientWidth, cont.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    HL.enable(renderer);
     cont.appendChild(renderer.domElement);
 
     var ctrl = new THREE.OrbitControls(cam, renderer.domElement);
@@ -249,6 +247,7 @@ function _initUpperLimbEngine() {
 
     function animate() {
         requestAnimationFrame(animate);
+        HL.tick();
         ctrl.update();
         renderer.render(scene, cam);
     }
