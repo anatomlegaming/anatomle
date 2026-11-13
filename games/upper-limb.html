@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anatomle — Upper Limb</title>
+    <title>Anatomle · Muscles</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/notebook.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
@@ -18,29 +19,15 @@
     <script src="../js/core/replayIndex.js"></script>
     <script src="../js/core/pathGame.js"></script>
     <style>
-        * { box-sizing: border-box; }
-        body { font-family: 'DM Sans', sans-serif; background: #fdf6ec; color: #2d1f14; margin: 0; overflow: hidden; }
-        #cv {
-            position: fixed; top: 58px; left: 0; right: 420px; bottom: 68px; z-index: 10;
-            background: radial-gradient(ellipse at 50% 40%, #f5e8d0 0%, #ede0c8 60%, #e4d4b8 100%);
-        }
-        .scr::-webkit-scrollbar { width: 3px; }
-        .scr::-webkit-scrollbar-thumb { background: #e8d5c0; border-radius: 2px; }
-        .shake { animation: shake .3s ease-in-out; }
-        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
         #root { position: fixed; inset: 0; z-index: 100; pointer-events: none; }
         #root > * { pointer-events: all; }
     </style>
 </head>
-<body>
+<body class="game nb-margin">
+<div class="page-turn"></div>
 <div id="cv"></div>
-<button onclick="if(window.resetCamera) window.resetCamera();" style="
-    position:fixed; bottom:80px; left:16px; z-index:50;
-    background:rgba(253,246,236,0.92); border:1.5px solid #e8d5c0;
-    border-radius:8px; padding:7px 10px; cursor:pointer;
-    font-size:16px; line-height:1; color:#9a8070;
-    box-shadow:0 2px 8px rgba(45,31,20,0.1); transition:all 0.15s;
-" title="Reset view" onmouseover="this.style.color='#2d1f14'" onmouseout="this.style.color='#9a8070'">⊙</button>
+<span class="tape cv-tape-l"></span><span class="tape pink cv-tape-r"></span>
+<button type="button" class="nb-btn reset-view" onclick="if(window.resetCamera) window.resetCamera();" title="Reset view" aria-label="Reset view">⊙</button>
 <div id="root"></div>
 
 <script src="../js/3d/upperLimbEngine.js"></script>
@@ -50,7 +37,7 @@
 
 <script>
 ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(MuscleGame, {
-    graph: UPPER_LIMB_BONE_GRAPH, title: 'Myomle · Upper Limb', minPath: 4, maxPath: 8, bonus: 3, replayCode: 'ul', shareTitle: 'Myomle – Upper Limb'
+    graph: UPPER_LIMB_BONE_GRAPH, title: 'muscles · upper limb', minPath: 4, maxPath: 8, bonus: 3, replayCode: 'ul', shareTitle: 'Myomle – Upper Limb'
 }));
 </script>
 </body>

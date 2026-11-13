@@ -2,38 +2,39 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ANATOMLE | Contact</title>
+    <title>Anatomle · Contact</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/notebook.css">
     <style>
         :root {
-            --cream: #fdf6ec;
-            --coral: #e8603c;
-            --coral-dark: #c94d2b;
-            --ink: #2d1f14;
-            --ink-light: #4a3728;
-            --muted: #9a8070;
-            --card-bg: #fff8f0;
-            --border: #e8d5c0;
+            --cream: #FBFCFF;
+            --coral: #C2185B;
+            --coral-dark: #C8102E;
+            --ink: #17213A;
+            --ink-light: #2B3654;
+            --muted: #4A5573;
+            --card-bg: #FFFFFF;
+            --border: #C9D3EA;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); min-height: 100vh; }
+        body { font-family: var(--font); background: var(--cream); color: var(--ink); min-height: 100vh; }
 
         nav {
             position: fixed; top: 0; left: 0; right: 0; height: 58px; z-index: 100;
-            background: rgba(253,246,236,0.95); backdrop-filter: blur(8px);
+            background: rgba(251,252,255,0.95); backdrop-filter: blur(8px);
             border-bottom: 1.5px solid var(--border);
             display: flex; align-items: center; justify-content: space-between;
             padding: 0 28px;
         }
-        .nav-logo { font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 900; color: var(--ink); text-decoration: none; letter-spacing: -0.03em; }
+        .nav-logo { font-family: var(--font); font-size: 1.4rem; font-weight: 900; color: var(--ink); text-decoration: none; letter-spacing: -0.03em; }
         .nav-logo span { color: var(--coral); font-style: italic; }
-        .nav-menu { background: none; border: 1.5px solid var(--border); border-radius: 8px; padding: 6px 16px; font-family: 'DM Sans', sans-serif; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-light); cursor: pointer; transition: all 0.15s; text-decoration: none; display: flex; align-items: center; }
+        .nav-menu { background: none; border: 1.5px solid var(--border); border-radius: 8px; padding: 6px 16px; font-family: var(--font); font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-light); cursor: pointer; transition: all 0.15s; text-decoration: none; display: flex; align-items: center; }
         .nav-menu:hover { background: var(--ink); color: white; border-color: var(--ink); }
 
         main { max-width: 580px; margin: 0 auto; padding: 100px 24px 80px; }
         .eyebrow { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.25em; color: var(--coral); margin-bottom: 12px; }
-        h1 { font-family: 'Fraunces', serif; font-size: clamp(2.8rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.95; letter-spacing: -0.04em; color: var(--ink); margin-bottom: 32px; }
+        h1 { font-family: var(--font); font-size: clamp(2.8rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.95; letter-spacing: -0.04em; color: var(--ink); margin-bottom: 32px; }
         h1 span { color: var(--coral); font-style: italic; }
         p { font-size: 0.95rem; line-height: 1.8; color: var(--ink-light); margin-bottom: 18px; }
         .divider { height: 1.5px; background: linear-gradient(90deg, var(--border), transparent); margin: 36px 0; }
@@ -54,7 +55,7 @@
             justify-content: center; font-size: 1.5rem; flex-shrink: 0;
         }
         .contact-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); margin-bottom: 4px; }
-        .contact-value { font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 700; color: var(--ink); }
+        .contact-value { font-family: var(--font); font-size: 1.1rem; font-weight: 700; color: var(--ink); }
         .contact-value a { color: var(--coral); text-decoration: none; }
         .contact-value a:hover { text-decoration: underline; }
         .contact-note { font-size: 0.82rem; color: var(--muted); margin-top: 4px; }
@@ -62,7 +63,7 @@
         .response-badge {
             display: inline-flex; align-items: center; gap: 8px;
             background: #e8f5ec; border-radius: 999px;
-            padding: 8px 16px; font-size: 0.8rem; color: #5a8a6a; font-weight: 600;
+            padding: 8px 16px; font-size: 0.8rem; color: #1E9E52; font-weight: 600;
             margin-top: 8px;
         }
 
@@ -70,10 +71,11 @@
         footer strong { color: var(--ink-light); }
     </style>
 </head>
-<body>
+<body class="nb-page nb-margin">
+<div class="page-turn"></div>
 
 <nav>
-    <a href="index.html" class="nav-logo">Anat<span>om</span>le</a>
+    <a href="index.html" class="nav-logo">anatom<span>le</span></a>
     <a href="index.html" class="nav-menu">← Menu</a>
 </nav>
 

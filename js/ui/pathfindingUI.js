@@ -1,55 +1,16 @@
 // ============================================================================
-// ANATOMLE - PATHFINDING UI
+// ANATOMLE - PATHFINDING UI  (Study Notebook look; styles in css/notebook.css)
 // Pure React.createElement — no JSX, loads as plain <script> tag
-// Supports: skeleton game and upper limb muscle game
-// Features: optional nerve hint button, share button, review mode
+// Used by: Full Skeleton, Daily, and the Myomle muscle game
 // ============================================================================
 (function () {
     var e = React.createElement;
     var useRef    = React.useRef;
     var useEffect = React.useEffect;
+    var useState  = React.useState;
 
-    var C = {
-        cream:    '#fdf6ec',
-        card:     '#fff8f0',
-        border:   '#e8d5c0',
-        ink:      '#2d1f14',
-        inkLight: '#4a3728',
-        muted:    '#9a8070',
-        coral:    '#e8603c',
-        coralDk:  '#c94d2b',
-        golden:   '#f0a500',
-        sage:     '#5a8a6a',
-        purple:   '#8b5cf6',
-        cyan:     '#06b6d4',
-        cyanDk:   '#0891b2',
-        dark:     'rgba(45,31,20,0.94)',
-    };
-    var NAV=58, BAR=46, SRCH=68, PW=420, AW=0;
+    function plural(n, word) { return n + ' ' + word + (n === 1 ? '' : 'es'); }
 
-    // ── SECTION HEADER ────────────────────────────────────────────────────────
-    function SectionHead(icon, label, val, col) {
-        return e('div', { style:{
-            padding:'10px 16px 8px', display:'flex',
-            justifyContent:'space-between', alignItems:'center',
-            flexShrink:0, borderBottom:'1px solid '+C.border
-        }},
-            e('div', { style:{ display:'flex', alignItems:'center', gap:6 } },
-                e('span', { style:{ fontSize:12 } }, icon),
-                e('span', { style:{
-                    fontFamily:'DM Sans,sans-serif', fontSize:9, color:col,
-                    textTransform:'uppercase', letterSpacing:'0.22em', fontWeight:700
-                }}, label)
-            ),
-            val !== null && val !== undefined
-                ? e('span', { style:{
-                    fontFamily:'Fraunces,serif', fontSize:13, color:col, fontWeight:900
-                  }}, val)
-                : null
-        );
-    }
-
-    // ── MAIN COMPONENT ────────────────────────────────────────────────────────
     function PathfindingUI(props) {
         var gameTitle = props.gameTitle;
         var s         = props.state;
@@ -74,549 +35,226 @@
         var grade       = s.grade  || null;   // {tier, stars, label, emoji, detail} from PathScoring
         var gridText    = s.grid   || null;
 
-        var accent   = C.coral;
-        var accentDk = C.coralDk;
+        var howState = useState(false);
+        var showHow = howState[0], setShowHow = howState[1];
 
         var inputRef = useRef(null);
         useEffect(function () {
             if (phase === 'playing' && inputRef.current) inputRef.current.focus();
         }, [phase]);
 
-        var guessed = chain.filter(function (c) { return c.guessed; });
-        var danger  = left <= 3;
+        var danger = left <= 3;
+        var home   = h.onHome ? h.onHome : function () { window.location.href = '../index.html'; };
 
         // ── NAVBAR ────────────────────────────────────────────────────────────
-        var navbar = e('div', { style:{
-            position:'fixed', top:0, left:0, right:0, height:NAV, zIndex:300,
-            background:C.cream, borderBottom:'2px solid '+C.border,
-            display:'grid', gridTemplateColumns:'1fr auto 1fr',
-            alignItems:'center', padding:'0 20px',
-            boxShadow:'0 2px 16px rgba(45,31,20,0.07)'
-        }},
-            // Left: empty column keeps the logo centred
-            e('div', null),
-            // Centre: logo — clickable back to menu
-            e('a', { href:'../index.html', style:{
-                display:'flex', flexDirection:'column', alignItems:'center', gap:2,
-                textDecoration:'none', cursor:'pointer'
-            }},
-                e('div', { style:{ display:'flex', alignItems:'baseline' } },
-                    e('span', { style:{
-                        fontFamily:'Fraunces,serif', fontWeight:900, fontSize:22,
-                        color:C.ink, letterSpacing:'-0.04em'
-                    }}, 'Anat'),
-                    e('span', { style:{
-                        fontFamily:'Fraunces,serif', fontWeight:900, fontSize:22,
-                        color:accent, letterSpacing:'-0.04em', fontStyle:'italic'
-                    }}, 'om'),
-                    e('span', { style:{
-                        fontFamily:'Fraunces,serif', fontWeight:900, fontSize:22,
-                        color:C.ink, letterSpacing:'-0.04em'
-                    }}, 'le')
-                ),
-                e('span', { style:{
-                    fontFamily:'DM Sans,sans-serif', fontSize:8, color:C.muted,
-                    textTransform:'uppercase', letterSpacing:'0.25em'
-                }}, gameTitle)
+        var navbar = e('header', { className: 'g-nav' },
+            e('div', { className: 'brand' },
+                e('a', { href: '../index.html', className: 'wordmark', title: 'Back to the notes' },
+                    'anatom', e('span', { className: 'le' }, 'le')),
+                e('span', { className: 'mode' }, gameTitle)
             ),
-            // Right: how-to icon + menu button
-            e('div', { style:{ display:'flex', justifyContent:'flex-end', alignItems:'center', gap:8 } },
-                typeof window.HowToIcon !== 'undefined'
-                    ? e(window.HowToIcon, { gameType:'pathfinding', tooltip:false })
+            e('div', { className: 'acts' },
+                window.HowToModal
+                    ? e('button', { type: 'button', className: 'nb-btn', onClick: function () { setShowHow(true); } }, 'How to play')
                     : null,
-                e('a', { href:'../index.html', style:{
-                    fontFamily:'DM Sans,sans-serif', fontSize:10, fontWeight:700,
-                    color:C.inkLight, textDecoration:'none',
-                    textTransform:'uppercase', letterSpacing:'0.1em',
-                    padding:'7px 16px',
-                    background:C.card,
-                    border:'1.5px solid '+C.border,
-                    borderRadius:999,
-                    transition:'all 0.18s'
-                }}, '\u2190 Menu')
+                e('a', { href: '../index.html', className: 'nb-btn dark' }, 'Menu')
             )
         );
+        var howModal = window.HowToModal
+            ? e(window.HowToModal, { show: showHow, onClose: function () { setShowHow(false); } })
+            : null;
 
-        // ── CHALLENGE BAR — path centred over 3D area, guesses to its right ──
-        // 3D area occupies: left=0 → right=PW+AW
-        // Centre of 3D area from left edge = (viewport - PW - AW) / 2
-        // Expressed as: left: calc(50% - (PW+AW)/2) then shift back by half of own width
-        var BAR_H = BAR + 8;
-        var challengeBar = e('div', { style:{
-            position:'fixed', top:NAV, left:0, right:PW+AW, height:BAR_H,
-            zIndex:200, background:C.dark, backdropFilter:'blur(6px)',
-            display:'flex', alignItems:'center',
-            padding:'0 20px'
-        }},
-            // Path — centred within this bar (which already only spans the 3D area)
-            e('div', { style:{
-                flex:1, display:'flex', alignItems:'center',
-                justifyContent:'center', gap:12
-            }},
-                e('span', { style:{
-                    fontFamily:'Fraunces,serif', fontWeight:700, fontSize:18,
-                    color:'#a8d5b5', fontStyle:'italic'
-                }}, target.start),
-                e('span', { style:{
-                    color:'rgba(253,246,236,0.3)', fontSize:14, letterSpacing:'0.1em'
-                }}, '\u2192\u2192\u2192'),
-                e('span', { style:{
-                    fontFamily:'Fraunces,serif', fontWeight:700, fontSize:18,
-                    color:accent, fontStyle:'italic'
-                }}, target.end)
+        // ── CHALLENGE BAR (above the 3D card) ─────────────────────────────────
+        var challengeBar = e('div', { className: 'g-bar' },
+            e('div', { className: 'ends' },
+                e('span', { className: 'bone hl-green' }, target.start),
+                e('span', { className: 'to' }, 'to'),
+                e('span', { className: 'bone hl-pink' }, target.end)
             ),
-            // Guess count — right side of the bar: shows guesses remaining
-            e('div', { style:{
-                display:'flex', alignItems:'baseline', gap:5, flexShrink:0
-            }},
-                e('span', { style:{
-                    fontFamily:'Fraunces,serif', fontWeight:900, fontSize:26,
-                    color: danger ? accent : 'rgba(253,246,236,0.92)', lineHeight:1
-                }}, left),
-                e('span', { style:{
-                    fontFamily:'DM Sans,sans-serif', fontSize:10,
-                    color:'rgba(253,246,236,0.4)', textTransform:'uppercase', letterSpacing:'0.1em'
-                }}, 'left')
-            )
+            e('div', { className: 'left' + (danger && phase === 'playing' ? ' danger' : '') },
+                e('b', null, left), left === 1 ? ' guess left' : ' guesses left')
         );
 
-        // ── CHAIN ITEMS ───────────────────────────────────────────────────────
+        // ── MY ROUTE ──────────────────────────────────────────────────────────
+        var step = 0;
         var chainItems = chain.map(function (item, idx) {
             var isFirst = item.bone === target.start;
             var isLast  = item.bone === target.end;
-            var shown   = item.guessed || isLast || (reveal && phase === 'lost');
+            var revealed = reveal && phase === 'lost' && !item.guessed && !isFirst && !isLast;
+            var shown   = item.guessed || isFirst || isLast || revealed;
+            var n = step++;
 
-            var bg  = isFirst ? 'rgba(90,138,106,0.12)'
-                    : isLast  ? 'rgba(232,96,60,0.1)'
-                    : item.guessed ? 'rgba(90,138,106,0.08)'
-                    : 'rgba(45,31,20,0.02)';
-            var bdr = isFirst ? 'rgba(90,138,106,0.35)'
-                    : isLast  ? 'rgba(232,96,60,0.3)'
-                    : item.guessed ? 'rgba(90,138,106,0.25)'
-                    : C.border;
-            var col = isFirst ? C.sage
-                    : isLast  ? accent
-                    : item.guessed ? C.sage
-                    : C.muted;
-            var ico = isFirst ? '\uD83D\uDCCD'
-                    : isLast  ? '\uD83C\uDFAF'
-                    : item.guessed ? '\u2713'
-                    : '\u00B7';
+            var dotCls = isLast ? 'dot goal' : revealed ? 'dot reveal' : shown ? 'dot' : 'dot empty';
+            var hlCls  = isLast ? 'hl-pink' : isFirst ? '' : item.guessed ? 'hl-green' : '';
 
-            return e('div', { key:idx,
-                onMouseEnter: function() { if (shown && window.highlight3D) window.highlight3D(item.bone, true); },
-                onMouseLeave: function() { if (window.highlight3D) window.highlight3D(item.bone, false); },
-                onClick:      function() { if (shown && window.boneTooltip) window.boneTooltip.openCard(item.bone); },
-                style:{
-                padding:'6px 10px', marginBottom:3, borderRadius:8,
-                fontSize:11, fontWeight:600, fontFamily:'DM Sans,sans-serif',
-                textTransform:'uppercase', letterSpacing:'0.04em',
-                display:'flex', justifyContent:'space-between', alignItems:'center',
-                opacity: shown ? 1 : 0.2,
-                background:bg, border:'1.5px solid '+bdr, color:col,
-                cursor: shown ? 'pointer' : 'default',
-                transition:'filter 0.15s'
-            }},
-                e('div', { style:{ display:'flex', alignItems:'center', flexWrap:'wrap' } },
-                    e('span', null, shown ? item.bone + (item.alts && item.alts.length ? ' / ' + item.alts.join(' / ') : '') : '???')
-                ),
-                e('span', { style:{ fontSize:16, lineHeight:1 } }, ico)
+            return e('div', { key: idx,
+                className: 'g-row' + (shown ? ' clickable' : ' unknown'),
+                onMouseEnter: function () { if (shown && window.highlight3D) window.highlight3D(item.bone, true); },
+                onMouseLeave: function () { if (window.highlight3D) window.highlight3D(item.bone, false); },
+                onClick:      function () { if (shown && window.boneTooltip) window.boneTooltip.openCard(item.bone); }
+            },
+                e('span', { className: dotCls }, shown ? n : ''),
+                shown
+                    ? e('span', null,
+                        e('span', { className: 'nm ' + hlCls }, item.bone),
+                        item.alts && item.alts.length
+                            ? e('span', { className: 'alts' }, ' or ' + item.alts.join(' or '))
+                            : null)
+                    : e('span', null, '________')
             );
         });
 
-        // ── DETOUR ITEMS ──────────────────────────────────────────────────────
-        var detourItems = detours.length === 0
-            ? [e('div', { key:'none', style:{
-                fontFamily:'DM Sans,sans-serif', fontSize:9, color:C.muted,
-                textAlign:'center', marginTop:6, fontStyle:'italic'
-              }}, 'None yet')]
-            : detours.map(function (b) {
-                return e('div', { key:b, style:{
-                    padding:'5px 10px', marginBottom:3, borderRadius:8,
-                    background:'rgba(240,165,0,0.08)',
-                    border:'1.5px solid rgba(240,165,0,0.3)',
-                    fontSize:10, color:C.golden, fontWeight:600,
-                    fontFamily:'DM Sans,sans-serif',
-                    textTransform:'uppercase', letterSpacing:'0.04em',
-                    display:'flex', justifyContent:'space-between', alignItems:'center'
-                }},
-                    e('span', null, '\u26A0 '+b)
-                );
-            });
+        // ── CROSSED OUT (detours + wrong) ─────────────────────────────────────
+        var noteItems = [];
+        detours.forEach(function (b) {
+            noteItems.push(e('div', { key: 'd' + b, className: 'g-detour' },
+                e('b', null, b), e('span', null, ' works, but longer')));
+        });
+        bad.forEach(function (b) {
+            noteItems.push(e('div', { key: 'b' + b, className: 'g-bad shake' },
+                e('b', null, b), e('span', null, ' can’t get there')));
+        });
+        if (!noteItems.length) noteItems.push(e('div', { key: 'none', className: 'g-empty' }, 'nothing yet, nice'));
 
-        // ── BAD ITEMS ─────────────────────────────────────────────────────────
-        var badItems = bad.length === 0
-            ? [e('div', { key:'none', style:{
-                fontFamily:'DM Sans,sans-serif', fontSize:9, color:C.muted,
-                textAlign:'center', marginTop:6, fontStyle:'italic'
-              }}, 'None yet')]
-            : bad.map(function (b) {
-                return e('div', { key:b, className:'shake', style:{
-                    padding:'5px 10px', marginBottom:3, borderRadius:8,
-                    background:'rgba(201,77,43,0.07)',
-                    border:'1.5px solid rgba(201,77,43,0.25)',
-                    fontSize:10, color:C.coralDk, fontWeight:600,
-                    fontFamily:'DM Sans,sans-serif',
-                    textTransform:'uppercase', letterSpacing:'0.04em'
-                }}, '\u2717 '+b);
-            });
+        // ── PANEL BUTTONS ─────────────────────────────────────────────────────
+        var hintBtn = h.onHint
+            ? e('button', {
+                type: 'button', className: 'nb-btn wide',
+                onClick: h.onHint,
+                disabled: hintUsed || phase !== 'playing'
+              }, hintUsed ? '⚡ Hint used' : '⚡ Nerve hint')
+            : null;
 
-        // ── HINT BUTTON ───────────────────────────────────────────────────────
-        var hintBtn = e('button', {
-            onClick: h.onHint || function(){},
-            disabled: hintUsed || phase !== 'playing' || !h.onHint,
-            style:{
-                width:'100%', padding:'8px 0', borderRadius:8, marginBottom:8,
-                background: hintUsed ? 'rgba(45,31,20,0.03)' : 'rgba(6,182,212,0.08)',
-                color: hintUsed ? C.muted : C.cyan,
-                border:'1.5px solid '+(hintUsed ? C.border : C.cyan),
-                fontFamily:'DM Sans,sans-serif', fontWeight:700, fontSize:9,
-                textTransform:'uppercase', letterSpacing:'0.15em',
-                cursor: (hintUsed || !h.onHint) ? 'default' : 'pointer',
-                opacity: hintUsed ? 0.5 : 1,
-                display: h.onHint ? 'block' : 'none'
-            }
-        }, hintUsed ? '\u26A1 Hint Used' : '\u26A1 Nerve Hint');
+        var mainBtn = e('button', {
+            type: 'button',
+            className: 'nb-btn wide big ' + (phase === 'playing' ? '' : 'hl-btn'),
+            onClick: reviewing ? h.onStopReview : phase === 'playing' ? h.onGiveUp : h.onNewGame ? h.onNewGame : h.onStopReview
+        }, reviewing ? 'Results' : phase === 'playing' ? 'Give up' : h.onNewGame ? 'Next puzzle →' : 'Results');
 
-        // ── RIGHT PANEL ───────────────────────────────────────────────────────
-        var rightPanel = e('div', { style:{
-            position:'fixed', top:NAV, right:AW, width:PW, bottom:0, zIndex:200,
-            background:C.cream, borderLeft:'2px solid '+C.border,
-            display:'flex', flexDirection:'column',
-            boxShadow:'-4px 0 24px rgba(45,31,20,0.07)'
-        }},
-            // Path section
-            e('div', { style:{
-                flex:'1 1 0', overflow:'hidden', display:'flex',
-                flexDirection:'column', borderBottom:'2px solid '+C.border
-            }},
-                SectionHead('\uD83E\uDDB4',
-                    'Path', null, C.sage),
-                e('div', { className:'scr', style:{ overflowY:'auto', flex:1, padding:'8px 14px' } },
-                    chainItems)
+        var rightPanel = e('aside', { className: 'g-panel' },
+            e('div', { className: 'g-route' },
+                e('span', { className: 'tape pink' }),
+                e('div', { className: 'g-head' },
+                    e('span', { className: 't' }, 'my route'),
+                    e('span', { className: 'n' }, plural(guessesUsed, 'guess') + ' used')
+                ),
+                e('div', { className: 'g-list nb-scroll' }, chainItems)
             ),
-            // Detours section
-            e('div', { style:{
-                flex:'0 0 auto', maxHeight:'22%', overflow:'hidden',
-                display:'flex', flexDirection:'column', borderBottom:'2px solid '+C.border
-            }},
-                SectionHead('\u26A0', 'Detours', detours.length, C.golden),
-                e('div', { className:'scr', style:{ overflowY:'auto', flex:1, padding:'6px 14px' } },
-                    detourItems)
+            e('div', { className: 'g-notes' },
+                e('div', { className: 'g-head' },
+                    e('span', { className: 't' }, 'crossed out'),
+                    e('span', { className: 'n' }, (detours.length + bad.length) || '')
+                ),
+                e('div', { className: 'g-chipwrap nb-scroll' }, noteItems)
             ),
-            // Wrong section
-            e('div', { style:{
-                flex:'0 0 auto', maxHeight:'20%', overflow:'hidden',
-                display:'flex', flexDirection:'column', borderBottom:'2px solid '+C.border
-            }},
-                SectionHead('\u2717', 'Wrong', bad.length, C.coralDk),
-                e('div', { className:'scr', style:{ overflowY:'auto', flex:1, padding:'6px 14px' } },
-                    badItems)
-            ),
-            // Buttons
-            e('div', { style:{ padding:'10px 14px 14px', flexShrink:0 } },
-                hintBtn,
-                e('button', {
-                    onClick: reviewing ? h.onStopReview : phase === 'playing' ? h.onGiveUp : h.onNewGame ? h.onNewGame : h.onStopReview,
-                    style:{
-                        width:'100%', padding:'12px 0', borderRadius:10,
-                        background: phase === 'playing'
-                            ? 'rgba(45,31,20,0.05)'
-                            : 'linear-gradient(135deg,'+accent+','+accentDk+')',
-                        color: phase === 'playing' ? C.muted : 'white',
-                        border: phase === 'playing' ? '1.5px solid '+C.border : 'none',
-                        fontFamily:'Fraunces,serif', fontWeight:900, fontSize:12,
-                        textTransform:'uppercase', letterSpacing:'0.15em', cursor:'pointer'
-                    }
-                }, reviewing ? 'Results' : phase === 'playing' ? 'Give Up' : h.onNewGame ? 'Next Case \u2192' : 'Results')
-            )
+            e('div', { className: 'g-btns' }, hintBtn, mainBtn)
         );
 
         // ── SEARCH BAR ────────────────────────────────────────────────────────
         var dropdown = suggestions.length > 0
-            ? e('div', { style:{
-                position:'absolute', bottom:'100%', left:0, right:0,
-                background:C.cream, border:'2px solid '+C.border, borderBottom:'none',
-                zIndex:400, maxHeight:220, overflowY:'auto',
-                borderRadius:'12px 12px 0 0',
-                boxShadow:'0 -8px 24px rgba(45,31,20,0.1)'
-              }},
+            ? e('div', { className: 'g-drop nb-scroll', role: 'listbox' },
                 suggestions.map(function (sug, i) {
-                    return e('div', { key:sug,
-                        onClick: function () { h.onSubmit(sug); },
-                        style:{
-                            padding:'10px 16px', fontSize:11, fontWeight:600,
-                            fontFamily:'DM Sans,sans-serif', textTransform:'uppercase',
-                            letterSpacing:'0.08em', cursor:'pointer',
-                            color: i === selIdx ? 'white' : C.ink,
-                            background: i === selIdx
-                                ? 'linear-gradient(135deg,'+accent+','+accentDk+')'
-                                : 'transparent',
-                            borderBottom:'1px solid '+C.border
-                        }
+                    return e('div', { key: sug, role: 'option', 'aria-selected': i === selIdx,
+                        className: 'g-sug' + (i === selIdx ? ' sel' : ''),
+                        onMouseDown: function (ev) { ev.preventDefault(); },
+                        onClick: function () { h.onSubmit(sug); }
                     }, sug);
-                })
-              )
+                }))
             : null;
 
-        var searchBar = e('div', { style:{
-            position:'fixed', bottom:0, left:0, right:PW+AW, height:SRCH,
-            zIndex:250, background:C.cream, borderTop:'2px solid '+C.border,
-            padding:'11px 16px', display:'flex', alignItems:'center',
-            boxShadow:'0 -2px 12px rgba(45,31,20,0.06)'
-        }},
-            e('div', { style:{ flex:1, position:'relative' } },
+        var searchBar = e('div', { className: 'g-search' },
+            e('label', { className: 'g-field' + (input && suggestions.length === 0 ? ' err' : '') },
                 dropdown,
-                e('div', { style:{ position:'relative' } },
-                    e('span', { style:{
-                        position:'absolute', left:13, top:'50%',
-                        transform:'translateY(-50%)', fontSize:15,
-                        pointerEvents:'none',
-                        color: phase !== 'playing' ? C.muted : accent
-                    }}, '\uD83E\uDDB4'),
-                    e('input', {
-                        ref: inputRef, value: input,
-                        onChange: h.onInputChange,
-                        onKeyDown: h.onKeyDown,
-                        disabled: phase !== 'playing',
-                        placeholder: phase === 'playing'
-                            ? 'Type a name\u2026 select from list \u2191'
-                            : (h.onNewGame ? 'Game over \u2014 click Next Case \u2192' : 'Game over \u2014 tap Results to review'),
-                        style:{
-                            width:'100%',
-                            background: phase !== 'playing' ? 'rgba(45,31,20,0.04)' : C.card,
-                            border:'2px solid '+(input && suggestions.length === 0 ? C.coralDk : C.border),
-                            borderRadius:10, padding:'10px 14px 10px 38px',
-                            color:C.ink, fontFamily:'DM Sans,sans-serif', fontSize:12,
-                            outline:'none', opacity: phase !== 'playing' ? 0.55 : 1
-                        }
-                    })
-                )
+                e('span', { className: 'lbl' }, 'next:'),
+                e('input', {
+                    ref: inputRef, value: input,
+                    onChange: h.onInputChange,
+                    onKeyDown: h.onKeyDown,
+                    disabled: phase !== 'playing',
+                    'aria-label': 'Your guess',
+                    autoComplete: 'off', spellCheck: false,
+                    placeholder: phase === 'playing'
+                        ? 'type a name that connects…'
+                        : (h.onNewGame ? 'game over, hit Next puzzle →' : 'game over, tap Results to review')
+                })
             )
         );
 
         // ── END OVERLAY ───────────────────────────────────────────────────────
-        var overlay = (phase !== 'playing' && !reveal && !reviewing)
-            ? e('div', { style:{
-                position:'fixed', inset:0, zIndex:600,
-                display:'flex', alignItems:'center', justifyContent:'center',
-                backdropFilter:'blur(16px)',
-                background: phase === 'won'
-                    ? 'rgba(253,246,236,0.82)'
-                    : 'rgba(45,31,20,0.78)',
-                animation:'overlayFadeIn 0.3s ease both'
-              }},
-                e('div', { style:{
-                    textAlign:'center', padding:'44px 40px',
-                    background:C.cream, border:'2px solid '+C.border,
-                    borderRadius:24, maxWidth:460, width:'90%',
-                    boxShadow:'0 32px 64px rgba(45,31,20,0.18)',
-                    animation:'cardPopIn 0.45s cubic-bezier(0.34,1.56,0.64,1) both'
-                }},
-                    // Emoji
-                    e('div', { style:{ fontSize:48, marginBottom:10, lineHeight:1 } },
-                        grade ? grade.emoji
-                        : phase === 'won'
-                            ? (detours.length === 0 ? '\uD83C\uDFC6' : '\u2713')
-                            : '\uD83D\uDCA3'),
-                    // Headline
-                    e('h2', { style:{
-                        fontFamily:'Fraunces,serif', fontWeight:900, fontSize:32,
-                        color: phase === 'won' ? C.ink : C.coralDk,
-                        margin:'0 0 6px', letterSpacing:'-0.03em', lineHeight:1
-                    }},
-                        grade ? grade.label
-                        : phase === 'won'
-                            ? (detours.length === 0 && bad.length === 0 ? 'Perfect Path!' : 'Path Found!')
-                            : 'Flatline.'),
-                    // Scoring block
-                    (function() {
-                        var used = guessesUsed;
-                        var optimal = target.path.length - 2; // start + end are free, only mid bones count
-                        var extra = used - optimal;
-                        var stars = grade ? grade.stars
-                            : phase === 'won' ? (extra === 0 ? 3 : extra <= 2 ? 2 : 1) : 0;
-                        var starRow = ['⭐','⭐','⭐'].map(function(s, i) {
-                            return e('span', { key:i, style:{
-                                fontSize:22, opacity: i < stars ? 1 : 0.2,
-                                filter: i < stars ? 'none' : 'grayscale(1)'
-                            }}, s);
-                        });
-                        return e('div', { style:{ marginBottom:18 } },
-                            e('div', { style:{ display:'flex', justifyContent:'center', gap:4, marginBottom:8 } }, starRow),
-                            e('p', { style:{
-                                fontFamily:'DM Sans,sans-serif', color:C.muted,
-                                fontSize:13, margin:0
-                            }},
-                                grade ? grade.detail
-                                : phase === 'won'
-                                    ? used+' guess'+(used!==1?'es':'')+' — optimal is '+optimal
-                                    : bad.length+' wrong guess'+(bad.length!==1?'es':'')+' · '+used+' total'
-                            )
-                        );
-                    })(),
-                    // Streak block — only shown on daily (when streak prop exists)
-                    streak ? (function() {
-                        var won      = phase === 'won';
-                        var count    = streak.count || 0;
-                        var isNew    = streak.isNew && won;
-                        var flameCol = won && count > 0 ? '#f0a500' : '#9a8070';
-                        return e('div', { style:{
-                            display:'flex', alignItems:'center', justifyContent:'center', gap:10,
-                            marginBottom:20, padding:'12px 20px',
-                            background: won && count > 0 ? 'rgba(240,165,0,0.08)' : 'rgba(45,31,20,0.04)',
-                            border:'1.5px solid '+(won && count > 0 ? 'rgba(240,165,0,0.25)' : 'rgba(45,31,20,0.1)'),
-                            borderRadius:12,
-                            animation: isNew ? 'streakPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both' : 'none',
-                            animationDelay: '0.3s'
-                        }},
-                            e('span', { style:{
-                                fontSize:26, lineHeight:1,
-                                animation: won && count > 0 ? 'flameDance 1.2s ease-in-out infinite' : 'none',
-                                filter: won && count > 0 ? 'none' : 'grayscale(1)',
-                                opacity: won && count > 0 ? 1 : 0.4,
-                            }}, '\uD83D\uDD25'),
-                            e('div', { style:{ textAlign:'left' } },
-                                e('div', { style:{
-                                    fontFamily:'Fraunces,serif', fontWeight:900, fontSize:20,
-                                    color: flameCol, lineHeight:1, letterSpacing:'-0.02em'
-                                }}, count+' day streak'+(count !== 1 ? '' : '')),
-                                e('div', { style:{
-                                    fontFamily:'DM Sans,sans-serif', fontSize:11, color:C.muted, marginTop:2
-                                }}, won && count > 0
-                                    ? (isNew ? 'Keep it going!' : 'Already counted today')
-                                    : 'Play tomorrow to start a new streak'
-                                )
-                            )
-                        );
-                    })() : null,
-                    // Route pill
-                    e('div', { style:{
-                        display:'inline-flex', alignItems:'center', gap:8, marginBottom:20,
-                        padding:'7px 18px', background:'rgba(45,31,20,0.05)',
-                        borderRadius:999, border:'1.5px solid '+C.border
-                    }},
-                        e('span', { style:{
-                            fontFamily:'Fraunces,serif', fontWeight:700,
-                            fontSize:13, color:C.sage
-                        }}, target.start),
-                        e('span', { style:{ color:C.muted, fontSize:11 } }, '\u2192'),
-                        e('span', { style:{
-                            fontFamily:'Fraunces,serif', fontWeight:700,
-                            fontSize:13, color:accent
-                        }}, target.end)
+        var overlay = null;
+        if (phase !== 'playing' && !reveal && !reviewing) {
+            var won = phase === 'won';
+            var optimal = target.path.length - 2;
+            var stars = grade ? grade.stars : won ? (guessesUsed - optimal === 0 ? 3 : guessesUsed - optimal <= 2 ? 2 : 1) : 0;
+            var label = grade ? grade.label : won ? 'Path found!' : 'Flatline.';
+            var hlCls = !won ? 'hl-pink' : stars >= 3 ? 'hl-green' : 'hl';
+
+            var streakBlock = null;
+            if (streak) {
+                var count = streak.count || 0;
+                var lit   = won && count > 0;
+                var isNew = streak.isNew && won;
+                streakBlock = e('div', { className: 'g-streak', style: { animation: isNew ? 'streakPop .6s cubic-bezier(.34,1.56,.64,1) .3s both' : 'none' } },
+                    e('span', { style: { fontSize: 26, lineHeight: 1, filter: lit ? 'none' : 'grayscale(1)', opacity: lit ? 1 : .45,
+                        animation: lit ? 'flameDance 1.2s ease-in-out infinite' : 'none' } }, '🔥'),
+                    e('div', null,
+                        e('div', { className: 'num' }, count + ' day streak'),
+                        e('div', { className: 'sub' }, lit ? (isNew ? 'Keep it going!' : 'Already counted today') : 'Play tomorrow to start a new streak')
+                    )
+                );
+            }
+
+            overlay = e('div', { className: 'g-over' },
+                e('div', { className: 'g-card', role: 'dialog', 'aria-label': label },
+                    e('span', { className: 'tape' + (won ? '' : ' pink') }),
+                    e('div', { className: 'emoji' }, grade ? grade.emoji : won ? '🏆' : '💣'),
+                    e('h2', null, e('span', { className: hlCls }, label)),
+                    e('div', { className: 'stars', 'aria-label': stars + ' of 3 stars' },
+                        [0, 1, 2].map(function (i) {
+                            return e('span', { key: i, style: { opacity: i < stars ? 1 : .2, filter: i < stars ? 'none' : 'grayscale(1)' } }, '⭐');
+                        })),
+                    e('p', { className: 'detail' },
+                        grade ? grade.detail
+                        : won ? plural(guessesUsed, 'guess') + ', best possible is ' + optimal
+                        : bad.length + ' wrong · ' + guessesUsed + ' total'),
+                    streakBlock,
+                    e('div', { className: 'route' },
+                        e('span', { className: 'hl-green' }, target.start),
+                        e('span', { className: 'to' }, '→'),
+                        e('span', { className: 'hl-pink' }, target.end)),
+                    e('div', { className: 'row' },
+                        phase === 'lost'
+                            ? e('button', { type: 'button', className: 'nb-btn', onClick: h.onReveal }, '👁 Show the route')
+                            : e('button', { type: 'button', className: 'nb-btn', onClick: h.onReview }, '👁 Review my route')
                     ),
-                    // Reveal path (lost) / Review my path (won)
-                    phase === 'lost'
-                        ? e('div', { style:{ marginBottom:12 } },
-                            e('button', { onClick: h.onReveal, style:{
-                                padding:'8px 20px', background:'transparent',
-                                color:C.purple, border:'1.5px solid '+C.purple,
-                                borderRadius:999, fontFamily:'DM Sans,sans-serif',
-                                fontWeight:600, fontSize:9, textTransform:'uppercase',
-                                letterSpacing:'0.1em', cursor:'pointer'
-                            }}, '\uD83D\uDC41 Reveal Path')
-                          )
-                        : phase === 'won'
-                        ? e('div', { style:{ marginBottom:12 } },
-                            e('button', { onClick: h.onReview, style:{
-                                padding:'8px 20px', background:'transparent',
-                                color:C.sage, border:'1.5px solid '+C.sage,
-                                borderRadius:999, fontFamily:'DM Sans,sans-serif',
-                                fontWeight:600, fontSize:9, textTransform:'uppercase',
-                                letterSpacing:'0.1em', cursor:'pointer'
-                            }}, '\uD83E\uDDB4 Review My Path')
-                          )
-                        : null,
-                    // Emoji grid preview + share button
                     h.onShare
-                        ? e('div', { style:{ marginBottom:12 } },
-                            // Emoji preview row
-                            e('div', { style:{
-                                fontFamily:'monospace', fontSize:18, letterSpacing:2,
-                                marginBottom:10, lineHeight:1.4, textAlign:'center',
-                                padding:'10px 14px', background:'rgba(45,31,20,0.03)',
-                                borderRadius:10, border:'1.5px solid '+C.border,
-                            }},
-                                gridText ? gridText : null,
-                                gridText ? null : '\uD83D\uDFE2',
-                                // chain bones (skip first=start, skip last=end)
-                                gridText ? null : chain.slice(1, -1).map(function(item) {
-                                    return item.guessed ? '\uD83D\uDFE6' : '\u2B1C';
-                                }).join(''),
-                                // detours
-                                gridText ? null : detours.map(function() { return '\uD83D\uDFE1'; }).join(''),
-                                // wrong
-                                gridText ? null : bad.map(function() { return '\uD83D\uDD34'; }).join(''),
-                                // end
-                                gridText ? null : '\u2B1B'
-                            ),
-                            e('button', { onClick: h.onShare, style:{
-                                padding:'8px 20px', width:'100%',
-                                background: shared ? 'rgba(90,138,106,0.1)' : 'transparent',
-                                color: shared ? C.sage : C.muted,
-                                border:'1.5px solid '+(shared ? C.sage : C.border),
-                                borderRadius:999, fontFamily:'DM Sans,sans-serif',
-                                fontWeight:600, fontSize:9, textTransform:'uppercase',
-                                letterSpacing:'0.1em', cursor:'pointer'
-                            }}, shared ? '\u2713 Copied to clipboard!' : '\uD83D\uDCCB Copy & Share')
-                          )
+                        ? e('div', { style: { marginBottom: 12 } },
+                            gridText ? e('div', { className: 'g-grid' }, gridText) : null,
+                            e('button', { type: 'button', className: 'nb-btn wide ' + (shared ? 'green' : ''), onClick: h.onShare },
+                                shared ? '✓ Copied, go brag' : '📋 Copy & share'))
                         : null,
-                    // Action buttons — daily mode: only show Back to Home
-                    e('div', { style:{ display:'flex', gap:10, justifyContent:'center' } },
+                    e('div', { className: 'row' },
                         h.onNewGame
-                            ? e('button', { onClick: h.onNewGame, style:{
-                                padding:'12px 26px',
-                                background:'linear-gradient(135deg,'+accent+','+accentDk+')',
-                                color:'white', border:'none', borderRadius:10,
-                                fontFamily:'Fraunces,serif', fontWeight:900, fontSize:12,
-                                textTransform:'uppercase', letterSpacing:'0.1em',
-                                cursor:'pointer',
-                                boxShadow:'0 4px 12px rgba(232,96,60,0.25)'
-                              }}, 'Next Case')
+                            ? e('button', { type: 'button', className: 'nb-btn big hl-btn', onClick: h.onNewGame }, 'Next puzzle →')
                             : null,
-                        e('button', {
-                            onClick: h.onHome ? h.onHome : () => window.location.href='../index.html',
-                            style:{
-                                padding:'12px 26px',
-                                background: h.onNewGame ? 'rgba(45,31,20,0.05)' : 'linear-gradient(135deg,'+accent+','+accentDk+')',
-                                color: h.onNewGame ? C.inkLight : 'white',
-                                border: h.onNewGame ? '1.5px solid '+C.border : 'none',
-                                borderRadius:10, fontFamily:'Fraunces,serif', fontWeight:700,
-                                fontSize:12, textTransform:'uppercase', letterSpacing:'0.1em',
-                                cursor:'pointer',
-                                boxShadow: h.onNewGame ? 'none' : '0 4px 12px rgba(232,96,60,0.25)'
-                            }
-                        }, h.onNewGame ? 'Menu' : '← Back to Home')
+                        e('button', { type: 'button', className: 'nb-btn big ' + (h.onNewGame ? '' : 'dark'), onClick: home },
+                            h.onNewGame ? 'Menu' : '← Back to the notes')
                     )
                 )
-              )
-            : null;
+            );
+        }
 
-        // ── REVIEWING BANNER ─────────────────────────────────────────────────
+        // ── REVIEW BANNER ─────────────────────────────────────────────────────
         var reviewBar = reviewing
-            ? e('div', { style:{
-                position:'fixed', bottom:0, left:0, right:0, zIndex:700,
-                height:68, background:C.cream,
-                borderTop:'2px solid '+C.sage+'55',
-                display:'flex', alignItems:'center', justifyContent:'center', gap:16,
-                padding:'0 24px',
-              }},
-                e('span', { style:{
-                    fontFamily:'DM Sans,sans-serif', fontSize:'0.78rem',
-                    color:C.muted, textTransform:'uppercase', letterSpacing:'0.12em'
-                }}, '👁 Reviewing your path'),
-                e('button', { onClick: h.onStopReview, style:{
-                    padding:'8px 20px', background:C.sage, color:'white',
-                    border:'none', borderRadius:999,
-                    fontFamily:'DM Sans,sans-serif', fontWeight:700,
-                    fontSize:'0.72rem', textTransform:'uppercase',
-                    letterSpacing:'0.1em', cursor:'pointer'
-                }}, 'Back to Results')
-              )
+            ? e('div', { className: 'g-review' },
+                e('span', { className: 'hand' }, 'reviewing your route'),
+                e('button', { type: 'button', className: 'nb-btn dark', onClick: h.onStopReview }, 'Back to results'))
             : null;
 
-        return e(React.Fragment, null, navbar, challengeBar, rightPanel, reviewing ? reviewBar : searchBar, overlay);
+        return e(React.Fragment, null,
+            navbar, challengeBar, rightPanel,
+            reviewing ? reviewBar : searchBar,
+            overlay, howModal);
     }
 
     window.PathfindingUI = PathfindingUI;

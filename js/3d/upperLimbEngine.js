@@ -19,8 +19,8 @@ function mat(color, emissive, opacity, transparent) {
     });
 }
 
-var REST_MAT  = function(){ return mat(0xc4855a, 0, 1, false); }; // warm muscle tone, no emissive
-var GHOST_MAT = function(){ return new THREE.MeshStandardMaterial({ color:0xc4855a, transparent:true, opacity:0.12, depthWrite:false }); };
+var REST_MAT  = function(){ return mat(0xE3BFB6, 0, 1, false); }; // soft pencil-pink muscle tone, no emissive
+var GHOST_MAT = function(){ return new THREE.MeshStandardMaterial({ color:0xB7A4C4, transparent:true, opacity:0.12, depthWrite:false }); };
 
 // ── MESH LOOKUP ──────────────────────────────────────────────────────────────
 // Build a flat map of meshName → THREE.Mesh on model load
@@ -105,13 +105,13 @@ window.update3D = function(bones) {
         if (!node.isMesh) return;
         var type = highlighted[node.name];
         if (type) {
-            var col = 0x5a8a6a, em = 0x5a8a6a, ei = 0.55;
-            if (type === 'start')  { col = 0x5a8a6a; em = 0x5a8a6a; ei = 0.6; }
-            if (type === 'end')    { col = 0xe8603c; em = 0xe8603c; ei = 0.6; }
-            if (type === 'path')   { col = 0x5a8a6a; em = 0x5a8a6a; ei = 0.5; }
-            if (type === 'detour') { col = 0xf0a500; em = 0xf0a500; ei = 0.6; }
-            if (type === 'bad')    { col = 0xc94d2b; em = 0xc94d2b; ei = 0.75; }
-            if (type === 'reveal') { col = 0x8b5cf6; em = 0x8b5cf6; ei = 0.7; }
+            var col = 0x22D36B, em = 0x22D36B, ei = 0.55;
+            if (type === 'start')  { col = 0x17B857; em = 0x17B857; ei = 0.45; }
+            if (type === 'end')    { col = 0xFF4FA3; em = 0xFF4FA3; ei = 0.6; }
+            if (type === 'path')   { col = 0x34D16E; em = 0x34D16E; ei = 0.32; }
+            if (type === 'detour') { col = 0xFFD21F; em = 0xFFD21F; ei = 0.6; }
+            if (type === 'bad')    { col = 0xF0283C; em = 0xF0283C; ei = 0.75; }
+            if (type === 'reveal') { col = 0x9A6BFF; em = 0x9A6BFF; ei = 0.7; }
             node.material = new THREE.MeshStandardMaterial({ color:col, emissive:em, emissiveIntensity:ei, transparent:false, opacity:1 });
         } else {
             node.material = GHOST_MAT();
@@ -139,7 +139,7 @@ window.showNerveHint = function(muscleName) {
         if (nerveMeshes.has(node.name)) {
             node.visible = true;
             node.material = new THREE.MeshStandardMaterial({
-                color: 0xf0c040, emissive: 0xf0c040, emissiveIntensity: 0.8,
+                color: 0x8FD0FF, emissive: 0x8FD0FF, emissiveIntensity: 0.8,
                 transparent: false, opacity: 1
             });
         }
@@ -181,11 +181,11 @@ function _initUpperLimbEngine() {
     }, { passive: false });
 
     // Warm lighting
-    scene.add(new THREE.AmbientLight(0xfff8f0, 0.9));
-    var dl = new THREE.DirectionalLight(0xfff4e8, 0.8);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+    var dl = new THREE.DirectionalLight(0xffffff, 0.8);
     dl.position.set(5, 10, 7.5);
     scene.add(dl);
-    var dl2 = new THREE.DirectionalLight(0xffe8d8, 0.4);
+    var dl2 = new THREE.DirectionalLight(0xeef2ff, 0.4);
     dl2.position.set(-5, 3, -5);
     scene.add(dl2);
 
