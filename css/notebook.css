@@ -582,3 +582,30 @@ body.nb-page {
 }
 @media (prefers-reduced-motion: reduce) { .pop > span { animation: none; } }
 .cv-tape-r { display: none; }
+
+/* ── GUESS BOX: a bold block that is easy to spot ────────────────────────── */
+:root { --ask-bg: #1D3FBF; --ask-ink: #FFFFFF; --ask-glow: rgba(29,63,191,.45); }
+:root[data-theme="dark"] { --ask-bg: #FFD54A; --ask-ink: #141A29; --ask-glow: rgba(255,213,74,.45); }
+.g-ask {
+    background: var(--ask-bg) !important; color: var(--ask-ink);
+    border: 3px solid var(--ink); border-radius: 10px;
+    padding: 10px 12px 12px !important;
+    box-shadow: 6px 6px 0 var(--shadow);
+}
+.g-ask.fresh { animation: askPulse 1.6s ease-in-out 3; }
+@keyframes askPulse { 0%,100% { box-shadow: 6px 6px 0 var(--shadow), 0 0 0 0 var(--ask-glow); } 50% { box-shadow: 6px 6px 0 var(--shadow), 0 0 0 10px rgba(0,0,0,0); } }
+.ask-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 0 2px 8px; }
+.ask-t { font-weight: 700; font-size: 20px; letter-spacing: -.02em; }
+.ask-k { font-size: 13px; font-weight: 600; opacity: .9; }
+.g-guess .g-ask .g-field {
+    height: 54px; background: #FFFFFF; border: 2px solid #0E1526; box-shadow: none;
+}
+.g-guess .g-ask .g-field:focus-within { box-shadow: 0 0 0 3px rgba(255,255,255,.55); }
+:root[data-theme="dark"] .g-guess .g-ask .g-field:focus-within { box-shadow: 0 0 0 3px rgba(20,26,41,.4); }
+.g-guess .g-ask .g-field input { color: #17213A; font-size: 19px; font-weight: 600; }
+.g-guess .g-ask .g-field input::placeholder { color: #5A6480; font-weight: 500; }
+.g-guess .g-ask .g-field.err { border-color: #C8102E; }
+.g-guess .g-ask .g-drop { left: -14px; right: -14px; top: calc(100% + 14px); }
+.g-guess .g-search.g-ask { position: relative; z-index: 20; left: auto; right: auto; bottom: auto; }
+.g-guess .g-feedback { position: relative; z-index: 1; left: auto; right: auto; bottom: auto; }
+.g-ask .g-drop { color: var(--ink); }
