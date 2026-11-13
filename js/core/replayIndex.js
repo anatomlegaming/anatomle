@@ -28,7 +28,7 @@ window.encodeReplay = function(game, start, end, path, guessOrder, detours, bad)
     var e  = idx.toIdx[end];
     var p  = path.map(function(b) { return idx.toIdx[b]; }).join(',');
     var gs = guessOrder.map(function(b) {
-        var t = path.includes(b) ? 'o' : detours.includes(b) ? 'd' : 'b';
+        var t = bad.includes(b) ? 'b' : detours.includes(b) ? 'd' : 'o';
         return idx.toIdx[b] + ':' + t;
     }).join(',');
     return 'gm=' + game + '&s=' + s + '&e=' + e + '&p=' + p + '&gs=' + encodeURIComponent(gs);

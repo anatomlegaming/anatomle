@@ -287,8 +287,8 @@
 
             function updateHighlights(go, det, ba) {
                 var h = [{ name: start, type: 'start' }];
-                path.slice(1, -1).forEach(function(b) {
-                    if (go.indexOf(b) !== -1) h.push({ name: b, type: 'path' });
+                go.forEach(function(b) {
+                    if (b !== start) h.push({ name: b, type: 'path' });
                 });
                 h.push({ name: end, type: 'end' });
                 det.forEach(function(b) { h.push({ name: b, type: 'detour' }); });
@@ -338,17 +338,17 @@
 
                 if (type === 'o') {
                     guessedOptimal.push(bone);
-                    addRow(bone, 'optimal', '\uD83D\uDFE6', guessIdx);
+                    addRow(bone, 'optimal', '\uD83D\uDFE9', guessIdx);
                     updateHighlights(guessedOptimal, detours, bad);
                     var allDone = path.slice(1, -1).every(function(b) { return guessedOptimal.indexOf(b) !== -1; });
                     if (allDone) won = true;
                 } else if (type === 'd') {
                     detours.push(bone);
-                    addRow(bone, 'detour', '\uD83D\uDFE1', guessIdx);
+                    addRow(bone, 'detour', '\uD83D\uDFE8', guessIdx);
                     updateHighlights(guessedOptimal, detours, bad);
                 } else {
                     bad.push(bone);
-                    addRow(bone, 'bad', '\uD83D\uDD34', guessIdx);
+                    addRow(bone, 'bad', '\uD83D\uDFE5', guessIdx);
                     updateHighlights(guessedOptimal, detours, bad);
                 }
 
