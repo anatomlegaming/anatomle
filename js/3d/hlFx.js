@@ -11,7 +11,7 @@
 (function () {
     var PALETTES = {
         light: {
-            ghost: 0x7C87A3, ghostOpacity: 0.5,
+            ghost: 0x4E5A78, ghostOpacity: 0.62,
             start: 0x23935A, path: 0x45B873, end: 0xD9549A,
             detour: 0xE2AE2A, bad: 0xD6455A, reveal: 0x8566D9,
             emissive: 0.12
@@ -58,19 +58,23 @@
         });
     }
 
-    // Fill: an overlay copy of the mesh with the new colour, clipped by a plane
-    // that sweeps from the bottom of the mesh to the top.
-    function fill(mesh, mat, duration, delay) {
+    // Fill, like a progress bar: the mesh is split by a level that rises from
+    // the bottom to the top. Below the level it has the new colour, above it
+    // keeps the old grey, so the two never overlap.
+    function fill(mesh, mat, duration, delay, ghostScale) {
         var box = new THREE.Box3().setFromObject(mesh);
         if (box.isEmpty()) { mesh.material = mat; return; }
-        var plane = new THREE.Plane(new THREE.Vector3(0, -1, 0), box.min.y);
+        var below = new THREE.Plane(new THREE.Vector3(0, -1, 0), box.min.y);   // keeps y <= level
+        var above = new THREE.Plane(new THREE.Vector3(0, 1, 0), -box.min.y);   // keeps y >= level
+        var gm = ghostMaterial(ghostScale);
+        gm.clippingPlanes = [above];
+        mesh.material = gm;
         var om = mat.clone();
-        om.clippingPlanes = [plane];
-        om.polygonOffset = true; om.polygonOffsetFactor = -2; om.polygonOffsetUnits = -2;
+        om.clippingPlanes = [below];
+        om.emissiveIntensity = mat.emissiveIntensity + 0.25;   // the fresh ink glows a little
         var overlay = new THREE.Mesh(mesh.geometry, om);
-        overlay.renderOrder = 2;
         mesh.add(overlay);
-        anims.push({ kind: 'fill', mesh: mesh, overlay: overlay, plane: plane, final: mat,
+        anims.push({ kind: 'fill', mesh: mesh, overlay: overlay, below: below, above: above, final: mat, om: om,
                      y0: box.min.y, y1: box.max.y, t0: performance.now() + (delay || 0), dur: duration });
     }
 
@@ -84,6 +88,7 @@
                      t0: performance.now() + (delay || 0), dur: 520 });
     }
 
+    // gentle start and finish, steady in the middle, like a loading bar
     function ease(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
 
     function tick() {
@@ -98,7 +103,10 @@
                     a.mesh.material = a.final;
                     return false;
                 }
-                a.plane.constant = a.y0 + (a.y1 - a.y0) * ease(t) + 1e-4;
+                var lvl = a.y0 + (a.y1 - a.y0) * ease(t);
+                a.below.constant = lvl;
+                a.above.constant = -lvl;
+                a.om.emissiveIntensity = a.final.emissiveIntensity + 0.25 * (1 - t);
                 return true;
             }
             if (a.kind === 'shake') {
@@ -128,11 +136,9 @@
         var animate = !reduceMotion && !opts.instant && was !== undefined && (was === 'ghost' || was === 'reveal');
         if (!animate) { mesh.material = m; return true; }
 
-        // the base stays a ghost while the colour is drawn in over it
-        if (was !== 'ghost') mesh.material = ghostMaterial(opts.ghostScale);
         var delay = (opts.order || 0) * 90;
-        if (type === 'bad') { fill(mesh, m, 380, delay); shake(mesh, delay + 300); }
-        else fill(mesh, m, type === 'reveal' ? 600 : 850, delay);
+        if (type === 'bad') { fill(mesh, m, 550, delay, opts.ghostScale); shake(mesh, delay + 520); }
+        else fill(mesh, m, type === 'reveal' ? 800 : 1300, delay, opts.ghostScale);
         return true;
     }
 
@@ -142,6 +148,7 @@
     window.HL = {
         apply: apply, tick: tick, enable: enable, shake: shake,
         ghostMaterial: ghostMaterial, typeMaterial: typeMaterial,
-        theme: theme, palette: pal
+        theme: theme, palette: pal,
+        active: function () { return anims.map(function (a) { return a.kind + ':' + (a.mesh.name || '') + ':' + (a.below ? (-a.above.constant).toFixed(3) : ''); }); }
     };
 })();
