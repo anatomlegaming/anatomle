@@ -209,8 +209,8 @@
         return;
     }
 
-    var GAME_LABELS = { fs:'Full Skeleton', h:'Hand', f:'Foot', sk:'Skull', ul:'Upper Limb Muscles', un:'Nerve Challenge' };
-    var GAME_LINKS  = { fs:'games/full-skeleton.html', h:'games/hand.html', f:'games/foot.html', sk:'games/skull.html', ul:'games/upper-limb.html', un:'games/upper-limb-nerve.html' };
+    var GAME_LABELS = { fs:'Full Skeleton', ul:'Upper Limb Muscles' };
+    var GAME_LINKS  = { fs:'games/full-skeleton.html', ul:'games/upper-limb.html' };
     var gameLink    = GAME_LINKS[replay.game] || 'index.html';
 
     document.getElementById('panel-game').textContent = (isDaily ? 'Daily · ' : '') + (GAME_LABELS[replay.game] || 'Replay');
@@ -234,11 +234,7 @@
     function loadEngine() {
         var engineScripts = {
             fs: ['../js/data/boneMappings.js', '../js/3d/skeletonEngine.js'],
-            h:  ['../js/data/boneMappings.js', '../js/3d/handEngine.js'],
-            f:  ['../js/data/boneMappings.js', '../js/3d/footEngine.js'],
-            sk: ['../js/3d/skullEngine.js'],
             ul: ['../js/data/upperLimbGraph.js', '../js/3d/upperLimbEngine.js'],
-            un: ['../js/data/upperLimbGraph.js', '../js/3d/upperLimbEngine.js'],
         };
         var scripts = engineScripts[replay.game] || engineScripts.fs;
         var loaded  = 0;
