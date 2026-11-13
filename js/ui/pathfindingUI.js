@@ -25,7 +25,7 @@
         cyanDk:   '#0891b2',
         dark:     'rgba(45,31,20,0.94)',
     };
-    var NAV=58, BAR=46, SRCH=68, PW=420, AW=160;
+    var NAV=58, BAR=46, SRCH=68, PW=420, AW=0;
 
     // ── SECTION HEADER ────────────────────────────────────────────────────────
     function SectionHead(icon, label, val, col) {
@@ -454,7 +454,7 @@
                         margin:'0 0 6px', letterSpacing:'-0.03em', lineHeight:1
                     }},
                         phase === 'won'
-                            ? (detours.length === 0 ? 'Perfect Path!' : 'Path Found!')
+                            ? (detours.length === 0 && bad.length === 0 ? 'Perfect Path!' : 'Path Found!')
                             : 'Flatline.'),
                     // Scoring block
                     (function() {

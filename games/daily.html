@@ -7,9 +7,9 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="../js/data/skeletonGraph.js"></script>
@@ -23,14 +23,8 @@
     <style>
         * { box-sizing: border-box; }
         body { font-family: 'DM Sans', sans-serif; background: #fdf6ec; color: #2d1f14; margin: 0; overflow: hidden; }
-        #cv { position: fixed; top: 104px; left: 0; right: 580px; bottom: 68px; z-index: 10;
+        #cv { position: fixed; top: 104px; left: 0; right: 420px; bottom: 68px; z-index: 10;
               background: radial-gradient(ellipse at 50% 40%, #f5e8d0 0%, #ede0c8 60%, #e4d4b8 100%); }
-        #ad-slot { position: fixed; top: 58px; right: 0; width: 160px; bottom: 0; z-index: 150;
-              background: #fff8f0; border-left: 2px solid #e8d5c0;
-              display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
-        #ad-slot span { font-family: 'DM Sans', sans-serif; font-size: 9px; color: #c8b8a8;
-              text-transform: uppercase; letter-spacing: 0.2em; writing-mode: vertical-rl; }
-        #ad-slot .ad-placeholder { width: 120px; height: 240px; border: 2px dashed #e8d5c0; border-radius: 8px; }
         .scr::-webkit-scrollbar { width: 3px; }
         .scr::-webkit-scrollbar-thumb { background: #e8d5c0; border-radius: 2px; }
         .shake { animation: shake .3s ease-in-out; }
@@ -85,7 +79,6 @@
     font-size:16px; line-height:1; color:#9a8070;
     box-shadow:0 2px 8px rgba(45,31,20,0.1); transition:all 0.15s;
 " title="Reset view" onmouseover="this.style.color='#2d1f14'" onmouseout="this.style.color='#9a8070'">⊙</button>
-<div id="ad-slot"><div class="ad-placeholder"></div><span>Coming Soon</span></div>
 <div id="root"></div>
 
 <script src="../js/3d/skeletonEngine.js"></script>
@@ -111,7 +104,7 @@ function getUTCDateString(isoString) {
 }
 
 function initDailyFromDate(dateStr) {
-    var seed = DAILY_SEEDS[dateStr];
+    var seed = getDailySeed(dateStr);
     if (!seed) {
         document.getElementById('loading-screen').style.display = 'none';
         document.getElementById('no-puzzle').style.display = 'flex';
@@ -129,20 +122,32 @@ function startApp() {
     if (window.__dailyAppReady) window.__dailyAppReady();
 }
 
-// Try worldtimeapi first
+// Try worldtimeapi first, but never wait on it for more than 2.5 seconds:
+// the service is often slow or down, and the device date is a fine fallback.
+var __dailyStarted = false;
+function startForDate(dateStr) {
+    if (__dailyStarted) return;
+    __dailyStarted = true;
+    if (initDailyFromDate(dateStr)) startApp();
+}
+function deviceUTCDateString() {
+    var now = new Date();
+    return now.getUTCFullYear() + '-' +
+        String(now.getUTCMonth() + 1).padStart(2, '0') + '-' +
+        String(now.getUTCDate()).padStart(2, '0');
+}
+var __timeFallback = setTimeout(function() { startForDate(deviceUTCDateString()); }, 2500);
 fetch('https://worldtimeapi.org/api/timezone/UTC')
     .then(function(r) { return r.json(); })
     .then(function(data) {
-        var dateStr = getUTCDateString(data.utc_datetime || data.datetime);
-        if (initDailyFromDate(dateStr)) startApp();
+        var iso = data.utc_datetime || data.datetime;
+        if (!iso) throw new Error('no date');
+        clearTimeout(__timeFallback);
+        startForDate(getUTCDateString(iso));
     })
     .catch(function() {
-        // Fallback: device UTC date
-        var now = new Date();
-        var dateStr = now.getUTCFullYear() + '-' +
-            String(now.getUTCMonth() + 1).padStart(2, '0') + '-' +
-            String(now.getUTCDate()).padStart(2, '0');
-        if (initDailyFromDate(dateStr)) startApp();
+        clearTimeout(__timeFallback);
+        startForDate(deviceUTCDateString());
     });
 </script>
 
@@ -336,7 +341,9 @@ function DailyGame() {
         if (e.key === 'ArrowDown') { e.preventDefault(); setSelIdx(i => Math.min(i + 1, suggestions.length - 1)); }
         else if (e.key === 'ArrowUp') { e.preventDefault(); setSelIdx(i => Math.max(i - 1, 0)); }
         else if (e.key === 'Enter') {
+            const exact = suggestions.find(b => b.toLowerCase() === input.trim().toLowerCase());
             if (selIdx >= 0 && suggestions[selIdx]) submit(suggestions[selIdx]);
+            else if (exact) submit(exact);
             else if (suggestions.length === 1) submit(suggestions[0]);
         }
         else if (e.key === 'Escape') { setInput(''); setSelIdx(-1); }
