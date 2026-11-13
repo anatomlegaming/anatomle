@@ -67,7 +67,9 @@
                         e('li', null, e('i', { className: 'k ok' }), e('b', null, 'Green'), ' is on the shortest route.'),
                         e('li', null, e('i', { className: 'k detour' }), e('b', null, 'Yellow'), ' connects, but takes the long way.'),
                         e('li', null, e('i', { className: 'k bad' }), e('b', null, 'Red'), ' can’t reach the goal in time.')),
-                    e('p', { className: 'htp-note' }, 'Every guess uses one of your guesses, even the red ones.')),
+                    e('p', { className: 'htp-note' }, 'Every guess uses one of your guesses, even the red ones.'),
+                    e('p', { className: 'htp-warn' }, '\u26A0 Watch the ', e('b', null, 'need at least'),
+                        ' counter by your guesses. It shows the fewest more ' + things + ' that could still finish the route. If it ever goes above your guesses left, the game ends early.')),
 
                 e(Step, { n: 3, title: 'Join them up to win' },
                     e('div', { className: 'htp-demo chain' },

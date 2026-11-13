@@ -9,6 +9,14 @@
     var useEffect = React.useEffect;
     var useState  = React.useState;
 
+    // Letters that pop in one after another, for a freshly found name
+    function Pop(text, key) {
+        return e('span', { key: key, className: 'pop', 'aria-label': text },
+            text.split('').map(function (ch, i) {
+                return e('span', { key: i, 'aria-hidden': true, style: { animationDelay: (i * 38) + 'ms' } }, ch === ' ' ? '\u00A0' : ch);
+            }));
+    }
+
     function plural(n, word) { return n + ' ' + word + (n === 1 ? '' : 'es'); }
 
     function PathfindingUI(props) {
@@ -35,6 +43,8 @@
         var grade       = s.grade  || null;   // {tier, stars, label, emoji, detail} from PathScoring
         var gridText    = s.grid   || null;
         var log         = s.log    || [];
+        var need        = s.need === undefined ? null : s.need;
+        var spare       = need === null ? null : left - need;   // guesses you can afford to waste
         var goal        = s.goal   || target.end;
         var guessNo = {}; log.forEach(function (g) { guessNo[g.bone] = g.n; });
 
@@ -100,8 +110,15 @@
                 e('span', { className: 'to' }, 'to'),
                 e('span', { className: 'bone hl-pink' }, target.end)
             ),
-            e('div', { className: 'left' + (danger && phase === 'playing' ? ' danger' : '') },
-                e('b', null, left), left === 1 ? ' guess left' : ' guesses left')
+            e('div', { className: 'counts' },
+                e('div', { className: 'left' + (danger && phase === 'playing' ? ' danger' : '') },
+                    e('b', null, left), left === 1 ? ' guess left' : ' guesses left'),
+                phase === 'playing' && need !== null && isFinite(need)
+                    ? e('div', { className: 'need ' + (spare <= 0 ? 'tight' : spare === 1 ? 'close' : ''),
+                                 title: 'The fewest more ' + things + 's that could still finish the route. If this goes above your guesses left, the game ends.' },
+                        'need at least ', e('b', null, need), ' more',
+                        spare <= 0 ? ' \u00B7 no room for mistakes' : spare === 1 ? ' \u00B7 1 spare' : '')
+                    : null)
         );
 
         // ── MY ROUTE ──────────────────────────────────────────────────────────
@@ -125,7 +142,9 @@
                 e('span', { className: dotCls }, shown ? n : ''),
                 shown
                     ? e('span', null,
-                        e('span', { className: 'nm ' + hlCls }, item.bone),
+                        item.guessed && !isFirst && last && last.bone === item.bone
+                            ? e('span', { className: 'nm ' + hlCls }, Pop(item.bone, 'pop' + item.bone))
+                            : e('span', { className: 'nm ' + hlCls }, item.bone),
                         item.alts && item.alts.length
                             ? e('span', { className: 'alts' }, ' or ' + item.alts.join(' or '))
                             : null)
@@ -170,7 +189,7 @@
                       e('span', { key: 'c', className: 'hl-pink' }, target.end), '.'];
         } else if (last.type === 'optimal') {
             fbCls = 'ok';
-            fbText = [e('b', { key: 'a' }, '\u2713 ' + last.bone), ' is on the shortest route!'];
+            fbText = [e('b', { key: 'a' }, '\u2713 ', Pop(last.bone, 'p')), ' is on the shortest route!'];
         } else if (last.type === 'detour') {
             fbCls = 'detour';
             fbText = [e('b', { key: 'a' }, '~ ' + last.bone), ' connects, but adds ' + last.extra + ' step' + (last.extra === 1 ? '' : 's') + '.'];
@@ -178,7 +197,12 @@
             fbCls = 'bad';
             fbText = [e('b', { key: 'a' }, '\u2717 ' + last.bone), last.extra === null ? ' isn\u2019t linked to this route.' : ' is too far off course to reach ' + goal + ' in time.'];
         }
-        var feedback = phase === 'playing' && !reviewing && !suggestions.length
+        if (last && phase === 'playing' && spare !== null && spare <= 0) {
+            fbCls += ' warn';
+            fbText = fbText.concat([e('span', { key: 'w', className: 'warnline' },
+                '\u26A0 No room for mistakes now: you need ' + need + ' more and have ' + left + ' left. One more wrong guess ends the game.')]);
+        }
+        var feedback = phase === 'playing' && !reviewing
             ? e('div', { key: 'fb' + log.length, className: 'g-feedback ' + fbCls, role: 'status', 'aria-live': 'polite' }, fbText)
             : null;
 
@@ -188,41 +212,6 @@
             e('span', null, e('i', { className: 'k ok' }), 'shortest route'),
             e('span', null, e('i', { className: 'k detour' }), 'long way'),
             e('span', null, e('i', { className: 'k bad' }), 'can\u2019t reach'));
-
-        // ── PANEL BUTTONS ─────────────────────────────────────────────────────
-        var hintBtn = h.onHint
-            ? e('button', {
-                type: 'button', className: 'nb-btn wide',
-                onClick: h.onHint,
-                disabled: hintUsed || phase !== 'playing'
-              }, hintUsed ? '⚡ Hint used' : '⚡ Nerve hint')
-            : null;
-
-        var mainBtn = e('button', {
-            type: 'button',
-            className: 'nb-btn wide big ' + (phase === 'playing' ? '' : 'hl-btn'),
-            onClick: reviewing ? h.onStopReview : phase === 'playing' ? h.onGiveUp : h.onNewGame ? h.onNewGame : h.onStopReview
-        }, reviewing ? 'Results' : phase === 'playing' ? 'Give up' : h.onNewGame ? 'Next puzzle →' : 'Results');
-
-        var rightPanel = e('aside', { className: 'g-panel' },
-            e('div', { className: 'g-route' },
-                e('span', { className: 'tape pink' }),
-                e('div', { className: 'g-head' },
-                    e('span', { className: 't' }, 'the route'),
-                    e('span', { className: 'n' }, found + ' of ' + slots + ' found')
-                ),
-                e('div', { className: 'g-list nb-scroll' }, chainItems)
-            ),
-            e('div', { className: 'g-notes' },
-                e('div', { className: 'g-head' },
-                    e('span', { className: 't' }, 'my guesses'),
-                    e('span', { className: 'n' + (mistakes ? ' warn' : '') },
-                        log.length ? (mistakes ? mistakes + ' mistake' + (mistakes === 1 ? '' : 's') : 'no mistakes') : '')
-                ),
-                e('div', { className: 'g-chipwrap nb-scroll' }, logItems)
-            ),
-            e('div', { className: 'g-btns' }, hintBtn, mainBtn)
-        );
 
         // ── SEARCH BAR ────────────────────────────────────────────────────────
         var dropdown = suggestions.length > 0
@@ -252,6 +241,42 @@
                         : (h.onNewGame ? 'game over, hit Next puzzle →' : 'game over, tap Results to review')
                 })
             )
+        );
+
+        // ── PANEL BUTTONS ─────────────────────────────────────────────────────
+        var hintBtn = h.onHint
+            ? e('button', {
+                type: 'button', className: 'nb-btn wide',
+                onClick: h.onHint,
+                disabled: hintUsed || phase !== 'playing'
+              }, hintUsed ? '⚡ Hint used' : '⚡ Nerve hint')
+            : null;
+
+        var mainBtn = e('button', {
+            type: 'button',
+            className: 'nb-btn wide big ' + (phase === 'playing' ? '' : 'hl-btn'),
+            onClick: reviewing ? h.onStopReview : phase === 'playing' ? h.onGiveUp : h.onNewGame ? h.onNewGame : h.onStopReview
+        }, reviewing ? 'Results' : phase === 'playing' ? 'Give up' : h.onNewGame ? 'Next puzzle →' : 'Results');
+
+        var rightPanel = e('aside', { className: 'g-panel' },
+            reviewing ? null : e('div', { className: 'g-guess' }, searchBar, feedback),
+            e('div', { className: 'g-route' },
+                e('span', { className: 'tape pink' }),
+                e('div', { className: 'g-head' },
+                    e('span', { className: 't' }, 'the route'),
+                    e('span', { className: 'n' }, found + ' of ' + slots + ' found')
+                ),
+                e('div', { className: 'g-list nb-scroll' }, chainItems)
+            ),
+            e('div', { className: 'g-notes' },
+                e('div', { className: 'g-head' },
+                    e('span', { className: 't' }, 'my guesses'),
+                    e('span', { className: 'n' + (mistakes ? ' warn' : '') },
+                        log.length ? (mistakes ? mistakes + ' mistake' + (mistakes === 1 ? '' : 's') : 'no mistakes') : '')
+                ),
+                e('div', { className: 'g-chipwrap nb-scroll' }, logItems)
+            ),
+            e('div', { className: 'g-btns' }, hintBtn, mainBtn)
         );
 
         // ── END OVERLAY ───────────────────────────────────────────────────────
@@ -330,8 +355,8 @@
             : null;
 
         return e(React.Fragment, null,
-            navbar, challengeBar, colourKey, feedback, rightPanel,
-            reviewing ? reviewBar : searchBar,
+            navbar, challengeBar, colourKey, rightPanel,
+            reviewing ? reviewBar : null,
             overlay, howModal);
     }
 

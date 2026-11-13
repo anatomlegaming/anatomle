@@ -18,6 +18,9 @@
 //   2 stars  Shortest Route  shortest route, one or two mistakes
 //   1 star   Path Found      a longer route, or 3+ mistakes
 //   Flatline                 ran out of guesses
+//   Out of reach             ended early: the goal needs more bones than
+//                            there are guesses left (the game shows a live
+//                            "need at least N more" counter so this is no surprise)
 // A "mistake" is any guess that wasn't optimal.
 //
 // Requires: React (for usePathGame only). No other dependencies.
@@ -90,6 +93,30 @@
         return null;
     }
 
+    // Fewest new bones still needed to join start and end, given the bones
+    // already guessed (good ones are free, wrong ones can't be used).
+    // 0-1 BFS: stepping onto an unguessed bone costs 1.
+    function stillNeeded(a, good, bad) {
+        var free = {}; good.forEach(function (b) { free[b] = true; });
+        var banned = {}; (bad || []).forEach(function (b) { banned[b] = true; });
+        free[a.end] = true;
+        var dist = {}; dist[a.start] = 0;
+        var dq = [a.start];
+        while (dq.length) {
+            var x = dq.shift();
+            if (x === a.end) return dist[x];
+            (a.graph[x] || []).forEach(function (y) {
+                if (banned[y]) return;
+                var w = free[y] ? 0 : 1, nd = dist[x] + w;
+                if (dist[y] === undefined || nd < dist[y]) {
+                    dist[y] = nd;
+                    if (w === 0) dq.unshift(y); else dq.push(y);
+                }
+            });
+        }
+        return Infinity;
+    }
+
     // A shortest route that reuses as many of the player's correct guesses as
     // possible. Used to fill the empty slots and for "Reveal Path".
     function bestShortestRoute(a, guessed) {
@@ -156,9 +183,13 @@
         return walk(a.start, a.dS) || walk(a.end, a.dE);
     }
 
-    function grade(phase, a, route, mistakes, used, ordered) {
+    function grade(phase, a, route, mistakes, used, ordered, left, need) {
         var steps = a.L - 1;
         if (phase === 'lost') {
+            if (left > 0 && need > left)
+                return { tier: 0, stars: 0, label: 'Out of reach.', emoji: '🚧', early: true,
+                         detail: 'The goal needs at least ' + need + ' more, but you only had ' + left +
+                                 ' guess' + (left !== 1 ? 'es' : '') + ' left, so the game ended early.' };
             return { tier: 0, stars: 0, label: 'Flatline.', emoji: '💣',
                      detail: 'Out of guesses · ' + mistakes + ' mistake' + (mistakes !== 1 ? 's' : '') };
         }
@@ -184,7 +215,7 @@
     window.PathScoring = {
         symmetric: symmetric, analyze: analyze, allowance: allowance, classify: classify,
         routeThrough: routeThrough, bestShortestRoute: bestShortestRoute,
-        buildChain: buildChain, grade: grade, GRID: GRID,
+        buildChain: buildChain, grade: grade, GRID: GRID, stillNeeded: stillNeeded,
         extraSteps: extraSteps, inOrder: inOrder
     };
 
@@ -244,7 +275,8 @@
         var chain = useMemo(function () { return a ? buildChain(a, optimal) : []; }, [a, guesses]);
         var route = useMemo(function () { return a ? routeThrough(a, optimal.concat(detours)) : null; }, [a, guesses]);
         var ordered = a ? inOrder(a, guesses.map(function (g) { return g.bone; })) : false;
-        var result = a ? grade(phase, a, route, mistakes, guesses.length, ordered) : null;
+        var need = a ? stillNeeded(a, optimal.concat(detours), bad) : 0;
+        var result = a ? grade(phase, a, route, mistakes, guesses.length, ordered, left, need) : null;
         // Every guess in order, with how far off the shortest route it was
         var log = a ? guesses.map(function (g, i) {
             return { n: i + 1, bone: g.bone, type: g.type, extra: extraSteps(g.bone, a), onRoute: !!(route && route.indexOf(g.bone) !== -1) };
@@ -321,7 +353,10 @@
 
             var good = next.filter(function (g) { return g.type !== 'bad'; }).map(function (g) { return g.bone; });
             if (routeThrough(a, good)) setPhase('won');
-            else if (next.length >= max) setPhase('lost');
+            // lose as soon as the goal is out of reach with the guesses left
+            else if (next.length >= max ||
+                     stillNeeded(a, good, next.filter(function (g) { return g.type === 'bad'; }).map(function (g) { return g.bone; })) > max - next.length)
+                setPhase('lost');
         }
 
         function handleKey(ev) {
@@ -371,7 +406,7 @@
                 target: target, chain: chain, left: left, max: max, bad: bad, detours: detours,
                 input: input, selIdx: selIdx, phase: phase, reveal: reveal, suggestions: suggestions,
                 shared: shared, reviewing: reviewing, guessesUsed: guesses.length,
-                grade: result, grid: grid, log: log, goal: a ? a.end : ''
+                grade: result, grid: grid, log: log, goal: a ? a.end : '', need: need
             },
             handlers: {
                 onInputChange: function (ev) { setInput(ev.target.value); setSelIdx(-1); },
