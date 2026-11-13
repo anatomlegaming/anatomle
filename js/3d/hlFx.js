@@ -4,7 +4,9 @@
 // HL.apply(mesh, type)  colour a mesh for a game state. When the state changes
 //                       the colour is "drawn in" from the bottom of the mesh up,
 //                       like a highlighter stroke. Wrong guesses also shake.
-// HL.tick()             call once per frame from the render loop.
+// HL.tick()             call once per frame from the render loop. Returns true
+//                       when something changed and the scene needs a redraw.
+// HL.invalidate()       ask for a redraw on the next frame (camera moved, etc).
 // HL.enable(renderer)   turn on the clipping the fill animation needs.
 // Colours follow the page theme (light / dark) and update on 'anatomle-theme'.
 // ============================================================================
@@ -31,7 +33,12 @@
 
     var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    function ghostMaterial(opacityScale) {
+    // Materials are shared: one per theme and state, instead of a new one
+    // for every mesh on every guess. Only the fill animation makes its own
+    // (it needs per-mesh clipping planes) and frees them when it ends.
+    var cache = {};
+
+    function newGhost(opacityScale) {
         var p = pal();
         return new THREE.MeshStandardMaterial({
             color: p.ghost, roughness: 0.85, metalness: 0,
@@ -39,20 +46,43 @@
         });
     }
 
-    function typeMaterial(type) {
-        var p = pal(), c = p[type] !== undefined ? p[type] : p.path;
-        return new THREE.MeshStandardMaterial({
-            color: c, emissive: c, emissiveIntensity: p.emissive,
-            roughness: 0.6, metalness: 0, transparent: false, opacity: 1
-        });
+    function ghostMaterial(opacityScale) {
+        var k = theme() + ':ghost:' + (opacityScale || window.HL.ghostScale || 1);
+        return cache[k] || (cache[k] = newGhost(opacityScale));
     }
 
+    function typeMaterial(type) {
+        var p = pal(), c = p[type] !== undefined ? p[type] : p.path;
+        var k = theme() + ':' + (p[type] !== undefined ? type : 'path');
+        return cache[k] || (cache[k] = new THREE.MeshStandardMaterial({
+            color: c, emissive: c, emissiveIntensity: p.emissive,
+            roughness: 0.6, metalness: 0, transparent: false, opacity: 1
+        }));
+    }
+
+    // The lit-up version used while the player hovers a row in the route list
+    function hoverMaterial() {
+        var k = theme() + ':hover';
+        return cache[k] || (cache[k] = new THREE.MeshStandardMaterial({
+            color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.4, roughness: 0.6, metalness: 0
+        }));
+    }
+
+    var dirty = true;
+    function invalidate() { dirty = true; }
+
     var anims = [];   // running fills and shakes
+
+    function endFill(a) {
+        if (a.overlay.parent) a.overlay.parent.remove(a.overlay);
+        a.om.dispose();
+        a.gm.dispose();
+    }
 
     function stopAnims(mesh) {
         anims = anims.filter(function (a) {
             if (a.mesh !== mesh) return true;
-            if (a.overlay && a.overlay.parent) a.overlay.parent.remove(a.overlay);
+            if (a.kind === 'fill') endFill(a);
             if (a.kind === 'shake') a.mesh.position.copy(a.home);
             return false;
         });
@@ -66,7 +96,7 @@
         if (box.isEmpty()) { mesh.material = mat; return; }
         var below = new THREE.Plane(new THREE.Vector3(0, -1, 0), box.min.y);   // keeps y <= level
         var above = new THREE.Plane(new THREE.Vector3(0, 1, 0), -box.min.y);   // keeps y >= level
-        var gm = ghostMaterial(ghostScale);
+        var gm = newGhost(ghostScale);
         gm.clippingPlanes = [above];
         mesh.material = gm;
         var om = mat.clone();
@@ -74,7 +104,7 @@
         om.emissiveIntensity = mat.emissiveIntensity + 0.25;   // the fresh ink glows a little
         var overlay = new THREE.Mesh(mesh.geometry, om);
         mesh.add(overlay);
-        anims.push({ kind: 'fill', mesh: mesh, overlay: overlay, below: below, above: above, final: mat, om: om,
+        anims.push({ kind: 'fill', mesh: mesh, overlay: overlay, below: below, above: above, final: mat, om: om, gm: gm,
                      y0: box.min.y, y1: box.max.y, t0: performance.now() + (delay || 0), dur: duration });
     }
 
@@ -92,14 +122,15 @@
     function ease(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
 
     function tick() {
-        if (!anims.length) return;
+        if (!anims.length) { var d = dirty; dirty = false; return d; }
+        dirty = false;
         var now = performance.now();
         anims = anims.filter(function (a) {
             var t = (now - a.t0) / a.dur;
             if (t < 0) return true;
             if (a.kind === 'fill') {
                 if (t >= 1) {
-                    if (a.overlay.parent) a.overlay.parent.remove(a.overlay);
+                    endFill(a);
                     a.mesh.material = a.final;
                     return false;
                 }
@@ -117,6 +148,7 @@
             }
             return false;
         });
+        return true;
     }
 
     // type: null (ghost) or start / end / path / detour / bad / reveal.
@@ -129,6 +161,7 @@
         var was = mesh._hlType;
         mesh._hlType = key;
         stopAnims(mesh);
+        dirty = true;
 
         if (!type) { mesh.material = ghostMaterial(opts.ghostScale); return true; }
 
@@ -142,13 +175,30 @@
         return true;
     }
 
+    // A small "drawing the model… 40%" note over the 3D area while it loads
+    function loadNote(cont) {
+        var el = document.createElement('div');
+        el.className = 'cv-load';
+        el.setAttribute('role', 'status');
+        el.textContent = 'drawing the model…';
+        cont.appendChild(el);
+        return {
+            progress: function (ev) {
+                if (ev && ev.lengthComputable && ev.total) el.textContent = 'drawing the model… ' + Math.round(ev.loaded / ev.total * 100) + '%';
+            },
+            done: function () { if (el.parentNode) el.parentNode.removeChild(el); },
+            fail: function () { el.classList.add('err'); el.textContent = 'The 3D model didn’t load. Check your connection and refresh the page.'; }
+        };
+    }
+
     var renderers = [];
     function enable(renderer) { renderer.localClippingEnabled = true; renderers.push(renderer); }
 
     window.HL = {
-        apply: apply, tick: tick, enable: enable, shake: shake,
-        ghostMaterial: ghostMaterial, typeMaterial: typeMaterial,
+        apply: apply, tick: tick, invalidate: invalidate, enable: enable, loadNote: loadNote,
+        ghostMaterial: ghostMaterial, typeMaterial: typeMaterial, hoverMaterial: hoverMaterial,
         theme: theme, palette: pal,
+        // for debugging in the console: what is animating right now
         active: function () { return anims.map(function (a) { return a.kind + ':' + (a.mesh.name || '') + ':' + (a.below ? (-a.above.constant).toFixed(3) : ''); }); }
     };
 })();

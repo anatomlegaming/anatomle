@@ -57,6 +57,15 @@ function meshNameToDisplay(meshName) {
 }
 
 // ── RAYCASTING ────────────────────────────────────────────────────────────────
+// Only lit-up bones show a tooltip, so only those are tested. This is much
+// cheaper than testing the whole skeleton, and a grey bone in front of a lit
+// one no longer blocks it.
+function litMeshes() {
+    var out = [];
+    _skeleton.traverse(function(n) { if (n.isMesh && n._hlType && n._hlType !== 'ghost') out.push(n); });
+    return out;
+}
+
 function raycastAt(clientX, clientY) {
     if (!_skeleton || !_cam || !_renderer) return null;
     var rect  = _renderer.domElement.getBoundingClientRect();
@@ -65,7 +74,7 @@ function raycastAt(clientX, clientY) {
         -((clientY - rect.top) / rect.height) * 2 + 1
     );
     _raycaster.setFromCamera(mouse, _cam);
-    var hits = _raycaster.intersectObjects([_skeleton], true);
+    var hits = _raycaster.intersectObjects(litMeshes(), false);
     if (!hits.length) return null;
     var obj = hits[0].object;
     while (obj && !obj.isMesh) obj = obj.parent;
@@ -103,7 +112,6 @@ window.reset3D = function() {
     _skeleton.traverse(function(n) {
         if (!n.isMesh) return;
         HL.apply(n, null, { instant: true });
-        n._baseMaterial = n.material;
     });
 };
 
@@ -134,7 +142,6 @@ window.update3D = function(bones) {
         if (!node.isMesh) return;
         var matched = _matchBone(node, bones);
         HL.apply(node, matched ? matched.type : null);
-        node._baseMaterial = matched ? HL.typeMaterial(matched.type) : node.material;
     });
 };
 
@@ -144,7 +151,6 @@ window.addEventListener('anatomle-theme', function () {
     _skeleton.traverse(function(n) {
         if (!n.isMesh || !n._hlType) return;
         HL.apply(n, n._hlType === 'ghost' ? null : n._hlType, { force: true, instant: true });
-        n._baseMaterial = n.material;
     });
 });
 
@@ -152,18 +158,13 @@ window.addEventListener('anatomle-theme', function () {
 window.highlight3D = function(displayName, on) {
     if (!_skeleton) return;
     _skeleton.traverse(function(node) {
-        if (!node.isMesh || !node._baseMaterial || node._baseMaterial.transparent || node._hlType === 'ghost') return;
+        if (!node.isMesh || !node._hlType || node._hlType === 'ghost') return;
         if (meshNameToDisplay(node.name) !== displayName) return;
-        if (on) {
-            var hl = node._baseMaterial.clone();
-            hl.emissive          = new THREE.Color(0xffffff);
-            hl.emissiveIntensity = 0.4;
-            hl.color             = new THREE.Color(0xffffff);
-            node.material = hl;
-        } else {
-            node.material = node._baseMaterial;
-        }
+        // a bone still being drawn in keeps its animation
+        if (node.children.length) return;
+        node.material = on ? HL.hoverMaterial() : HL.typeMaterial(node._hlType);
     });
+    HL.invalidate();
 };
 
 // ── SCENE INIT ────────────────────────────────────────────────────────────────
@@ -182,30 +183,12 @@ window.getMeshCenter = function(displayName) {
     if (!_skeleton) return null;
     var box = new THREE.Box3();
     var found = false;
+    var want = [{ name: displayName }];
     _skeleton.traverse(function(node) {
-        if (!node.isMesh) return;
-        // Use same matching logic as update3D
-        var key = BONE_TO_3D_MODEL[displayName];
-        var matches = false;
-        if (displayName === 'True Ribs (1-7)')        matches = TRUE_RIB_NODES.some(function(t)   { return node.name.indexOf(t) !== -1; });
-        else if (displayName === 'False Ribs (8-10)')  matches = FALSE_RIB_NODES.some(function(f)  { return node.name.indexOf(f) !== -1; });
-        else if (displayName === 'Floating Ribs (11-12)') matches = FLOATING_RIB_NODES.some(function(l) { return node.name.indexOf(l) !== -1; });
-        else if (displayName === 'Costal Cartilage (1-7)')  matches = COSTAL_TRUE_NODES.some(function(c)  { return node.name.indexOf(c) !== -1; });
-        else if (displayName === 'Costal Cartilage (8-10)') matches = COSTAL_FALSE_NODES.some(function(d) { return node.name.indexOf(d) !== -1; });
-        else if (displayName === 'Hip Bone') matches = node.name.indexOf('Hip_boner') !== -1;
-        else if (key) {
-            if (key.indexOf('__group__') === 0) {
-                matches = key.slice(9).split('|').some(function(p) { return node.name.indexOf(p) !== -1; });
-            } else {
-                matches = node.name.indexOf(key) !== -1;
-            }
-        }
-        if (matches) {
-            node.geometry.computeBoundingBox();
-            var nb = node.geometry.boundingBox.clone().applyMatrix4(node.matrixWorld);
-            box.union(nb);
-            found = true;
-        }
+        if (!node.isMesh || !_matchBone(node, want)) return;
+        if (!node.geometry.boundingBox) node.geometry.computeBoundingBox();
+        box.union(node.geometry.boundingBox.clone().applyMatrix4(node.matrixWorld));
+        found = true;
     });
     if (!found) return null;
     return box.getCenter(new THREE.Vector3());
@@ -358,7 +341,9 @@ function _initSkeletonEngine() {
     draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
     var loader = new THREE.GLTFLoader();
     loader.setDRACOLoader(draco);
+    var note = HL.loadNote(cont);
     loader.load('../models/overview-skeleton.glb', function(gltf) {
+        note.done();
         _skeleton = gltf.scene;
         scene.add(_skeleton);
         buildReverseMap();
@@ -376,15 +361,26 @@ function _initSkeletonEngine() {
         window.reset3D();
         window.__modelIsReady = true;
         window.dispatchEvent(new CustomEvent('modelReady'));
+    }, note.progress, function(err) {
+        console.error('Failed to load overview-skeleton.glb:', err);
+        note.fail();
     });
 
-    function animate() { requestAnimationFrame(animate); HL.tick(); ctrl.update(); _renderer.render(scene, _cam); }
+    // Only draw when something changed: the camera moved, a bone was
+    // recoloured, or an animation is running. Saves battery when idle.
+    ctrl.addEventListener('change', HL.invalidate);
+    function animate() {
+        requestAnimationFrame(animate);
+        ctrl.update();
+        if (HL.tick()) _renderer.render(scene, _cam);
+    }
     animate();
 
     var ro = new ResizeObserver(function() {
         _cam.aspect = cont.clientWidth / cont.clientHeight;
         _cam.updateProjectionMatrix();
         _renderer.setSize(cont.clientWidth, cont.clientHeight);
+        HL.invalidate();
     });
     ro.observe(cont);
 }
