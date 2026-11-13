@@ -196,7 +196,7 @@ function _initUpperLimbEngine() {
         ctrl.target.copy(center);
         var fov = cam.fov * (Math.PI / 180);
         var maxDim = Math.max(size.x, size.y, size.z);
-        camFx.setRange(maxDim);
+        camFx.setRange(maxDim, box);
         cam.position.set(center.x, center.y, center.z + Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.3);
         cam.lookAt(center);
         ctrl.update();
