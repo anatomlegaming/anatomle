@@ -125,13 +125,6 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        const DIFF = {
-            Easy:   { bg:'#e8f5ec', color:'var(--sage)',   border:'#b8dfc4' },
-            Medium: { bg:'#fff3e0', color:'var(--golden)', border:'#ffd580' },
-            Hard:   { bg:'#fce8e4', color:'var(--coral)',  border:'#f4b8a8' },
-            Expert: { bg:'#f3e8ff', color:'#8b5cf6',       border:'#c4b5fd' },
-        };
-
         // ── LOADING ───────────────────────────────────────────────────────────
         function LoadingScreen() {
             return (
@@ -148,59 +141,6 @@
                         <div className="boing" style={{width:14, height:14, background:'var(--coral)',  borderRadius:'50%', animationDelay:'0s'}}></div>
                         <div className="boing" style={{width:14, height:14, background:'var(--golden)', borderRadius:'50%', animationDelay:'0.18s'}}></div>
                         <div className="boing" style={{width:14, height:14, background:'var(--sage)',   borderRadius:'50%', animationDelay:'0.36s'}}></div>
-                    </div>
-                </div>
-            );
-        }
-
-        // ── SHARED: BACK BUTTON ───────────────────────────────────────────────
-        function BackBtn({ onBack }) {
-            return (
-                <button onClick={onBack} className="back-btn" style={{
-                    background:'none', border:'none', cursor:'pointer',
-                    color:'var(--muted)', fontSize:'0.78rem',
-                    textTransform:'uppercase', letterSpacing:'0.15em',
-                    display:'inline-flex', alignItems:'center', gap:6,
-                    marginBottom:24, transition:'all 0.2s',
-                    fontFamily:'DM Sans, sans-serif', padding:0
-                }}
-                onMouseEnter={e => e.currentTarget.style.color='var(--ink)'}
-                onMouseLeave={e => e.currentTarget.style.color='var(--muted)'}
-                >← Back to Categories</button>
-            );
-        }
-
-        // ── SHARED: MODE CARD ─────────────────────────────────────────────────
-        function ModeCard({ mode, onClick }) {
-            const tag = DIFF[mode.difficulty];
-            return (
-                <div
-                    onClick={() => !mode.disabled && onClick(mode)}
-                    className="mode-card"
-                    style={{
-                        background:'var(--card-bg)',
-                        border:`2px solid ${mode.disabled ? 'var(--border)' : mode.accent + '55'}`,
-                        borderRadius:20, padding:'26px 22px',
-                        cursor: mode.disabled ? 'default' : 'pointer',
-                        opacity: mode.disabled ? 0.45 : 1,
-                        position:'relative',
-                    }}
-                >
-                    {mode.disabled && (
-                        <div style={{position:'absolute', top:12, right:12, background:'var(--cream)', color:'var(--muted)', fontSize:'9px', fontWeight:700, padding:'4px 10px', borderRadius:999, textTransform:'uppercase', letterSpacing:'0.1em', border:'1.5px solid var(--border)'}}>Coming Soon</div>
-                    )}
-                    {mode.badge && !mode.disabled && (
-                        <div style={{position:'absolute', top:12, right:12, background:mode.badgeBg, color:mode.badgeColor, fontSize:'9px', fontWeight:700, padding:'4px 12px', borderRadius:999, letterSpacing:'0.08em', border:`1.5px solid ${mode.badgeColor}44`}}>{mode.badge}</div>
-                    )}
-                    <div style={{display:'inline-flex', alignItems:'center', justifyContent:'center', background:mode.accentBg, borderRadius:14, width:52, height:52, fontSize:'1.8rem', marginBottom:14}}>{mode.icon}</div>
-                    <h3 style={{fontFamily:'Fraunces, serif', fontWeight:900, fontSize:'1.2rem', color:'var(--ink)', margin:'0 0 6px', letterSpacing:'-0.02em'}}>{mode.name}</h3>
-                    <p style={{color:'var(--muted)', fontSize:'0.82rem', lineHeight:1.55, margin:'0 0 18px', minHeight:56}}>{mode.description}</p>
-                    <div style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
-                        <span style={{background:tag.bg, color:tag.color, border:`1.5px solid ${tag.border}`, borderRadius:999, padding:'3px 12px', fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em'}}>{mode.difficulty}</span>
-                        <div style={{display:'flex', alignItems:'center', gap:8}}>
-                            {mode.howTo && window.HowToIcon && <window.HowToIcon gameType={mode.howTo} tooltip={true} />}
-                            {!mode.disabled && <span style={{color:'var(--muted)', fontSize:'0.78rem', fontWeight:600}}>Play →</span>}
-                        </div>
                     </div>
                 </div>
             );
@@ -245,10 +185,10 @@
         }
 
         // ── CATEGORY MENU ─────────────────────────────────────────────────────
-        function CategoryMenu({ onSelectCategory }) {
+        function CategoryMenu() {
             const categories = [
                 {
-                    id:'bone-games',
+                    id:'bone-games', href:'games/full-skeleton.html',
                     prefix:'Oste', suffix:'omle', suffixColor:'var(--coral)',
                     tagline:'Skeletal Anatomy',
                     description:'Trace a path through the human skeleton, bone by bone.',
@@ -256,10 +196,10 @@
                     available: true,
                 },
                 {
-                    id:'muscle-games',
+                    id:'muscle-games', href:'games/upper-limb.html',
                     prefix:'Myo', suffix:'mle', suffixColor:'var(--sage)',
                     tagline:'Muscle Anatomy',
-                    description:'Navigate upper limb muscles by bone attachment or nerve territory.',
+                    description:'Trace a path through the 58 muscles of the upper limb, linked by the bones they share.',
                     icon:'💪', glowClass:'card-glow-sage', borderColor:'var(--sage)',
                     available: true,
                 },
@@ -306,7 +246,7 @@
                             {categories.map(cat => (
                                 <div
                                     key={cat.id}
-                                    onClick={() => cat.available && onSelectCategory(cat.id)}
+                                    onClick={() => cat.available && (window.location.href = cat.href)}
                                     className={`category-card ${cat.glowClass}`}
                                     style={{
                                         background:'var(--card-bg)',
@@ -339,7 +279,7 @@
                                     {cat.available && (
                                         <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap:8}}>
                                             <div style={{fontSize:'0.65rem', color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.18em', fontWeight:600}}>∞ Unlimited Play</div>
-                                            <div style={{display:'inline-block', background:cat.borderColor, color:'white', borderRadius:999, padding:'7px 20px', fontSize:'0.78rem', fontWeight:600, letterSpacing:'0.05em', textTransform:'uppercase'}}>Explore →</div>
+                                            <div style={{display:'inline-block', background:cat.borderColor, color:'white', borderRadius:999, padding:'7px 20px', fontSize:'0.78rem', fontWeight:600, letterSpacing:'0.05em', textTransform:'uppercase'}}>Play →</div>
                                         </div>
                                     )}
                                 </div>
@@ -371,132 +311,17 @@
             );
         }
 
-        // ── BONE GAMES ────────────────────────────────────────────────────────
-        function BoneGamesMenu({ onBack }) {
-            const mainModes = [
-                { id:'full-skeleton', name:'Full Skeleton', description:'The full skeleton. Start at one bone, find your way to another.',          difficulty:'Hard',   icon:'🦴', file:'games/full-skeleton.html', disabled:false, accent:'var(--coral)',  accentBg:'#fce8e4', howTo:'pathfinding' },
-            ];
-            const quickModes = [
-                { id:'skull', name:'Skull',      description:'Find the path through the bones of the skull.',          difficulty:'Easy',   icon:'💀', file:'games/skull.html', disabled:false, accent:'var(--golden)', accentBg:'#fff3e0' },
-                { id:'hand',  name:'Hand',       description:'Find the path through the bones of the hand.',       difficulty:'Medium', icon:'✋', file:'games/hand.html',  disabled:false, accent:'var(--sage)',   accentBg:'#e8f5ec' },
-                { id:'foot',  name:'Foot',       description:'Find the path through the bones of the foot.',       difficulty:'Medium', icon:'🦶', file:'games/foot.html',  disabled:false, accent:'#8b5cf6',       accentBg:'#f3e8ff' },
-            ];
-
-            const SectionHeader = ({label}) => (
-                <div style={{display:'flex', alignItems:'center', gap:16, marginBottom:18}}>
-                    <div style={{height:'1.5px', flex:1, background:'linear-gradient(90deg, transparent, var(--border))'}} />
-                    <span style={{fontFamily:'DM Sans, sans-serif', fontSize:'0.68rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.25em', color:'var(--muted)', whiteSpace:'nowrap'}}>{label}</span>
-                    <div style={{height:'1.5px', flex:1, background:'linear-gradient(90deg, var(--border), transparent)'}} />
-                </div>
-            );
-
-            return (
-                <div style={{minHeight:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'48px 24px'}}>
-                    <div style={{maxWidth:860, width:'100%', position:'relative', zIndex:1}}>
-
-                        <header className="fade-up fade-up-1" style={{textAlign:'center', marginBottom:44}}>
-                            <BackBtn onBack={onBack} />
-                            <div style={{lineHeight:0.9, marginBottom:8}}>
-                                <span style={{fontFamily:'Fraunces, serif', fontWeight:900, fontSize:'clamp(4rem, 10vw, 7rem)', color:'var(--ink)', letterSpacing:'-0.04em'}}>Oste</span>
-                                <span style={{fontFamily:'Fraunces, serif', fontWeight:900, fontSize:'clamp(4rem, 10vw, 7rem)', color:'var(--coral)', letterSpacing:'-0.04em', fontStyle:'italic'}}>omle</span>
-                            </div>
-                            <p style={{fontFamily:'DM Sans, sans-serif', fontSize:'0.72rem', color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.3em', margin:0}}>Skeletal Anatomy</p>
-                        </header>
-
-                        <div className="fade-up fade-up-2" style={{marginBottom:36}}>
-                            <SectionHeader label="Head to Toe" />
-                            <div style={{display:'grid', gridTemplateColumns:'1fr', gap:18}}>
-                                {mainModes.map(mode => (
-                                    <ModeCard key={mode.id} mode={mode} onClick={m => window.location.href = m.file} />
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="fade-up fade-up-3" style={{marginBottom:32}}>
-                            <SectionHeader label="Tip of the Iceberg" />
-                            <div style={{display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:18}}>
-                                {quickModes.map(mode => (
-                                    <ModeCard key={mode.id} mode={mode} onClick={m => window.location.href = m.file} />
-                                ))}
-                            </div>
-                        </div>
-
-                        <hr className="fancy" />
-                        <div className="fade-up fade-up-4" style={{textAlign:'center', paddingTop:16, color:'var(--muted)', fontSize:'0.72rem', textTransform:'uppercase', letterSpacing:'0.2em'}}>
-                            Pathfinding challenges across the skeletal system
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        // ── MUSCLE GAMES ──────────────────────────────────────────────────────
-        function MuscleGamesMenu({ onBack }) {
-            const modes = [
-                {
-                    id:'upper-limb', name:'Upper Limb',
-                    badge:null, badgeColor:'var(--sage)', badgeBg:'#e8f5ec',
-                    description:'Navigate 58 muscles from shoulder to fingertip — guided by shared bony attachment.',
-                    difficulty:'Medium', icon:'💪', file:'games/upper-limb.html',
-                    disabled:false, accent:'var(--sage)', accentBg:'#e8f5ec', howTo:'pathfinding',
-                },
-                {
-                    id:'upper-limb-nerve', name:'Upper Limb',
-                    badge:'🧠 Nerve Challenge', badgeColor:'var(--cyan)', badgeBg:'rgba(6,182,212,0.1)',
-                    description:'Same 58 muscles — completely different rules. Navigate by nerve territory instead of bone.',
-                    difficulty:'Hard', icon:'🧠', file:'games/upper-limb-nerve.html',
-                    disabled:false, accent:'var(--cyan)', accentBg:'rgba(6,182,212,0.1)', howTo:'pathfinding',
-                },
-            ];
-
-            return (
-                <div style={{minHeight:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'48px 24px'}}>
-                    <div style={{maxWidth:960, width:'100%', position:'relative', zIndex:1}}>
-
-                        <header className="fade-up fade-up-1" style={{textAlign:'center', marginBottom:44}}>
-                            <BackBtn onBack={onBack} />
-                            <div style={{lineHeight:0.9, marginBottom:8}}>
-                                <span style={{fontFamily:'Fraunces, serif', fontWeight:900, fontSize:'clamp(4rem, 10vw, 7rem)', color:'var(--ink)', letterSpacing:'-0.04em'}}>Myo</span>
-                                <span style={{fontFamily:'Fraunces, serif', fontWeight:900, fontSize:'clamp(4rem, 10vw, 7rem)', color:'var(--sage)', letterSpacing:'-0.04em', fontStyle:'italic'}}>mle</span>
-                            </div>
-                            <p style={{fontFamily:'DM Sans, sans-serif', fontSize:'0.72rem', color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.3em', margin:'0 0 20px'}}>Muscle Anatomy Challenges</p>
-
-                            {/* Mode explainer */}
-                            <div style={{display:'flex', justifyContent:'center', gap:10, flexWrap:'wrap'}}>
-                                <span style={{fontFamily:'DM Sans, sans-serif', fontSize:'0.72rem', fontWeight:700, padding:'5px 16px', borderRadius:999, background:'rgba(90,138,106,0.08)', color:'var(--sage)', border:'1.5px solid rgba(90,138,106,0.3)', letterSpacing:'0.08em', textTransform:'uppercase'}}>⚡ Standard — Bone Attachment</span>
-                                <span style={{fontFamily:'DM Sans, sans-serif', fontSize:'0.72rem', fontWeight:700, padding:'5px 16px', borderRadius:999, background:'rgba(6,182,212,0.08)', color:'var(--cyan)', border:'1.5px solid rgba(6,182,212,0.3)', letterSpacing:'0.08em', textTransform:'uppercase'}}>🧠 Challenge — Nerve Territory</span>
-                            </div>
-                        </header>
-
-                        <div className="fade-up fade-up-2" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))', gap:18, marginBottom:32}}>
-                            {modes.map(mode => (
-                                <ModeCard key={mode.id} mode={mode} onClick={m => window.location.href = m.file} />
-                            ))}
-                        </div>
-
-                        <hr className="fancy" />
-                        <div className="fade-up fade-up-3" style={{textAlign:'center', paddingTop:16, color:'var(--muted)', fontSize:'0.72rem', textTransform:'uppercase', letterSpacing:'0.2em'}}>
-                            Navigate by attachment · Identify nerves by territory
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
         // ── APP ───────────────────────────────────────────────────────────────
         function App() {
             const [loading, setLoading] = useState(true);
-            const [view, setView]       = useState('categories');
-
+            
             useEffect(() => {
                 const t = setTimeout(() => setLoading(false), 1200);
                 return () => clearTimeout(t);
             }, []);
 
             if (loading)                 return <LoadingScreen />;
-            if (view === 'bone-games')   return <BoneGamesMenu   onBack={() => setView('categories')} />;
-            if (view === 'muscle-games') return <MuscleGamesMenu onBack={() => setView('categories')} />;
-            return <CategoryMenu onSelectCategory={setView} />;
+            return <CategoryMenu />;
         }
 
         ReactDOM.createRoot(document.getElementById('root')).render(<App />);

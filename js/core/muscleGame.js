@@ -1,12 +1,12 @@
 // ============================================================================
-// ANATOMLE - Muscle Pathfinding Game (shared by both Myomle modes)
+// ANATOMLE - Muscle Pathfinding Game (Myomle)
 // ============================================================================
 // Requires: React, UPPER_LIMB_MUSCLES (+ derived graphs), pathfinding.js,
 //           gameLogic.js, replayIndex.js, upperLimbEngine.js, pathfindingUI.js
 //
 // Usage:
 //   ReactDOM.createRoot(el).render(React.createElement(MuscleGame, {
-//       graph: UPPER_LIMB_BONE_GRAPH, mode: 'standard', title: '…',
+//       graph: UPPER_LIMB_BONE_GRAPH, title: '…',
 //       minPath: 4, maxPath: 8, bonus: 3, replayCode: 'ul', shareTitle: '…'
 //   }));
 //
@@ -25,12 +25,8 @@
         return initializeGame(graph, { minLength: minPath, maxLength: maxPath });
     }
 
-    function supplyOf(muscle) {
-        return (UPPER_LIMB_MUSCLES[muscle] || {}).supply || '';
-    }
-
     function MuscleGame(props) {
-        var graph = props.graph, isNerve = props.mode === 'nerve';
+        var graph = props.graph;
 
         var first = useMemo(function () { return newPuzzle(graph, props.minPath, props.maxPath); }, []);
         function chainFor(g) {
@@ -52,10 +48,8 @@
         var _sh = useState(false), shared = _sh[0], setShared = _sh[1];
         var _rv = useState(false), reviewing = _rv[0], setReviewing = _rv[1];
         var _go = useState([]), guessOrder = _go[0], setGuessOrder = _go[1];
-        var _sl = useState(function () { return [{ muscle: first.start, supply: supplyOf(first.start) }]; }),
-            supplyLog = _sl[0], setSupplyLog = _sl[1];
 
-        var htp = window.useFirstVisit ? window.useFirstVisit(isNerve ? 'upper-limb-nerve' : 'upper-limb') : [false, function () {}];
+        var htp = window.useFirstVisit ? window.useFirstVisit('upper-limb') : [false, function () {}];
 
         // ── 3D highlights ────────────────────────────────────────────────────
         var highlightRef = useRef([]);
@@ -116,7 +110,6 @@
             if (target.path.indexOf(guess) !== -1) {
                 var updated = chain.map(function (c) { return c.bone === guess ? Object.assign({}, c, { guessed: true }) : c; });
                 setChain(updated);
-                setSupplyLog(function (p) { return p.concat([{ muscle: guess, supply: supplyOf(guess) }]); });
                 var optimal = updated.filter(function (c) { return c.guessed; }).map(function (c) { return c.bone; });
                 if (canReachTargetWithGuessed(target.start, target.end, optimal, detours, graph)) setPhase('won');
                 return;
@@ -129,7 +122,6 @@
             if (result.type === 'detour') {
                 var newDetours = detours.concat([guess]);
                 setDetours(newDetours);
-                setSupplyLog(function (p) { return p.concat([{ muscle: guess, supply: supplyOf(guess), detour: true }]); });
                 var opt = chain.filter(function (c) { return c.guessed; }).map(function (c) { return c.bone; });
                 if (canReachTargetWithGuessed(target.start, target.end, opt, newDetours, graph)) { setPhase('won'); return; }
             } else {
@@ -160,7 +152,6 @@
             setInput(''); setSelIdx(-1);
             setPhase('playing'); setReveal(false); setReviewing(false);
             setHintUsed(false); setShared(false); setGuessOrder([]);
-            setSupplyLog([{ muscle: g.start, supply: supplyOf(g.start) }]);
             if (window.reset3D) window.reset3D();
         }
 
@@ -197,8 +188,7 @@
             target: target, chain: chain, left: left, max: max, bad: bad, detours: detours,
             input: input, selIdx: selIdx, phase: phase, reveal: reveal, suggestions: suggestions,
             hintUsed: hintUsed, shared: shared, reviewing: reviewing,
-            guessesUsed: guessOrder.length,
-            supplyLog: isNerve ? supplyLog : null
+            guessesUsed: guessOrder.length
         };
         var handlers = {
             onInputChange: function (ev) { setInput(ev.target.value); setSelIdx(-1); },
@@ -216,7 +206,7 @@
         return React.createElement(React.Fragment, null,
             window.HowToModal ? React.createElement(window.HowToModal, { show: htp[0], onClose: htp[1] }) : null,
             React.createElement(window.PathfindingUI, {
-                gameTitle: props.title, state: state, handlers: handlers, mode: props.mode
+                gameTitle: props.title, state: state, handlers: handlers
             })
         );
     }

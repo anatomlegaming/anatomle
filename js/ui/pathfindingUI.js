@@ -1,8 +1,8 @@
 // ============================================================================
 // ANATOMLE - PATHFINDING UI
 // Pure React.createElement — no JSX, loads as plain <script> tag
-// Supports: skeleton game, upper limb standard, upper limb nerve challenge
-// Features: mode badge, nerve hint button, nerve supply log, share button
+// Supports: skeleton game and upper limb muscle game
+// Features: optional nerve hint button, share button, review mode
 // ============================================================================
 (function () {
     var e = React.createElement;
@@ -52,7 +52,6 @@
     // ── MAIN COMPONENT ────────────────────────────────────────────────────────
     function PathfindingUI(props) {
         var gameTitle = props.gameTitle;
-        var mode      = props.mode || 'standard'; // 'standard' | 'nerve'
         var s         = props.state;
         var h         = props.handlers;
 
@@ -72,11 +71,9 @@
         var reviewing   = s.reviewing  || false;
         var guessesUsed = s.guessesUsed || (max - left);
         var streak      = s.streak || null;
-        var supplyLog   = s.supplyLog  || null;
 
-        var isNerve  = mode === 'nerve';
-        var accent   = isNerve ? C.cyan    : C.coral;
-        var accentDk = isNerve ? C.cyanDk  : C.coralDk;
+        var accent   = C.coral;
+        var accentDk = C.coralDk;
 
         var inputRef = useRef(null);
         useEffect(function () {
@@ -94,17 +91,8 @@
             alignItems:'center', padding:'0 20px',
             boxShadow:'0 2px 16px rgba(45,31,20,0.07)'
         }},
-            // Left: mode badge — only show for nerve mode
-            e('div', { style:{ display:'flex', alignItems:'center' } },
-                isNerve ? e('span', { style:{
-                    fontFamily:'DM Sans,sans-serif', fontSize:9, fontWeight:700,
-                    textTransform:'uppercase', letterSpacing:'0.12em',
-                    color: C.cyan,
-                    padding:'4px 12px',
-                    border:'1.5px solid '+C.cyan,
-                    borderRadius:999, lineHeight:1.4
-                }}, '\uD83E\uDDE0 Nerve Challenge') : null
-            ),
+            // Left: empty column keeps the logo centred
+            e('div', null),
             // Centre: logo — clickable back to menu
             e('a', { href:'../index.html', style:{
                 display:'flex', flexDirection:'column', alignItems:'center', gap:2,
@@ -213,20 +201,6 @@
                     : item.guessed ? '\u2713'
                     : '\u00B7';
 
-            // Nerve supply tag (nerve mode only, when shown)
-            var supplyTag = null;
-            if (isNerve && shown && item.bone &&
-                typeof UPPER_LIMB_MUSCLES !== 'undefined' &&
-                UPPER_LIMB_MUSCLES[item.bone]) {
-                var supply = UPPER_LIMB_MUSCLES[item.bone].supply;
-                if (supply) {
-                    supplyTag = e('span', { style:{
-                        fontSize:8, color:C.cyan, fontFamily:'DM Sans,sans-serif',
-                        opacity:0.85, marginLeft:6, fontWeight:600
-                    }}, '\u2022 ' + supply);
-                }
-            }
-
             return e('div', { key:idx,
                 onMouseEnter: function() { if (shown && window.highlight3D) window.highlight3D(item.bone, true); },
                 onMouseLeave: function() { if (window.highlight3D) window.highlight3D(item.bone, false); },
@@ -242,8 +216,7 @@
                 transition:'filter 0.15s'
             }},
                 e('div', { style:{ display:'flex', alignItems:'center', flexWrap:'wrap' } },
-                    e('span', null, shown ? item.bone : '???'),
-                    supplyTag
+                    e('span', null, shown ? item.bone : '???')
                 ),
                 e('span', { style:{ fontSize:16, lineHeight:1 } }, ico)
             );
@@ -256,9 +229,6 @@
                 textAlign:'center', marginTop:6, fontStyle:'italic'
               }}, 'None yet')]
             : detours.map(function (b) {
-                var supply = (isNerve &&
-                    typeof UPPER_LIMB_MUSCLES !== 'undefined' &&
-                    UPPER_LIMB_MUSCLES[b]) ? UPPER_LIMB_MUSCLES[b].supply : null;
                 return e('div', { key:b, style:{
                     padding:'5px 10px', marginBottom:3, borderRadius:8,
                     background:'rgba(240,165,0,0.08)',
@@ -268,8 +238,7 @@
                     textTransform:'uppercase', letterSpacing:'0.04em',
                     display:'flex', justifyContent:'space-between', alignItems:'center'
                 }},
-                    e('span', null, '\u26A0 '+b),
-                    supply ? e('span', { style:{ fontSize:8, opacity:0.7 } }, supply) : null
+                    e('span', null, '\u26A0 '+b)
                 );
             });
 
@@ -319,7 +288,7 @@
                 flex:'1 1 0', overflow:'hidden', display:'flex',
                 flexDirection:'column', borderBottom:'2px solid '+C.border
             }},
-                SectionHead(isNerve ? '\uD83E\uDDE0' : '\uD83E\uDDB4',
+                SectionHead('\uD83E\uDDB4',
                     'Path', null, C.sage),
                 e('div', { className:'scr', style:{ overflowY:'auto', flex:1, padding:'8px 14px' } },
                     chainItems)
@@ -402,7 +371,7 @@
                         transform:'translateY(-50%)', fontSize:15,
                         pointerEvents:'none',
                         color: phase !== 'playing' ? C.muted : accent
-                    }}, isNerve ? '\uD83E\uDDE0' : '\uD83E\uDDB4'),
+                    }}, '\uD83E\uDDB4'),
                     e('input', {
                         ref: inputRef, value: input,
                         onChange: h.onInputChange,
@@ -533,31 +502,6 @@
                             fontSize:13, color:accent
                         }}, target.end)
                     ),
-                    // Nerve supply recap (nerve mode only)
-                    (isNerve && supplyLog && supplyLog.length > 0)
-                        ? e('div', { style:{
-                            marginBottom:16, padding:'10px 14px',
-                            background:'rgba(6,182,212,0.05)',
-                            border:'1.5px solid rgba(6,182,212,0.2)',
-                            borderRadius:10, textAlign:'left'
-                          }},
-                            e('div', { style:{
-                                fontFamily:'DM Sans,sans-serif', fontSize:8, color:C.cyan,
-                                textTransform:'uppercase', letterSpacing:'0.2em',
-                                marginBottom:6, fontWeight:700
-                            }}, '\uD83E\uDDE0 Nerve Supply'),
-                            supplyLog.map(function (item, i) {
-                                return e('div', { key:i, style:{
-                                    fontFamily:'DM Sans,sans-serif', fontSize:10,
-                                    color: item.detour ? C.golden : C.inkLight,
-                                    marginBottom:2, display:'flex', justifyContent:'space-between'
-                                }},
-                                    e('span', { style:{ fontWeight:600 } }, item.muscle),
-                                    e('span', { style:{ color:C.cyan, fontSize:9 } }, item.supply)
-                                );
-                            })
-                          )
-                        : null,
                     // Reveal path (lost) / Review my path (won)
                     phase === 'lost'
                         ? e('div', { style:{ marginBottom:12 } },
