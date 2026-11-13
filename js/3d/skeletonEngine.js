@@ -305,7 +305,7 @@ function _initSkeletonEngine() {
         ctrl.target.copy(center);
         var fov    = _cam.fov * (Math.PI / 180);
         var maxDim = Math.max(size.x, size.y, size.z);
-        _camFx.setRange(maxDim);
+        _camFx.setRange(maxDim, box);
         var dist = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.5;
         _initCenter = center.clone();
         _initDist   = dist;

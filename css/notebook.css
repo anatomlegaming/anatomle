@@ -170,6 +170,17 @@ body.game { overflow: hidden; }
 }
 .cv-load.err { font-family: var(--font); font-size: 16px; color: var(--red); }
 
+/* "drag to turn · scroll to zoom" until the player first moves the model */
+.cv-hint {
+    position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 2;
+    padding: 6px 14px; border-radius: 999px; white-space: nowrap; pointer-events: none;
+    background: var(--nav-bg); border: 1.5px solid var(--rule);
+    font-size: 13px; font-weight: 500; color: var(--ink-2);
+    transition: opacity .4s ease;
+}
+.cv-hint b { color: var(--ink); }
+.cv-hint.gone { opacity: 0; }
+
 .reset-view {
     position: fixed; z-index: 50;
     left: 80px; bottom: 32px;

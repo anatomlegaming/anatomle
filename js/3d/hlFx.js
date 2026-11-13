@@ -193,7 +193,9 @@
     }
 
     // ── Camera ──────────────────────────────────────────────────────────────
-    // Orbit with a short, soft glide; no flipping over the top or bottom.
+    // Turntable feel: dragging sideways spins the model, dragging up/down
+    // tilts it only so far (never top-down), and it is slow enough to aim.
+    // Right-drag moves it, but it can never be dragged out of view.
     // The mouse wheel zooms smoothly towards whatever is under the cursor
     // (trackpads and mouse wheels feel the same); pinch zooms on touch.
     // opts: { cam, ctrl, dom, pickables: fn -> meshes, onUser: fn }
@@ -201,14 +203,27 @@
     function camera(o) {
         var cam = o.cam, ctrl = o.ctrl, dom = o.dom;
         ctrl.enableDamping = true;
-        ctrl.dampingFactor = 0.12;
-        ctrl.rotateSpeed = 0.75;
-        ctrl.panSpeed = 0.8;
+        ctrl.dampingFactor = 0.16;
+        ctrl.rotateSpeed = 0.45;           // a drag the height of the view turns ~80°
+        ctrl.panSpeed = 0.7;
         ctrl.zoomSpeed = 0.8;
         ctrl.enableZoom = true;            // pinch on touch; the wheel is handled below
         ctrl.screenSpacePanning = true;
-        ctrl.minPolarAngle = 0.1;
-        ctrl.maxPolarAngle = Math.PI - 0.1;
+        ctrl.minPolarAngle = Math.PI / 2 - 1.0;   // look down/up at most ~57°
+        ctrl.maxPolarAngle = Math.PI / 2 + 1.0;
+        var bounds = null;                 // the target may not leave the model
+        dom.style.cursor = 'grab';
+        dom.addEventListener('pointerdown', function () { dom.style.cursor = 'grabbing'; });
+        window.addEventListener('pointerup', function () { dom.style.cursor = 'grab'; });
+        dom.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+        // How to move it, until the player first does
+        var hint = document.createElement('div');
+        hint.className = 'cv-hint';
+        hint.innerHTML = '<b>drag</b> to turn · <b>scroll</b> to zoom · <b>right-drag</b> to move';
+        if (matchMedia('(pointer: coarse)').matches) hint.innerHTML = '<b>drag</b> to turn · <b>pinch</b> to zoom · <b>two fingers</b> to move';
+        dom.parentNode.appendChild(hint);
+        function used() { if (hint.parentNode) { hint.classList.add('gone'); setTimeout(function () { if (hint.parentNode) hint.parentNode.removeChild(hint); }, 400); } }
 
         var goal = null;                   // distance we are easing towards
         var pivot = new THREE.Vector3();   // point that stays put while zooming
@@ -216,13 +231,13 @@
         var lastPick = 0, flight = null;
 
         function cancel() { flight = null; }
-        ctrl.addEventListener('start', function () { cancel(); if (o.onUser) o.onUser(); });
+        ctrl.addEventListener('start', function () { cancel(); used(); if (o.onUser) o.onUser(); });
 
         // Capture on the parent, so OrbitControls' own (jumpy) wheel zoom never runs
         dom.parentNode.addEventListener('wheel', function (e) {
             if (e.target !== dom) return;
             e.preventDefault(); e.stopPropagation();
-            cancel(); if (o.onUser) o.onUser();
+            cancel(); used(); if (o.onUser) o.onUser();
             var dy = e.deltaY * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? 400 : 1);
             dy = Math.max(-120, Math.min(120, dy));
             var d = cam.position.distanceTo(ctrl.target);
@@ -244,7 +259,16 @@
         function ease(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
         var tmp = new THREE.Vector3();
 
+        function keepInView() {
+            if (!bounds || bounds.containsPoint(ctrl.target)) return;
+            var d = bounds.clampPoint(ctrl.target, tmp).sub(ctrl.target).multiplyScalar(0.25);
+            cam.position.add(d);
+            ctrl.target.add(d);
+            dirty = true;
+        }
+
         function step() {
+            keepInView();
             if (flight) {
                 var t = Math.min((performance.now() - flight.t0) / flight.ms, 1), k = ease(t);
                 cam.position.lerpVectors(flight.p0, flight.p1, k);
@@ -272,7 +296,8 @@
         }
 
         // zoom limits that fit the model, and a near plane that never cuts it
-        function setRange(size) {
+        function setRange(size, box) {
+            if (box) bounds = box.clone().expandByScalar(size * 0.05);
             ctrl.minDistance = size * 0.12;
             ctrl.maxDistance = size * 2.6;
             cam.near = size * 0.005; cam.far = size * 50;
