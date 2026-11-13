@@ -1,7 +1,8 @@
 // ============================================================================
 // ANATOMLE — Replay Index
 // Maps bone names to compact integer indices per game, for URL encoding.
-// Game codes: fs=full-skeleton, h=hand, f=foot, sk=skull
+// Game codes: fs=full-skeleton, h=hand, f=foot, sk=skull,
+//             ul=upper-limb muscles, un=upper-limb nerve challenge
 // ============================================================================
 
 var REPLAY_INDEX = {
@@ -22,6 +23,16 @@ var REPLAY_INDEX = {
         toBone: {"0": "Frontal Bone", "1": "Parietal Bone", "2": "Occipital Bone", "3": "Temporal Bone", "4": "Sphenoid Bone", "5": "Ethmoid Bone", "6": "Nasal Bone", "7": "Lacrimal Bone", "8": "Zygomatic Bone", "9": "Maxilla", "10": "Palatine Bone", "11": "Vomer", "12": "Inferior Nasal Concha", "13": "Mandible"},
     },
 };
+
+// Upper-limb muscles share one index for both Myomle modes. Append new muscles
+// to the END of this list so existing replay links keep decoding correctly.
+(function() {
+    var muscles = ["Trapezius", "Levator Scapulae", "Rhomboid Minor", "Rhomboid Major", "Serratus Anterior", "Subclavius", "Pectoralis Minor", "Pectoralis Major", "Subscapularis", "Supraspinatus", "Infraspinatus", "Teres Minor", "Teres Major", "Deltoid", "Latissimus Dorsi", "Coracobrachialis", "Biceps Brachii", "Brachialis", "Triceps Brachii", "Anconeus", "Brachioradialis", "Extensor Carpi Radialis Longus", "Extensor Carpi Radialis Brevis", "Extensor Digitorum", "Extensor Digiti Minimi", "Extensor Carpi Ulnaris", "Supinator", "Abductor Pollicis Longus", "Extensor Pollicis Brevis", "Extensor Pollicis Longus", "Extensor Indicis", "Pronator Teres", "Flexor Carpi Radialis", "Palmaris Longus", "Flexor Digitorum Superficialis", "Flexor Digitorum Profundus", "Flexor Pollicis Longus", "Pronator Quadratus", "Flexor Carpi Ulnaris", "Abductor Pollicis Brevis", "Flexor Pollicis Brevis", "Opponens Pollicis", "Adductor Pollicis", "Palmaris Brevis", "Abductor Digiti Minimi", "Flexor Digiti Minimi Brevis", "Opponens Digiti Minimi", "Lumbrical I", "Lumbrical II", "Lumbrical III", "Lumbrical IV", "Dorsal Interosseous I", "Dorsal Interosseous II", "Dorsal Interosseous III", "Dorsal Interosseous IV", "Palmar Interosseous I", "Palmar Interosseous II", "Palmar Interosseous III"];
+    var toIdx = {}, toBone = {};
+    muscles.forEach(function(m, i) { toIdx[m] = i; toBone[String(i)] = m; });
+    REPLAY_INDEX.ul = { toIdx: toIdx, toBone: toBone };
+    REPLAY_INDEX.un = { toIdx: toIdx, toBone: toBone };
+})();
 
 // Encode a replay into a compact URL query string
 window.encodeReplay = function(game, start, end, path, guessOrder, detours, bad) {

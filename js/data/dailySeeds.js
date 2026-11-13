@@ -4,10 +4,9 @@
 // One seed per UTC day. Same seed = same puzzle for every player worldwide.
 // Puzzle resets at midnight UTC.
 //
-// To add more days: append entries following the same pattern.
-// Seeds are pre-generated offline so players cannot predict future puzzles
-// by inspecting this file — the seed number alone doesn't reveal the puzzle
-// without also running it through the seeded RNG + graph traversal.
+// The hand-picked seeds below cover the launch period. Any date without an
+// entry gets a seed derived from the date itself (see getDailySeed), so the
+// daily puzzle never runs out and every player still gets the same puzzle.
 // ============================================================================
 
 const DAILY_SEEDS = {
@@ -102,3 +101,20 @@ const DAILY_SEEDS = {
     "2026-05-22": 974628,
     "2026-05-23": 482554,
 };
+
+// Derive a stable seed for any "YYYY-MM-DD" date. Listed dates keep their
+// original seed so old replays and streaks stay valid.
+function getDailySeed(dateStr) {
+    if (DAILY_SEEDS[dateStr]) return DAILY_SEEDS[dateStr];
+    // FNV-1a hash of the date string, then a final avalanche mix
+    var h = 0x811c9dc5;
+    var key = 'anatomle:' + dateStr;
+    for (var i = 0; i < key.length; i++) {
+        h ^= key.charCodeAt(i);
+        h = Math.imul(h, 0x01000193);
+    }
+    h ^= h >>> 16; h = Math.imul(h, 0x85ebca6b);
+    h ^= h >>> 13; h = Math.imul(h, 0xc2b2ae35);
+    h ^= h >>> 16;
+    return (h >>> 0) % 900000 + 100000;
+}

@@ -33,7 +33,7 @@
     var BAR_H   = 46;
     var SRCH_H  = 68;
     var PANEL_W = 420;
-    var AD_W    = 160;
+    var AD_W    = 0;
 
     function secHead(icon, label, count, color) {
         return e('div', {

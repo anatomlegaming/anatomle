@@ -65,8 +65,17 @@ function getNerveMeshesForSupply(supply) {
 
 // ── PUBLIC API ───────────────────────────────────────────────────────────────
 
+// Meshes that belong to hidden systems (bones, nerves, vessels…). They stay
+// invisible except while a nerve hint is lighting one of them up.
+var _hiddenMeshes = [];
+
+function hideNonMuscle() {
+    _hiddenMeshes.forEach(function(m) { m.visible = false; });
+}
+
 window.reset3D = function() {
     if (!_model) return;
+    hideNonMuscle();
     _model.traverse(function(n) {
         if (n.isMesh) n.material = GHOST_MAT();
     });
@@ -91,6 +100,7 @@ window.update3D = function(bones) {
         });
     });
 
+    hideNonMuscle();
     _model.traverse(function(node) {
         if (!node.isMesh) return;
         var type = highlighted[node.name];
@@ -127,6 +137,7 @@ window.showNerveHint = function(muscleName) {
     _model.traverse(function(node) {
         if (!node.isMesh) return;
         if (nerveMeshes.has(node.name)) {
+            node.visible = true;
             node.material = new THREE.MeshStandardMaterial({
                 color: 0xf0c040, emissive: 0xf0c040, emissiveIntensity: 0.8,
                 transparent: false, opacity: 1
@@ -141,7 +152,7 @@ window.clearNerveHint = function() {
 };
 
 // ── SCENE SETUP ──────────────────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', function() {
+function _initUpperLimbEngine() {
     var cont = document.getElementById('cv');
     var scene = new THREE.Scene();
     var cam = new THREE.PerspectiveCamera(45, cont.clientWidth / cont.clientHeight, 0.1, 100);
@@ -190,17 +201,22 @@ window.addEventListener('DOMContentLoaded', function() {
 
         buildMeshMap();
 
-        // Hide non-muscle groups by default — show only muscles
+        // Hide non-muscle systems by default — show only muscles. We hide the
+        // meshes themselves rather than their parent groups, so a nerve hint
+        // can still make an individual nerve visible.
+        _hiddenMeshes = [];
         _model.traverse(function(node) {
             if (node.isObject3D && !node.isMesh) {
                 var name = node.name || '';
-                // Hide bones, nerves, veins, arteries, cartilages, ligaments groups
+                // Bones, nerves, veins, arteries, cartilages, ligaments groups
                 if (name.indexOf('bone') !== -1 || name.indexOf('nerve') !== -1 ||
                     name.indexOf('vein') !== -1 || name.indexOf('arteri') !== -1 ||
                     name.indexOf('cartilage') !== -1 || name.indexOf('ligament') !== -1 ||
                     name.indexOf('capsule') !== -1 || name.indexOf('synovia') !== -1 ||
                     name.indexOf('bursae') !== -1) {
-                    node.visible = false;
+                    node.traverse(function(child) {
+                        if (child.isMesh && _hiddenMeshes.indexOf(child) === -1) _hiddenMeshes.push(child);
+                    });
                 }
             }
         });
@@ -218,6 +234,15 @@ window.addEventListener('DOMContentLoaded', function() {
         cam.position.set(center.x, center.y, center.z + Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.3);
         cam.lookAt(center);
         ctrl.update();
+        var homePos = cam.position.clone(), homeTarget = center.clone();
+        window.resetCamera = function() {
+            cam.position.copy(homePos);
+            ctrl.target.copy(homeTarget);
+            ctrl.update();
+        };
+
+        window.__modelIsReady = true;
+        window.dispatchEvent(new Event('modelReady'));
     }, undefined, function(err) {
         console.error('Failed to load upper-limb.glb:', err);
     });
@@ -235,4 +260,12 @@ window.addEventListener('DOMContentLoaded', function() {
         renderer.setSize(cont.clientWidth, cont.clientHeight);
     });
     ro.observe(cont);
-});
+}
+
+// Run now if the page has already loaded (e.g. replay.html injects this
+// script after DOMContentLoaded), otherwise wait for the DOM.
+if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', _initUpperLimbEngine);
+} else {
+    _initUpperLimbEngine();
+}

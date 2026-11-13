@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <title>ANATOMLE | Anatomy Training Platform</title>
 
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="js/ui/howToPlay.js"></script>
     <script src="js/core/streak.js"></script>
@@ -263,14 +263,6 @@
                     icon:'💪', glowClass:'card-glow-sage', borderColor:'var(--sage)',
                     available: true,
                 },
-                {
-                    id:'blood-games',
-                    prefix:'Hæmo', suffix:'mle', suffixColor:'var(--golden)',
-                    tagline:'Circulatory System',
-                    description:'Trace blood cell journeys through arteries, veins, and capillary beds.',
-                    icon:'🩸', glowClass:'card-glow-golden', borderColor:'var(--golden)',
-                    available: false,
-                },
             ];
 
             return (
@@ -383,7 +375,6 @@
         function BoneGamesMenu({ onBack }) {
             const mainModes = [
                 { id:'full-skeleton', name:'Full Skeleton', description:'The full skeleton. Start at one bone, find your way to another.',          difficulty:'Hard',   icon:'🦴', file:'games/full-skeleton.html', disabled:false, accent:'var(--coral)',  accentBg:'#fce8e4', howTo:'pathfinding' },
-                { id:'challenge',     name:'Challenge Mode',description:'Invisible skeleton — expert pathfinding with no visual feedback.',                  difficulty:'Expert', icon:'⚡', file:'games/challenge.html',    disabled:true,  accent:'#ec4899',       accentBg:'#fce7f3' },
             ];
             const quickModes = [
                 { id:'skull', name:'Skull',      description:'Find the path through the bones of the skull.',          difficulty:'Easy',   icon:'💀', file:'games/skull.html', disabled:false, accent:'var(--golden)', accentBg:'#fff3e0' },
@@ -414,7 +405,7 @@
 
                         <div className="fade-up fade-up-2" style={{marginBottom:36}}>
                             <SectionHeader label="Head to Toe" />
-                            <div style={{display:'grid', gridTemplateColumns:'repeat(2, 1fr)', gap:18}}>
+                            <div style={{display:'grid', gridTemplateColumns:'1fr', gap:18}}>
                                 {mainModes.map(mode => (
                                     <ModeCard key={mode.id} mode={mode} onClick={m => window.location.href = m.file} />
                                 ))}
@@ -455,13 +446,6 @@
                     description:'Same 58 muscles — completely different rules. Navigate by nerve territory instead of bone.',
                     difficulty:'Hard', icon:'🧠', file:'games/upper-limb-nerve.html',
                     disabled:false, accent:'var(--cyan)', accentBg:'rgba(6,182,212,0.1)', howTo:'pathfinding',
-                },
-                {
-                    id:'lower-limb', name:'Lower Limb',
-                    badge:null,
-                    description:'Gluteals, quadriceps, hamstrings, calf — hip to toe.',
-                    difficulty:'Medium', icon:'🦵', file:'games/lower-limb.html',
-                    disabled:true, accent:'var(--golden)', accentBg:'#fff3e0',
                 },
             ];
 
