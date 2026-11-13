@@ -420,7 +420,7 @@
         { icon:'📍', head:'Start & End given',    body:'Each puzzle gives you two bones. The start is revealed — the end is shown but locked. Find what connects them.' },
         { icon:'🔗', head:'Guess the stops',       body:'Type any bone that lies on the connecting path. Each correct guess lights up that step in the chain.' },
         { icon:'⚠️', head:'Every guess counts',    body:'Green is on a shortest route. Yellow works but takes the long way. Red can never get you there. Every guess uses one of your turns.' },
-        { icon:'🏆', head:'Connect the ends',      body:'Win once your guesses join start to end. Shortest route with no mistakes is Perfect, with one or two mistakes is Shortest Route, any other route is Path Found.' },
+        { icon:'🏆', head:'Connect the ends',      body:'Win once your guesses join start to end. Perfect means the shortest route, no mistakes, guessed in order from one end. No mistakes but out of order is a Clean Route, one or two mistakes is Shortest Route, anything else is Path Found.' },
     ];
 
     // ── MODAL CONTENT ─────────────────────────────────────────────────────────

@@ -34,6 +34,9 @@
         var streak      = s.streak || null;
         var grade       = s.grade  || null;   // {tier, stars, label, emoji, detail} from PathScoring
         var gridText    = s.grid   || null;
+        var log         = s.log    || [];
+        var goal        = s.goal   || target.end;
+        var guessNo = {}; log.forEach(function (g) { guessNo[g.bone] = g.n; });
 
         var howState = useState(false);
         var showHow = howState[0], setShowHow = howState[1];
@@ -100,21 +103,35 @@
                         item.alts && item.alts.length
                             ? e('span', { className: 'alts' }, ' or ' + item.alts.join(' or '))
                             : null)
-                    : e('span', null, '________')
+                    : e('span', null, '________'),
+                isFirst ? e('span', { className: 'tag' }, 'start')
+                : isLast ? e('span', { className: 'tag' }, 'goal')
+                : revealed ? e('span', { className: 'tag' }, 'answer')
+                : item.guessed && guessNo[item.bone] ? e('span', { className: 'tag' }, 'guess ' + guessNo[item.bone])
+                : null
             );
         });
 
-        // ── CROSSED OUT (detours + wrong) ─────────────────────────────────────
-        var noteItems = [];
-        detours.forEach(function (b) {
-            noteItems.push(e('div', { key: 'd' + b, className: 'g-detour' },
-                e('b', null, b), e('span', null, ' works, but longer')));
+        // ── GUESS LOG: every guess in order, with what it did ────────────────
+        var logItems = log.slice().reverse().map(function (g) {
+            var why, cls;
+            if (g.type === 'optimal') { cls = 'ok'; why = 'on the shortest route'; }
+            else if (g.type === 'detour') {
+                cls = 'detour';
+                why = 'connects, but adds ' + g.extra + ' step' + (g.extra === 1 ? '' : 's') + (g.onRoute ? ' (used)' : '');
+            } else {
+                cls = 'bad';
+                why = g.extra === null ? 'not linked to this route'
+                    : 'too far off course to reach ' + goal + ' in time';
+            }
+            return e('div', { key: g.n, className: 'g-log ' + cls + (g.type === 'bad' ? ' shake' : '') },
+                e('span', { className: 'num' }, g.n),
+                e('div', { className: 'txt' },
+                    e('b', null, g.bone),
+                    e('span', { className: 'why' }, why)));
         });
-        bad.forEach(function (b) {
-            noteItems.push(e('div', { key: 'b' + b, className: 'g-bad shake' },
-                e('b', null, b), e('span', null, ' can’t get there')));
-        });
-        if (!noteItems.length) noteItems.push(e('div', { key: 'none', className: 'g-empty' }, 'nothing yet, nice'));
+        if (!logItems.length) logItems.push(e('div', { key: 'none', className: 'g-empty' }, 'your guesses show up here'));
+        var mistakes = detours.length + bad.length;
 
         // ── PANEL BUTTONS ─────────────────────────────────────────────────────
         var hintBtn = h.onHint
@@ -142,10 +159,11 @@
             ),
             e('div', { className: 'g-notes' },
                 e('div', { className: 'g-head' },
-                    e('span', { className: 't' }, 'crossed out'),
-                    e('span', { className: 'n' }, (detours.length + bad.length) || '')
+                    e('span', { className: 't' }, 'my guesses'),
+                    e('span', { className: 'n' + (mistakes ? ' warn' : '') },
+                        log.length ? (mistakes ? mistakes + ' mistake' + (mistakes === 1 ? '' : 's') : 'no mistakes') : '')
                 ),
-                e('div', { className: 'g-chipwrap nb-scroll' }, noteItems)
+                e('div', { className: 'g-chipwrap nb-scroll' }, logItems)
             ),
             e('div', { className: 'g-btns' }, hintBtn, mainBtn)
         );
@@ -217,6 +235,10 @@
                         grade ? grade.detail
                         : won ? plural(guessesUsed, 'guess') + ', best possible is ' + optimal
                         : bad.length + ' wrong · ' + guessesUsed + ' total'),
+                    log.length ? e('div', { className: 'g-trail' },
+                        log.map(function (g) {
+                            return e('span', { key: g.n, className: 'chip ' + (g.type === 'optimal' ? 'ok' : g.type) }, g.n + '. ' + g.bone);
+                        })) : null,
                     streakBlock,
                     e('div', { className: 'route' },
                         e('span', { className: 'hl-green' }, target.start),
