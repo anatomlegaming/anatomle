@@ -225,10 +225,12 @@
                 }))
             : null;
 
-        var searchBar = e('div', { className: 'g-search' },
+        var searchBar = e('div', { className: 'g-search g-ask' + (log.length === 0 && phase === 'playing' ? ' fresh' : '') },
+            e('div', { className: 'ask-head' },
+                e('span', { className: 'ask-t' }, phase === 'playing' ? 'Your guess' : 'Game over'),
+                phase === 'playing' ? e('span', { className: 'ask-k' }, 'type, then press Enter \u21B5') : null),
             e('label', { className: 'g-field' + (input && suggestions.length === 0 ? ' err' : '') + (shaking ? ' shake' : '') },
                 dropdown,
-                e('span', { className: 'lbl' }, 'next:'),
                 e('input', {
                     ref: inputRef, value: input,
                     onChange: h.onInputChange,
