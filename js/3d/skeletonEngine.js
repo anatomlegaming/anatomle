@@ -102,7 +102,7 @@ window.reset3D = function() {
     if (!_skeleton) return;
     _skeleton.traverse(function(n) {
         if (!n.isMesh) return;
-        n.material = new THREE.MeshStandardMaterial({ color:0x8B7355, transparent:true, opacity:0.25 });
+        n.material = new THREE.MeshStandardMaterial({ color:0x8E9CC4, transparent:true, opacity:0.28 });
         n._baseMaterial = n.material;
     });
 };
@@ -132,16 +132,16 @@ window.update3D = function(bones) {
         }
         var mat;
         if (matched) {
-            var col = 0x5a8a6a, em = 0.55;
-            if (matched.type === 'start')  { col = 0x5a8a6a; em = 0.6; }
-            if (matched.type === 'end')    { col = 0xe8603c; em = 0.6; }
-            if (matched.type === 'path')   { col = 0x5a8a6a; em = 0.5; }
-            if (matched.type === 'detour') { col = 0xf0a500; em = 0.6; }
-            if (matched.type === 'bad')    { col = 0xc94d2b; em = 0.75; }
-            if (matched.type === 'reveal') { col = 0x8b5cf6; em = 0.7; }
+            var col = 0x22D36B, em = 0.55;
+            if (matched.type === 'start')  { col = 0x17B857; em = 0.45; }
+            if (matched.type === 'end')    { col = 0xFF4FA3; em = 0.6; }
+            if (matched.type === 'path')   { col = 0x34D16E; em = 0.32; }
+            if (matched.type === 'detour') { col = 0xFFD21F; em = 0.6; }
+            if (matched.type === 'bad')    { col = 0xF0283C; em = 0.75; }
+            if (matched.type === 'reveal') { col = 0x9A6BFF; em = 0.7; }
             mat = new THREE.MeshStandardMaterial({ color:col, emissive:col, emissiveIntensity:em });
         } else {
-            mat = new THREE.MeshStandardMaterial({ color:0x8B7355, transparent:true, opacity:0.25 });
+            mat = new THREE.MeshStandardMaterial({ color:0x8E9CC4, transparent:true, opacity:0.28 });
         }
         node.material      = mat;
         node._baseMaterial = mat;
@@ -346,8 +346,8 @@ function _initSkeletonEngine() {
     }, { passive:false });
 
     // ── Lights ──
-    scene.add(new THREE.AmbientLight(0xfff8f0, 0.9));
-    var dl = new THREE.DirectionalLight(0xfff4e8, 0.7);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+    var dl = new THREE.DirectionalLight(0xffffff, 0.7);
     dl.position.set(5, 10, 7.5); scene.add(dl);
 
     // ── Load model ──

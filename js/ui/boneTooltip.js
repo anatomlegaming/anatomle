@@ -21,16 +21,16 @@
     var useRef   = React.useRef;
 
     var C = {
-        cream:   '#fdf6ec',
-        card:    '#fff8f0',
-        border:  '#e8d5c0',
-        ink:     '#2d1f14',
-        inkLight:'#4a3728',
-        muted:   '#9a8070',
-        coral:   '#e8603c',
-        coralDk: '#c94d2b',
-        sage:    '#5a8a6a',
-        dark:    'rgba(45,31,20,0.94)',
+        cream:   '#FBFCFF',
+        card:    '#FFFFFF',
+        border:  '#C9D3EA',
+        ink:     '#17213A',
+        inkLight:'#2B3654',
+        muted:   '#4A5573',
+        coral:   '#C2185B',
+        coralDk: '#C8102E',
+        sage:    '#1E9E52',
+        dark:    'rgba(23,33,58,0.94)',
     };
 
     // ── SHARED EVENT BUS ──────────────────────────────────────────────────────
@@ -78,19 +78,19 @@
             position:'fixed', left:tx, top:ty, zIndex:700,
             pointerEvents:'none',
             background:C.dark, borderRadius:8,
-            padding:'6px 12px', border:'1px solid rgba(253,246,236,0.12)',
-            boxShadow:'0 4px 16px rgba(45,31,20,0.25)',
+            padding:'6px 12px', border:'1px solid rgba(251,252,255,0.12)',
+            boxShadow:'0 4px 16px rgba(23,33,58,0.25)',
             display:'flex', flexDirection:'column', gap:2,
             maxWidth:200, animation:'htpFadeIn 0.12s ease'
         }},
             e('span', { style:{
-                fontFamily:'DM Sans,sans-serif', fontWeight:700, fontSize:11,
-                color:'rgba(253,246,236,0.95)', textTransform:'uppercase',
+                fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:11,
+                color:'rgba(251,252,255,0.95)', textTransform:'uppercase',
                 letterSpacing:'0.06em', lineHeight:1.3
             }}, name),
             e('span', { style:{
-                fontFamily:'DM Sans,sans-serif', fontSize:9,
-                color:'rgba(253,246,236,0.45)', letterSpacing:'0.04em'
+                fontFamily:'Space Grotesk,sans-serif', fontSize:9,
+                color:'rgba(251,252,255,0.45)', letterSpacing:'0.04em'
             }}, 'Click for more info')
         );
     }
@@ -132,14 +132,14 @@
                 position:'fixed', inset:0, zIndex:700,
                 display:'flex', alignItems:'center', justifyContent:'center',
                 padding:20, backdropFilter:'blur(10px)',
-                background:'rgba(45,31,20,0.45)'
+                background:'rgba(23,33,58,0.45)'
             }
         },
             e('div', { style:{
                 background:C.cream, borderRadius:18, maxWidth:400, width:'100%',
                 border:'2px solid '+C.border,
-                boxShadow:'0 24px 56px rgba(45,31,20,0.22)',
-                fontFamily:'DM Sans,sans-serif', overflow:'hidden',
+                boxShadow:'0 24px 56px rgba(23,33,58,0.22)',
+                fontFamily:'Space Grotesk,sans-serif', overflow:'hidden',
                 animation:'htpFadeIn 0.18s ease'
             }},
                 // Header bar
@@ -151,7 +151,7 @@
                 }},
                     e('div', null,
                         e('div', { style:{
-                            fontFamily:'Fraunces,serif', fontWeight:900,
+                            fontFamily:'Space Grotesk,sans-serif', fontWeight:900,
                             fontSize:20, color:C.ink, letterSpacing:'-0.03em',
                             lineHeight:1.1, marginBottom:3
                         }}, name),
@@ -210,7 +210,7 @@
                                 color:'white', textDecoration:'none',
                                 borderRadius:8, fontSize:11, fontWeight:700,
                                 textTransform:'uppercase', letterSpacing:'0.1em',
-                                boxShadow:'0 3px 10px rgba(232,96,60,0.25)'
+                                boxShadow:'0 3px 10px rgba(194,24,91,0.25)'
                             }
                         },
                             e('span', null, '↗'),

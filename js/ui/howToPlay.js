@@ -14,16 +14,16 @@
 
     // Exact colours from pathfindingUI.js
     var C = {
-        cream:   '#fdf6ec',
-        card:    '#fff8f0',
-        border:  '#e8d5c0',
-        ink:     '#2d1f14',
-        muted:   '#9a8070',
-        coral:   '#e8603c',
-        coralDk: '#c94d2b',
-        golden:  '#f0a500',
-        sage:    '#5a8a6a',
-        dark:    'rgba(45,31,20,0.94)',
+        cream:   '#FBFCFF',
+        card:    '#FFFFFF',
+        border:  '#C9D3EA',
+        ink:     '#17213A',
+        muted:   '#4A5573',
+        coral:   '#C2185B',
+        coralDk: '#C8102E',
+        golden:  '#8A6100',
+        sage:    '#1E9E52',
+        dark:    'rgba(23,33,58,0.94)',
     };
 
     // Inject shared keyframes once
@@ -33,7 +33,7 @@
         st.textContent = [
             '@keyframes htpBlink   { 0%,100%{opacity:1} 50%{opacity:0} }',
             '@keyframes htpFadeIn  { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }',
-            '@keyframes htpPulse   { 0%,100%{box-shadow:0 0 0 0 rgba(90,138,106,0.5)} 50%{box-shadow:0 0 0 6px rgba(90,138,106,0)} }',
+            '@keyframes htpPulse   { 0%,100%{box-shadow:0 0 0 0 rgba(30,158,82,0.5)} 50%{box-shadow:0 0 0 6px rgba(30,158,82,0)} }',
             '@keyframes htpWin     { 0%{opacity:0;transform:scale(0.85)} 60%{transform:scale(1.05)} 100%{opacity:1;transform:scale(1)} }',
         ].join('\n');
         document.head.appendChild(st);
@@ -62,8 +62,8 @@
         var done = props.done || false;
 
         function col(id) {
-            if (id === 3) return done ? C.coral : 'rgba(45,31,20,0.13)';
-            return lit.includes(id) ? C.sage : 'rgba(45,31,20,0.13)';
+            if (id === 3) return done ? C.coral : 'rgba(23,33,58,0.13)';
+            return lit.includes(id) ? C.sage : 'rgba(23,33,58,0.13)';
         }
         function w(id) {
             if (id === 3) return done ? 4.5 : 2;
@@ -80,18 +80,18 @@
         },
             e('defs', null,
                 e('pattern', { id:'htpGrid', width:18, height:18, patternUnits:'userSpaceOnUse' },
-                    e('path', { d:'M 18 0 L 0 0 0 18', fill:'none', stroke:'rgba(45,31,20,0.045)', strokeWidth:0.5 })
+                    e('path', { d:'M 18 0 L 0 0 0 18', fill:'none', stroke:'rgba(23,33,58,0.045)', strokeWidth:0.5 })
                 )
             ),
             e('rect', { width:200, height:260, fill:'url(#htpGrid)' }),
 
             // Spine
             e('line', { x1:100, y1:10, x2:100, y2:240,
-                stroke:'rgba(45,31,20,0.09)', strokeWidth:2.5, strokeDasharray:'5 5' }),
+                stroke:'rgba(23,33,58,0.09)', strokeWidth:2.5, strokeDasharray:'5 5' }),
 
             // Ribcage
             e('ellipse', { cx:100, cy:155, rx:36, ry:44,
-                fill:'none', stroke:'rgba(45,31,20,0.07)', strokeWidth:1.5 }),
+                fill:'none', stroke:'rgba(23,33,58,0.07)', strokeWidth:1.5 }),
 
             // ── CLAVICLE (0) ──
             e('path', {
@@ -106,7 +106,7 @@
             }),
             lit.includes(0) && e('g', { style:{ animation:'htpFadeIn 0.3s ease' } },
                 e('rect', { x:74, y:42, width:52, height:15, rx:4, fill:C.sage }),
-                e('text', { x:100, y:53, textAnchor:'middle', fontFamily:'DM Sans,sans-serif', fontSize:8, fontWeight:700, fill:'white', letterSpacing:'0.05em' }, 'CLAVICLE')
+                e('text', { x:100, y:53, textAnchor:'middle', fontFamily:'Space Grotesk,sans-serif', fontSize:8, fontWeight:700, fill:'white', letterSpacing:'0.05em' }, 'CLAVICLE')
             ),
 
             // ── SCAPULA (1) ──
@@ -118,7 +118,7 @@
             e('path', { d:'M 52 112 L 74 106', fill:'none', stroke:col(1), strokeWidth:lit.includes(1)?3:1.5, strokeLinecap:'round', style:{ transition:'stroke 0.35s' } }),
             lit.includes(1) && e('g', { style:{ animation:'htpFadeIn 0.3s ease' } },
                 e('rect', { x:22, y:100, width:50, height:15, rx:4, fill:C.sage }),
-                e('text', { x:47, y:111, textAnchor:'middle', fontFamily:'DM Sans,sans-serif', fontSize:8, fontWeight:700, fill:'white', letterSpacing:'0.05em' }, 'SCAPULA')
+                e('text', { x:47, y:111, textAnchor:'middle', fontFamily:'Space Grotesk,sans-serif', fontSize:8, fontWeight:700, fill:'white', letterSpacing:'0.05em' }, 'SCAPULA')
             ),
 
             // ── HUMERUS (2) ──
@@ -133,7 +133,7 @@
             }),
             lit.includes(2) && e('g', { style:{ animation:'htpFadeIn 0.3s ease' } },
                 e('rect', { x:22, y:155, width:52, height:15, rx:4, fill:C.sage }),
-                e('text', { x:48, y:166, textAnchor:'middle', fontFamily:'DM Sans,sans-serif', fontSize:8, fontWeight:700, fill:'white', letterSpacing:'0.05em' }, 'HUMERUS')
+                e('text', { x:48, y:166, textAnchor:'middle', fontFamily:'Space Grotesk,sans-serif', fontSize:8, fontWeight:700, fill:'white', letterSpacing:'0.05em' }, 'HUMERUS')
             ),
 
             // ── RADIUS (3 = end) ──
@@ -152,11 +152,11 @@
             !done && e('g', { style:{ opacity:0.5 } },
                 e('ellipse', { cx:63, cy:192, rx:11, ry:11,
                     fill:'none', stroke:C.coral, strokeWidth:1.5, strokeDasharray:'3 2' }),
-                e('text', { x:82, y:196, fontFamily:'DM Sans,sans-serif', fontSize:8, fill:C.coral, fontWeight:700 }, 'TARGET')
+                e('text', { x:82, y:196, fontFamily:'Space Grotesk,sans-serif', fontSize:8, fill:C.coral, fontWeight:700 }, 'TARGET')
             ),
             done && e('g', { style:{ animation:'htpFadeIn 0.3s ease' } },
                 e('rect', { x:22, y:232, width:48, height:15, rx:4, fill:C.coral }),
-                e('text', { x:46, y:243, textAnchor:'middle', fontFamily:'DM Sans,sans-serif', fontSize:8, fontWeight:700, fill:'white', letterSpacing:'0.05em' }, 'RADIUS')
+                e('text', { x:46, y:243, textAnchor:'middle', fontFamily:'Space Grotesk,sans-serif', fontSize:8, fontWeight:700, fill:'white', letterSpacing:'0.05em' }, 'RADIUS')
             )
         );
     }
@@ -226,14 +226,14 @@
             var isEndLit = state === 'end-lit';
             var isEndDim = state === 'end-dim';
             var shown    = state === 'start' || state === 'found' || state === 'end-lit';
-            var bg  = isStart  ? 'rgba(90,138,106,0.12)'
-                    : isEndLit ? 'rgba(232,96,60,0.1)'
-                    : shown    ? 'rgba(90,138,106,0.08)'
-                    : 'rgba(45,31,20,0.02)';
-            var bdr = isStart  ? 'rgba(90,138,106,0.35)'
-                    : isEndLit ? 'rgba(232,96,60,0.3)'
-                    : isEndDim ? 'rgba(232,96,60,0.2)'  // always slightly coral-tinted
-                    : shown    ? 'rgba(90,138,106,0.25)'
+            var bg  = isStart  ? 'rgba(30,158,82,0.12)'
+                    : isEndLit ? 'rgba(194,24,91,0.1)'
+                    : shown    ? 'rgba(30,158,82,0.08)'
+                    : 'rgba(23,33,58,0.02)';
+            var bdr = isStart  ? 'rgba(30,158,82,0.35)'
+                    : isEndLit ? 'rgba(194,24,91,0.3)'
+                    : isEndDim ? 'rgba(194,24,91,0.2)'  // always slightly coral-tinted
+                    : shown    ? 'rgba(30,158,82,0.25)'
                     : C.border;
             var col = isStart  ? C.sage
                     : isEndLit ? C.coral
@@ -247,7 +247,7 @@
                     : '·';
             return e('div', { style:{
                 padding:'5px 8px', marginBottom:3, borderRadius:7,
-                fontSize:9, fontWeight:700, fontFamily:'DM Sans,sans-serif',
+                fontSize:9, fontWeight:700, fontFamily:'Space Grotesk,sans-serif',
                 textTransform:'uppercase', letterSpacing:'0.04em',
                 display:'flex', justifyContent:'space-between', alignItems:'center',
                 opacity: (state === 'hidden') ? 0.2 : isEndDim ? 0.35 : 1,
@@ -275,27 +275,27 @@
             }},
                 e('div', { style:{ display:'flex', alignItems:'center', gap:8 } },
                     e('span', { style:{
-                        fontFamily:'Fraunces,serif', fontWeight:700, fontSize:13,
-                        color:'#a8d5b5', fontStyle:'italic'
+                        fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:13,
+                        color:'#9BF0B8', fontStyle:'italic'
                     }}, 'Clavicle'),
-                    e('span', { style:{ color:'rgba(253,246,236,0.25)', fontSize:9 } }, '→→→'),
+                    e('span', { style:{ color:'rgba(251,252,255,0.25)', fontSize:9 } }, '→→→'),
                     e('span', { style:{
-                        fontFamily:'Fraunces,serif', fontWeight:700, fontSize:13,
+                        fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:13,
                         color:C.coral, fontStyle:'italic'
                     }}, 'Radius'),
                     e('span', { style:{
-                        fontFamily:'DM Sans,sans-serif', fontSize:8,
-                        color:'rgba(253,246,236,0.3)', marginLeft:6
+                        fontFamily:'Space Grotesk,sans-serif', fontSize:8,
+                        color:'rgba(251,252,255,0.3)', marginLeft:6
                     }}, 'Find the connecting path')
                 ),
                 e('div', { style:{ display:'flex', alignItems:'baseline', gap:4 } },
                     e('span', { style:{
-                        fontFamily:'Fraunces,serif', fontWeight:900, fontSize:20,
-                        color:'rgba(253,246,236,0.85)'
+                        fontFamily:'Space Grotesk,sans-serif', fontWeight:900, fontSize:20,
+                        color:'rgba(251,252,255,0.85)'
                     }}, done ? '🏆' : guessesLeft),
                     !done && e('span', { style:{
-                        fontFamily:'DM Sans,sans-serif', fontSize:8,
-                        color:'rgba(253,246,236,0.35)', marginLeft:2
+                        fontFamily:'Space Grotesk,sans-serif', fontSize:8,
+                        color:'rgba(251,252,255,0.35)', marginLeft:2
                     }}, 'left')
                 )
             ),
@@ -306,7 +306,7 @@
                 // 3D viewport
                 e('div', { style:{
                     flex:'0 0 55%', position:'relative',
-                    background:'radial-gradient(ellipse at 50% 40%, #f5e8d0 0%, #ede0c8 60%, #e4d4b8 100%)',
+                    background:'radial-gradient(ellipse at 50% 40%, #FFFFFF 0%, #F6F8FE 60%, #EEF2FC 100%)',
                     borderRight:'2px solid '+C.border,
                     display:'flex', alignItems:'center', justifyContent:'center'
                 }},
@@ -316,13 +316,13 @@
                     done && e('div', { style:{
                         position:'absolute', inset:0,
                         display:'flex', alignItems:'center', justifyContent:'center',
-                        background:'rgba(90,138,106,0.13)',
+                        background:'rgba(30,158,82,0.13)',
                         animation:'htpWin 0.4s ease forwards'
                     }},
                         e('div', { style:{
-                            fontFamily:'Fraunces,serif', fontWeight:900, fontSize:20,
+                            fontFamily:'Space Grotesk,sans-serif', fontWeight:900, fontSize:20,
                             color:C.sage, letterSpacing:'-0.03em',
-                            textShadow:'0 2px 8px rgba(90,138,106,0.3)'
+                            textShadow:'0 2px 8px rgba(30,158,82,0.3)'
                         }}, 'Path Found! ✓')
                     )
                 ),
@@ -337,12 +337,12 @@
                         e('div', { style:{ display:'flex', alignItems:'center', gap:5 } },
                             e('span', { style:{ fontSize:11 } }, '🦴'),
                             e('span', { style:{
-                                fontFamily:'DM Sans,sans-serif', fontSize:8, color:C.sage,
+                                fontFamily:'Space Grotesk,sans-serif', fontSize:8, color:C.sage,
                                 textTransform:'uppercase', letterSpacing:'0.22em', fontWeight:700
                             }}, 'Path')
                         ),
                         e('span', { style:{
-                            fontFamily:'Fraunces,serif', fontSize:12, color:C.sage, fontWeight:900
+                            fontFamily:'Space Grotesk,sans-serif', fontSize:12, color:C.sage, fontWeight:900
                         }}, guessesUsed+' / 2')
                     ),
                     // Chain rows — 4 bones, end always visible
@@ -357,7 +357,7 @@
                         borderTop:'1px solid '+C.border, padding:'5px 12px 4px', flexShrink:0
                     }},
                         e('div', { style:{
-                            fontFamily:'DM Sans,sans-serif', fontSize:8, color:C.golden,
+                            fontFamily:'Space Grotesk,sans-serif', fontSize:8, color:C.golden,
                             textTransform:'uppercase', letterSpacing:'0.22em', fontWeight:700, opacity:0.6
                         }}, '⚠ Detours · 0')
                     )
@@ -373,11 +373,11 @@
                     position:'absolute', bottom:'100%', left:12, right:12,
                     background:C.cream, border:'2px solid '+C.border,
                     borderBottom:'none', borderRadius:'10px 10px 0 0', overflow:'hidden',
-                    boxShadow:'0 -6px 20px rgba(45,31,20,0.08)'
+                    boxShadow:'0 -6px 20px rgba(23,33,58,0.08)'
                 }},
                     e('div', { style:{
                         padding:'8px 12px', fontSize:10, fontWeight:600,
-                        fontFamily:'DM Sans,sans-serif', textTransform:'uppercase',
+                        fontFamily:'Space Grotesk,sans-serif', textTransform:'uppercase',
                         letterSpacing:'0.08em', color:'white',
                         background:'linear-gradient(135deg,'+C.coral+','+C.coralDk+')'
                     }}, suggText + ' ↵ Enter')
@@ -389,10 +389,10 @@
                         color: typed ? C.coral : C.muted
                     }}, '🦴'),
                     e('div', { style:{
-                        width:'100%', background: done ? 'rgba(45,31,20,0.04)' : C.card,
+                        width:'100%', background: done ? 'rgba(23,33,58,0.04)' : C.card,
                         border:'2px solid '+(typed ? C.coral : C.border),
                         borderRadius:9, padding:'8px 12px 8px 32px',
-                        fontFamily:'DM Sans,sans-serif', fontSize:11,
+                        fontFamily:'Space Grotesk,sans-serif', fontSize:11,
                         color: typed ? C.ink : C.muted,
                         minHeight:34, transition:'border-color 0.2s',
                         display:'flex', alignItems:'center',
@@ -427,37 +427,37 @@
     function HowToContent(props) {
         var onClose = props.onClose;
         return e('div', { style:{
-            background:C.cream, borderRadius:20, maxWidth:520, width:'95vw',
-            border:'2px solid '+C.border, overflow:'hidden',
-            boxShadow:'0 32px 64px rgba(45,31,20,0.2)',
-            fontFamily:'DM Sans,sans-serif', maxHeight:'90vh', overflowY:'auto'
+            background:C.cream, borderRadius:6, maxWidth:520, width:'95vw',
+            border:'2px solid '+C.ink, overflow:'hidden',
+            boxShadow:'8px 8px 0 #CBD7F4',
+            fontFamily:'Space Grotesk,sans-serif', maxHeight:'90vh', overflowY:'auto'
         }},
             // Header
             e('div', { style:{
-                padding:'18px 22px 14px', borderBottom:'2px solid '+C.border,
+                padding:'18px 22px 14px', borderBottom:'2px solid '+C.ink,
                 display:'flex', justifyContent:'space-between', alignItems:'center',
                 background:C.card, flexShrink:0
             }},
                 e('div', null,
                     e('div', { style:{ lineHeight:1 } },
                         e('span', { style:{
-                            fontFamily:'Fraunces,serif', fontWeight:900,
+                            fontFamily:'Space Grotesk,sans-serif', fontWeight:900,
                             fontSize:24, color:C.ink, letterSpacing:'-0.04em'
                         }}, 'How to '),
                         e('span', { style:{
-                            fontFamily:'Fraunces,serif', fontWeight:900,
-                            fontSize:24, color:C.coral, letterSpacing:'-0.04em', fontStyle:'italic'
-                        }}, 'Play')
+                            fontFamily:'Space Grotesk,sans-serif', fontWeight:900,
+                            fontSize:24, color:C.ink, letterSpacing:'-0.04em',
+                            background:'linear-gradient(transparent 55%, #FF8EBF 55%)'
+                        }}, 'play')
                     ),
                     e('div', { style:{
-                        fontFamily:'DM Sans,sans-serif', fontSize:10, color:C.muted,
-                        textTransform:'uppercase', letterSpacing:'0.18em', marginTop:4
-                    }}, 'Pathfinding · Osteomle')
+                        fontFamily:'Caveat,cursive', fontWeight:700, fontSize:20, color:'#1D3FBF', marginTop:2
+                    }}, 'find the route, one guess at a time')
                 ),
                 e('button', { onClick:onClose, style:{
-                    background:'none', border:'1.5px solid '+C.border,
-                    borderRadius:'50%', width:32, height:32, cursor:'pointer',
-                    color:C.muted, fontSize:18, display:'flex',
+                    background:'#FFFFFF', border:'2px solid '+C.ink,
+                    borderRadius:'50%', width:34, height:34, cursor:'pointer',
+                    color:C.ink, fontSize:18, display:'flex',
                     alignItems:'center', justifyContent:'center',
                     flexShrink:0, transition:'all 0.2s'
                 }}, '×')
@@ -480,7 +480,7 @@
                         }},
                             e('div', { style:{ fontSize:20, marginBottom:6, lineHeight:1 } }, s.icon),
                             e('div', { style:{
-                                fontFamily:'Fraunces,serif', fontWeight:700,
+                                fontFamily:'Space Grotesk,sans-serif', fontWeight:700,
                                 fontSize:13, color:C.ink, marginBottom:3, lineHeight:1.2
                             }}, s.head),
                             e('div', { style:{ fontSize:11, color:C.muted, lineHeight:1.5 } }, s.body)
@@ -498,7 +498,7 @@
                         { col:C.sage,    label:'On a shortest route' },
                         { col:C.golden,  label:'Detour (longer, still winnable)' },
                         { col:C.coralDk, label:'Can\'t reach the end' },
-                        { col:'#8b5cf6', label:'Revealed after loss' },
+                        { col:'#6A3FD1', label:'Revealed after loss' },
                     ].map(function(k, i) {
                         return e('div', { key:i, style:{
                             display:'flex', alignItems:'center', gap:6
@@ -517,9 +517,9 @@
                     width:'100%', padding:'13px 0', borderRadius:10,
                     background:'linear-gradient(135deg,'+C.coral+','+C.coralDk+')',
                     color:'white', border:'none', cursor:'pointer',
-                    fontFamily:'Fraunces,serif', fontWeight:900,
+                    fontFamily:'Space Grotesk,sans-serif', fontWeight:900,
                     fontSize:14, textTransform:'uppercase', letterSpacing:'0.1em',
-                    boxShadow:'0 4px 14px rgba(232,96,60,0.28)'
+                    boxShadow:'0 4px 14px rgba(194,24,91,0.28)'
                 }}, "Let's Play →")
             )
         );
@@ -534,7 +534,7 @@
                 position:'fixed', inset:0, zIndex:800,
                 display:'flex', alignItems:'center', justifyContent:'center',
                 padding:20, backdropFilter:'blur(14px)',
-                background:'rgba(45,31,20,0.52)'
+                background:'rgba(23,33,58,0.45)'
             }
         },
             e(HowToContent, { onClose:props.onClose })
@@ -560,7 +560,7 @@
                 title: 'How to play',
                 style:{
                     width:28, height:28, borderRadius:'50%',
-                    background: hovered ? 'rgba(232,96,60,0.08)' : 'transparent',
+                    background: hovered ? 'rgba(194,24,91,0.08)' : 'transparent',
                     border:'1.5px solid '+(hovered ? C.coral : C.border),
                     display:'flex', alignItems:'center', justifyContent:'center',
                     cursor:'pointer', transition:'all 0.18s', flexShrink:0,
@@ -575,12 +575,12 @@
                 position:'absolute', bottom:'calc(100% + 10px)', right:0,
                 width:300, background:C.cream,
                 border:'2px solid '+C.border, borderRadius:14,
-                boxShadow:'0 16px 40px rgba(45,31,20,0.16)',
+                boxShadow:'0 16px 40px rgba(23,33,58,0.16)',
                 padding:'14px 16px', zIndex:900,
                 pointerEvents:'none', textAlign:'left'
             }},
                 e('div', { style:{
-                    fontFamily:'Fraunces,serif', fontWeight:900,
+                    fontFamily:'Space Grotesk,sans-serif', fontWeight:900,
                     fontSize:15, color:C.ink, marginBottom:6, letterSpacing:'-0.02em'
                 }}, 'How to Play'),
                 e('div', { style:{

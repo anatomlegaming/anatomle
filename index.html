@@ -2,329 +2,210 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ANATOMLE | Anatomy Training Platform</title>
-
-    <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="js/ui/howToPlay.js"></script>
-    <script src="js/core/streak.js"></script>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anatomle · daily anatomy puzzles</title>
+    <meta name="description" content="Wordle-style anatomy puzzles. Find the shortest route from one bone or muscle to another.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/notebook.css">
+    <script src="js/core/streak.js"></script>
     <style>
-        :root {
-            --cream: #fdf6ec;
-            --warm-white: #fffbf5;
-            --coral: #e8603c;
-            --coral-light: #f0876a;
-            --coral-dark: #c94d2b;
-            --golden: #f0a500;
-            --golden-light: #ffc840;
-            --sage: #5a8a6a;
-            --sage-light: #7aaa8a;
-            --ink: #2d1f14;
-            --ink-light: #4a3728;
-            --muted: #9a8070;
-            --card-bg: #fff8f0;
-            --border: #e8d5c0;
-            --cyan: #06b6d4;
+        body { min-height: 100vh; overflow-x: hidden; }
+        .home {
+            position: relative; z-index: 2;
+            max-width: 1120px; margin: 0 auto;
+            padding: 56px 32px 40px 88px;
+            min-height: 100vh; display: flex; flex-direction: column;
+            transition: opacity .5s ease, filter .5s ease;
+        }
+        .home.leaving { opacity: .2; filter: blur(1px); }
+
+        header .title-row { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 20px; }
+        header h1 { margin: 0; font-size: clamp(56px, 9vw, 84px); }
+        .tagline { font-size: clamp(30px, 4vw, 40px); color: var(--pen); transform: rotate(-3deg); display: inline-block; }
+        .pick { font-size: 32px; color: var(--pen); margin-top: 22px; }
+
+        .notes {
+            display: flex; flex-wrap: wrap; justify-content: space-between; gap: 40px 28px;
+            margin: 44px 0 56px; padding-top: 14px;
+        }
+        .slot { position: relative; }
+        .slot:nth-child(1) { transform: rotate(-3deg); }
+        .slot:nth-child(2) { transform: rotate(2deg); margin-top: 18px; }
+        .slot:nth-child(3) { transform: rotate(-1.5deg); }
+        .slot .tape { top: -13px; left: 50%; margin-left: -48px; z-index: 3; background: rgba(255,255,255,.62); border: 1px solid rgba(23,33,58,.08); }
+        .slot:nth-child(2) .tape { transform: rotate(3deg); }
+        .slot:nth-child(1) .tape { transform: rotate(-4deg); }
+
+        .note {
+            position: relative; display: flex; flex-direction: column; gap: 10px;
+            width: 310px; height: 310px; padding: 30px 28px 26px;
+            border: none; text-align: left; cursor: pointer; text-decoration: none;
+            color: #0E1526; font-family: var(--font);
+            box-shadow: 0 14px 22px -12px rgba(23,33,58,.45), 0 2px 0 rgba(23,33,58,.08);
+            transform-origin: 50% 0;
+            transition: transform .25s ease, box-shadow .25s ease;
+        }
+        .note:hover { color: #0E1526; transform: translateY(-4px) rotate(-.6deg); box-shadow: 0 24px 32px -14px rgba(23,33,58,.5); }
+        .note.daily   { background: #FFE047; }
+        .note.bones   { background: #FF8EBF; }
+        .note.muscles { background: #8FD0FF; }
+        .note .kicker { font-family: var(--hand); font-weight: 700; font-size: 28px; line-height: 1; }
+        .note .ttl { font-weight: 700; font-size: 48px; letter-spacing: -.035em; line-height: 1; }
+        .note .body { font-size: 17px; font-weight: 500; line-height: 1.4; }
+        .note .cta {
+            margin-top: auto; align-self: flex-start;
+            padding: 7px 16px; border-radius: 999px; background: #0E1526; color: #fff;
+            font-weight: 700; font-size: 16px;
+        }
+        .note .done { position: absolute; top: 22px; right: 22px; font-family: var(--hand); font-weight: 700; font-size: 24px; transform: rotate(8deg); padding: 0 8px; border: 2px solid #0E1526; border-radius: 8px; }
+
+        /* the folded corner that grows on hover and curls during the peel */
+        .curl {
+            position: absolute; right: 0; bottom: 0; width: 0; height: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0) 50%, rgba(255,255,255,.88) 50%, #DCE2F0 100%);
+            box-shadow: -4px -4px 10px rgba(23,33,58,.18);
+            transition: width .2s ease, height .2s ease;
+        }
+        .note:hover .curl, .note:focus-visible .curl { width: 42px; height: 42px; }
+
+        .note.peel { animation: peel 1.1s cubic-bezier(.45,0,.2,1) forwards; pointer-events: none; will-change: transform, opacity; z-index: 5; }
+        .note.peel .curl { animation: curl .5s cubic-bezier(.3,0,.2,1) forwards; }
+        @keyframes curl { from { width: 42px; height: 42px; } to { width: 190px; height: 190px; } }
+        @keyframes peel {
+            0%   { transform: perspective(1000px); }
+            30%  { transform: perspective(1000px) rotateX(-10deg) translateY(-10px) scale(1.03); box-shadow: 0 30px 40px -16px rgba(23,33,58,.45); }
+            55%  { transform: perspective(1000px) rotateX(-24deg) rotate(-6deg) translate(20px,-60px) scale(1.04); opacity: 1; }
+            100% { transform: perspective(1000px) rotateX(-55deg) rotate(-20deg) translate(140px,-560px) scale(.96); opacity: 0; }
         }
 
-        * { box-sizing: border-box; }
+        footer { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
+        .foot-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 22px; font-family: var(--hand); font-weight: 700; font-size: 26px; color: var(--ink-2); }
+        .foot-row a { color: var(--ink-2); text-decoration: none; }
+        .foot-row a:hover { color: var(--pen); text-decoration: underline; text-decoration-thickness: 2px; }
+        .streak { padding: 0 8px; }
+        .disclaimer { font-size: 13px; line-height: 1.5; color: var(--ink-3); max-width: 620px; }
 
-        body {
-            font-family: 'DM Sans', sans-serif;
-            background: var(--cream);
-            margin: 0;
-            overflow-x: hidden;
-            min-height: 100vh;
+        @media (max-width: 760px) {
+            .home { padding: 36px 20px 28px 34px; }
+            .notes { justify-content: center; gap: 34px; margin: 30px 0 40px; }
+            .slot:nth-child(2) { margin-top: 0; }
+            .note { width: min(310px, 80vw); height: auto; min-height: 250px; }
+            .note .ttl { font-size: 42px; }
         }
-
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-            pointer-events: none;
-            z-index: 0;
-            opacity: 0.4;
-        }
-
-        h1, h2, h3 { font-family: 'Fraunces', serif; }
-
-        .category-card, .mode-card {
-            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        .category-card:hover, .mode-card:hover {
-            transform: translateY(-6px) rotate(-0.5deg);
-            box-shadow: 0 20px 40px rgba(45, 31, 20, 0.15);
-        }
-        .back-btn:hover { transform: translateX(-4px); }
-
-        @keyframes boing {
-            0%, 100% { transform: translateY(0) scale(1); }
-            40%  { transform: translateY(-16px) scale(1.1); }
-            60%  { transform: translateY(-12px) scale(0.95); }
-        }
-        .boing { animation: boing 1s ease-in-out infinite; }
-
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(24px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        .fade-up   { animation: fadeUp 0.5s ease forwards; }
-        .fade-up-1 { animation-delay: 0.05s; opacity: 0; }
-        .fade-up-2 { animation-delay: 0.15s; opacity: 0; }
-        .fade-up-3 { animation-delay: 0.25s; opacity: 0; }
-        .fade-up-4 { animation-delay: 0.35s; opacity: 0; }
-
-        .streak-badge {
-            background: linear-gradient(135deg, var(--golden-light), var(--golden));
-            color: var(--ink);
-            border-radius: 999px;
-            padding: 4px 14px;
-            font-size: 11px;
-            font-weight: 600;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            box-shadow: 0 2px 8px rgba(240,165,0,0.35);
-        }
-
-        .card-glow-coral:hover  { box-shadow: 0 8px 32px rgba(232,96,60,0.2); }
-        .card-glow-sage:hover   { box-shadow: 0 8px 32px rgba(90,138,106,0.2); }
-        .card-glow-golden:hover { box-shadow: 0 8px 32px rgba(240,165,0,0.2); }
-
-        hr.fancy {
-            border: none;
-            height: 1.5px;
-            background: linear-gradient(90deg, transparent, var(--border), transparent);
-            margin: 0;
-        }
-
-        .daily-card {
-            background: linear-gradient(135deg, var(--coral), var(--coral-dark));
-            border-radius: 20px;
-            padding: 20px 28px;
-            color: white;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            box-shadow: 0 8px 24px rgba(232,96,60,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+        @media (prefers-reduced-motion: reduce) {
+            .note.peel { animation: none; }
+            .home.leaving { transition: none; }
         }
     </style>
 </head>
-<body>
-    <div id="root"></div>
+<body class="nb-margin">
+<div class="home" id="home">
+    <header>
+        <div class="title-row">
+            <h1 class="wordmark">anatom<span class="le">le</span></h1>
+            <span class="hand tagline">know your body? prove it.</span>
+        </div>
+        <div class="hand pick">pick a note to start ↓</div>
+    </header>
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+    <main class="notes">
+        <div class="slot">
+            <span class="tape"></span>
+            <a class="note daily" href="games/daily.html">
+                <span class="kicker" id="today">today</span>
+                <span class="ttl">Daily</span>
+                <span class="body">One puzzle for everyone. Resets at midnight UTC. Keep your streak alive.</span>
+                <span class="cta">Play today →</span>
+                <span class="curl"></span>
+            </a>
+        </div>
+        <div class="slot">
+            <span class="tape"></span>
+            <a class="note bones" href="games/full-skeleton.html">
+                <span class="kicker">osteomle</span>
+                <span class="ttl">Bones</span>
+                <span class="body">Unlimited skeleton puzzles. Find the shortest route from one bone to another.</span>
+                <span class="cta">Play bones →</span>
+                <span class="curl"></span>
+            </a>
+        </div>
+        <div class="slot">
+            <span class="tape"></span>
+            <a class="note muscles" href="games/upper-limb.html">
+                <span class="kicker">myomle</span>
+                <span class="ttl">Muscles</span>
+                <span class="body">Upper-limb muscles, linked by the bones they share. 58 to learn.</span>
+                <span class="cta">Play muscles →</span>
+                <span class="curl"></span>
+            </a>
+        </div>
+    </main>
 
-        // ── LOADING ───────────────────────────────────────────────────────────
-        function LoadingScreen() {
-            return (
-                <div style={{background:'var(--cream)'}} className="fixed inset-0 flex flex-col items-center justify-center gap-8">
-                    <div className="text-center">
-                        <h1 style={{color:'var(--ink)', fontFamily:'Fraunces, serif', fontSize:'7rem', fontWeight:900, lineHeight:1, letterSpacing:'-0.04em'}}>
-                            Anat<span style={{color:'var(--coral)', fontStyle:'italic'}}>om</span>le
-                        </h1>
-                        <p style={{color:'var(--muted)', fontSize:'0.8rem', letterSpacing:'0.35em', textTransform:'uppercase', marginTop:8}}>
-                            Daily Anatomy Challenge
-                        </p>
-                    </div>
-                    <div style={{display:'flex', gap:10, marginTop:8}}>
-                        <div className="boing" style={{width:14, height:14, background:'var(--coral)',  borderRadius:'50%', animationDelay:'0s'}}></div>
-                        <div className="boing" style={{width:14, height:14, background:'var(--golden)', borderRadius:'50%', animationDelay:'0.18s'}}></div>
-                        <div className="boing" style={{width:14, height:14, background:'var(--sage)',   borderRadius:'50%', animationDelay:'0.36s'}}></div>
-                    </div>
-                </div>
-            );
+    <footer>
+        <div class="foot-row">
+            <span class="streak" id="streak">no streak yet</span>
+            <span aria-hidden="true">·</span>
+            <a href="about.html">about</a>
+            <a href="credits.html">credits</a>
+            <a href="contact.html">contact</a>
+        </div>
+        <div class="disclaimer"><strong>Heads up:</strong> Anatomle is for learning and fun, not a clinical reference. Errors may be present. © 2026 Anatomle</div>
+    </footer>
+</div>
+
+<script>
+(function () {
+    var now = new Date();
+    document.getElementById('today').textContent =
+        'today · ' + now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+
+    // Streak
+    var s = window.StreakManager ? window.StreakManager.get() : { count: 0, best: 0 };
+    var el = document.getElementById('streak');
+    if (s.count > 0) {
+        el.textContent = 'streak: ' + s.count + ' day' + (s.count === 1 ? '' : 's') + ' 🔥';
+        el.classList.add('hl');
+        el.title = 'Best: ' + s.best;
+    }
+
+    // Already played today's daily?
+    try {
+        var key = 'anatomle_daily_v2_' + now.toISOString().slice(0, 10);
+        var saved = JSON.parse(localStorage.getItem(key) || 'null');
+        if (saved && (saved.phase === 'won' || saved.phase === 'lost')) {
+            var d = document.createElement('span');
+            d.className = 'done';
+            d.textContent = saved.phase === 'won' ? 'done ✓' : 'played';
+            document.querySelector('.note.daily').appendChild(d);
+            document.querySelector('.note.daily .cta').textContent = 'See result →';
         }
+    } catch (e) {}
 
-        // ── STREAK BADGE ─────────────────────────────────────────────────────
-        function StreakBadge() {
-            const [streak, setStreak] = React.useState({ count: 0, best: 0 });
-            const [hovered, setHovered] = React.useState(false);
-            React.useEffect(() => {
-                if (window.StreakManager) setStreak(window.StreakManager.get());
-            }, []);
-            const alive = streak.count > 0;
-            return (
-                <div style={{display:'flex', justifyContent:'center', marginTop:20, position:'relative'}}
-                    onMouseEnter={() => setHovered(true)}
-                    onMouseLeave={() => setHovered(false)}>
-                    <div style={{
-                        display:'inline-flex', alignItems:'center', gap:8,
-                        padding:'7px 18px', borderRadius:999,
-                        background: alive ? 'rgba(240,165,0,0.1)' : 'rgba(45,31,20,0.04)',
-                        border: `1.5px solid ${alive ? 'rgba(240,165,0,0.3)' : 'var(--border)'}`,
-                        cursor:'default', transition:'all 0.2s',
-                    }}>
-                        <span style={{fontSize:18, lineHeight:1, filter: alive ? 'none' : 'grayscale(1)', opacity: alive ? 1 : 0.35}}>🔥</span>
-                        <span style={{fontFamily:'Fraunces, serif', fontWeight:900, fontSize:15, color: alive ? 'var(--golden)' : 'var(--muted)', letterSpacing:'-0.01em'}}>{alive ? streak.count : '—'}</span>
-                        {alive && <span style={{fontFamily:'DM Sans, sans-serif', fontSize:11, color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.1em'}}>day streak</span>}
-                    </div>
-                    {hovered && (
-                        <div style={{
-                            position:'absolute', top:'calc(100% + 8px)', left:'50%', transform:'translateX(-50%)',
-                            background:'var(--ink)', color:'white', borderRadius:8, padding:'8px 14px',
-                            fontSize:12, fontFamily:'DM Sans, sans-serif', whiteSpace:'nowrap', zIndex:100,
-                            boxShadow:'0 4px 16px rgba(45,31,20,0.2)',
-                        }}>
-                            {alive ? `${streak.count} day streak · best: ${streak.best} · play daily to keep it going` : 'Complete the daily puzzle to start your streak'}
-                            <div style={{position:'absolute', top:-5, left:'50%', transform:'translateX(-50%)', width:10, height:10, background:'var(--ink)', borderRadius:2, rotate:'45deg'}} />
-                        </div>
-                    )}
-                </div>
-            );
-        }
-
-        // ── CATEGORY MENU ─────────────────────────────────────────────────────
-        function CategoryMenu() {
-            const categories = [
-                {
-                    id:'bone-games', href:'games/full-skeleton.html',
-                    prefix:'Oste', suffix:'omle', suffixColor:'var(--coral)',
-                    tagline:'Skeletal Anatomy',
-                    description:'Trace a path through the human skeleton, bone by bone.',
-                    icon:'🦴', glowClass:'card-glow-coral', borderColor:'var(--coral)',
-                    available: true,
-                },
-                {
-                    id:'muscle-games', href:'games/upper-limb.html',
-                    prefix:'Myo', suffix:'mle', suffixColor:'var(--sage)',
-                    tagline:'Muscle Anatomy',
-                    description:'Trace a path through the 58 muscles of the upper limb, linked by the bones they share.',
-                    icon:'💪', glowClass:'card-glow-sage', borderColor:'var(--sage)',
-                    available: true,
-                },
-            ];
-
-            return (
-                <div style={{minHeight:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'48px 24px'}}>
-                    <div style={{maxWidth:900, width:'100%', position:'relative', zIndex:1}}>
-
-                        <header className="fade-up fade-up-1" style={{textAlign:'center', marginBottom:48}}>
-<h1 style={{fontFamily:'Fraunces, serif', fontSize:'clamp(5rem, 12vw, 9rem)', fontWeight:900, color:'var(--ink)', margin:0, letterSpacing:'-0.04em', lineHeight:0.9}}>
-                                Anat<span style={{color:'var(--coral)', fontStyle:'italic'}}>om</span>le
-                            </h1>
-                            <p style={{color:'var(--ink-light)', fontSize:'1rem', maxWidth:480, margin:'16px auto 0', lineHeight:1.6, fontFamily:'Fraunces, serif', fontWeight:700, fontStyle:'italic', letterSpacing:'-0.01em'}}>
-                                Think you know the human body? Prove it.
-                            </p>
-                            <StreakBadge />
-                        </header>
-
-                        <div className="fade-up fade-up-2" style={{marginBottom:36}}>
-                            <div className="daily-card" style={{cursor:'pointer'}} onClick={() => window.location.href='games/daily.html'}>
-                                <div style={{fontSize:'2rem'}}>📅</div>
-                                <div style={{flex:1}}>
-                                    <div style={{fontFamily:'Fraunces, serif', fontWeight:700, fontSize:'1.1rem', marginBottom:2}}>Today's Puzzle is Live!</div>
-                                    <div style={{fontSize:'0.82rem', opacity:0.85}}>Resets at midnight UTC. Play every day to build your streak.</div>
-                                </div>
-                                <div style={{display:'flex', flexDirection:'column', alignItems:'flex-end', gap:8, flexShrink:0}}>
-                                    <div style={{textAlign:'right'}}>
-                                        <div style={{fontFamily:'Fraunces, serif', fontWeight:900, fontSize:'1.8rem', lineHeight:1}}>
-                                            {new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'})}
-                                        </div>
-                                        <div style={{fontSize:'0.7rem', opacity:0.75, textTransform:'uppercase', letterSpacing:'0.1em'}}>
-                                            {new Date().toLocaleDateString('en-US',{weekday:'long'})}
-                                        </div>
-                                    </div>
-                                    <div style={{background:'white', color:'var(--coral)', borderRadius:999, padding:'8px 20px', fontSize:'0.82rem', fontWeight:700, letterSpacing:'0.05em', textTransform:'uppercase', whiteSpace:'nowrap'}}>
-                                        Play Now →
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="fade-up fade-up-3" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(260px, 1fr))', gap:20, marginBottom:36}}>
-                            {categories.map(cat => (
-                                <div
-                                    key={cat.id}
-                                    onClick={() => cat.available && (window.location.href = cat.href)}
-                                    className={`category-card ${cat.glowClass}`}
-                                    style={{
-                                        background:'var(--card-bg)',
-                                        border:`2px solid ${cat.available ? cat.borderColor + '55' : 'var(--border)'}`,
-                                        borderRadius:20, padding:'28px 24px',
-                                        textAlign:'center',
-                                        cursor: cat.available ? 'pointer' : 'not-allowed',
-                                        opacity: cat.available ? 1 : 0.5,
-                                        position:'relative', overflow:'hidden',
-                                    }}
-                                >
-                                    {cat.available && (
-                                        <div style={{position:'absolute', top:14, right:14, width:8, height:8, borderRadius:'50%', background:cat.borderColor, boxShadow:`0 0 0 3px ${cat.borderColor}30`}} />
-                                    )}
-                                    {!cat.available && (
-                                        <div style={{position:'absolute', top:12, right:12, background:'var(--cream)', color:'var(--muted)', fontSize:'9px', fontWeight:700, padding:'4px 10px', borderRadius:999, textTransform:'uppercase', letterSpacing:'0.1em', border:'1.5px solid var(--border)'}}>Coming Soon</div>
-                                    )}
-
-                                    <div style={{fontSize:'3rem', marginBottom:12, lineHeight:1}}>{cat.icon}</div>
-
-                                    {/* Sub-brand name */}
-                                    <div style={{lineHeight:1, marginBottom:6}}>
-                                        <span style={{fontFamily:'Fraunces, serif', fontWeight:900, fontSize:'2rem', color:'var(--ink)', letterSpacing:'-0.04em'}}>{cat.prefix}</span>
-                                        <span style={{fontFamily:'Fraunces, serif', fontWeight:900, fontSize:'2rem', color:cat.suffixColor, letterSpacing:'-0.04em', fontStyle:'italic'}}>{cat.suffix}</span>
-                                    </div>
-                                    <div style={{fontFamily:'DM Sans, sans-serif', fontSize:'0.65rem', color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.22em', marginBottom:14}}>{cat.tagline}</div>
-
-                                    <p style={{color:'var(--muted)', fontSize:'0.83rem', lineHeight:1.6, margin:'0 0 18px'}}>{cat.description}</p>
-
-                                    {cat.available && (
-                                        <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap:8}}>
-                                            <div style={{fontSize:'0.65rem', color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.18em', fontWeight:600}}>∞ Unlimited Play</div>
-                                            <div style={{display:'inline-block', background:cat.borderColor, color:'white', borderRadius:999, padding:'7px 20px', fontSize:'0.78rem', fontWeight:600, letterSpacing:'0.05em', textTransform:'uppercase'}}>Play →</div>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-
-                        <hr className="fancy" />
-                        <div className="fade-up fade-up-4" style={{display:'flex', flexDirection:'column', alignItems:'center', gap:16, paddingTop:20}}>
-                            <div style={{display:'flex', justifyContent:'center', gap:32}}>
-                                {[
-                                    {label:'About Us', href:'about.html'},
-                                    {label:'Credits',  href:'credits.html'},
-                                    {label:'Contact',  href:'contact.html'},
-                                ].map(({label, href}) => (
-                                    <a key={label} href={href} style={{color:'var(--muted)', fontSize:'0.72rem', textTransform:'uppercase', letterSpacing:'0.15em', fontFamily:'DM Sans, sans-serif', textDecoration:'none', transition:'color 0.2s'}}
-                                    onMouseEnter={e => e.target.style.color='var(--ink)'}
-                                    onMouseLeave={e => e.target.style.color='var(--muted)'}
-                                    >{label}</a>
-                                ))}
-                            </div>
-                            <div style={{fontSize:'0.68rem', color:'var(--muted)', maxWidth:520, textAlign:'center', lineHeight:1.6, padding:'0 12px'}}>
-                                <strong style={{color:'var(--ink-light)'}}>Disclaimer:</strong> Anatomle is for educational entertainment only and is not a clinical reference.
-                                Always consult qualified resources and licensed professionals. Errors may be present.
-                            </div>
-                            <div style={{fontSize:'0.65rem', color:'var(--muted)', opacity:0.7}}>© 2026 Anatomle</div>
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        // ── APP ───────────────────────────────────────────────────────────────
-        function App() {
-            const [loading, setLoading] = useState(true);
-            
-            useEffect(() => {
-                const t = setTimeout(() => setLoading(false), 1200);
-                return () => clearTimeout(t);
-            }, []);
-
-            if (loading)                 return <LoadingScreen />;
-            return <CategoryMenu />;
-        }
-
-        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-    </script>
+    // Peel the note off, then go to the game (which swings in like a turned page)
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var going = false;
+    document.querySelectorAll('.note').forEach(function (note) {
+        note.addEventListener('click', function (ev) {
+            if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button !== 0) return;
+            ev.preventDefault();
+            if (going) return;
+            going = true;
+            var href = note.getAttribute('href');
+            if (reduce) { location.href = href; return; }
+            note.classList.add('peel');
+            setTimeout(function () { document.getElementById('home').classList.add('leaving'); }, 450);
+            setTimeout(function () { location.href = href; }, 900);
+        });
+    });
+    // Coming back with the browser Back button: undo the peel
+    window.addEventListener('pageshow', function () {
+        going = false;
+        document.getElementById('home').classList.remove('leaving');
+        document.querySelectorAll('.note.peel').forEach(function (n) { n.classList.remove('peel'); });
+    });
+})();
+</script>
 </body>
 </html>

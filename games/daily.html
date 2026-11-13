@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ANATOMLE | Daily Puzzle</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anatomle · Daily Puzzle</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
@@ -10,7 +11,8 @@
     <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/notebook.css">
     <script src="../js/data/skeletonGraph.js"></script>
     <script src="../js/data/boneMappings.js"></script>
     <script src="../js/data/dailySeeds.js"></script>
@@ -20,65 +22,29 @@
     <script src="../js/core/gameLogic.js"></script>
     <script src="../js/core/seededRandom.js"></script>
     <script src="../js/core/pathGame.js"></script>
-    <style>
-        * { box-sizing: border-box; }
-        body { font-family: 'DM Sans', sans-serif; background: #fdf6ec; color: #2d1f14; margin: 0; overflow: hidden; }
-        #cv { position: fixed; top: 104px; left: 0; right: 420px; bottom: 68px; z-index: 10;
-              background: radial-gradient(ellipse at 50% 40%, #f5e8d0 0%, #ede0c8 60%, #e4d4b8 100%); }
-        .scr::-webkit-scrollbar { width: 3px; }
-        .scr::-webkit-scrollbar-thumb { background: #e8d5c0; border-radius: 2px; }
-        .shake { animation: shake .3s ease-in-out; }
-        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
-        @keyframes overlayFadeIn { from { opacity:0; } to { opacity:1; } }
-        @keyframes cardPopIn { from { opacity:0; transform:translateY(28px) scale(0.94); } to { opacity:1; transform:translateY(0) scale(1); } }
-        @keyframes streakPop { 0% { opacity:0; transform:scale(0.4) translateY(10px); } 60% { transform:scale(1.2) translateY(-4px); } 80% { transform:scale(0.95); } 100% { opacity:1; transform:scale(1) translateY(0); } }
-        @keyframes flameDance { 0%,100% { transform:rotate(-4deg) scale(1); } 50% { transform:rotate(4deg) scale(1.08); } }
-        #loading-screen {
-            position: fixed; inset: 0; z-index: 9999;
-            background: #fdf6ec;
-            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
-        }
-        #loading-screen .logo { font-family: 'Fraunces', serif; font-size: 2rem; color: #2d1f14; }
-        #loading-screen .sub { font-size: 0.85rem; color: #9a8070; letter-spacing: 0.05em; }
-        #loading-screen .dot-row { display: flex; gap: 6px; }
-        #loading-screen .dot { width: 8px; height: 8px; border-radius: 50%; background: #c8a882; animation: pulse 1.2s infinite; }
-        #loading-screen .dot:nth-child(2) { animation-delay: 0.2s; }
-        #loading-screen .dot:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
-        #no-puzzle {
-            display: none; position: fixed; inset: 0; z-index: 9999;
-            background: #fdf6ec; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
-        }
-        #no-puzzle h2 { font-family: 'Fraunces', serif; font-size: 1.5rem; }
-        #no-puzzle p { color: #9a8070; font-size: 0.9rem; }
-    </style>
+    <style>#no-puzzle { display: none; }</style>
 </head>
-<body>
+<body class="game nb-margin">
+<div class="page-turn"></div>
 
 <!-- Loading screen shown while fetching UTC date -->
-<div id="loading-screen">
-    <div class="logo">Anatomle</div>
-    <div class="sub">Loading today's puzzle…</div>
-    <div class="dot-row">
-        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
-    </div>
+<div id="loading-screen" class="nb-screen">
+    <div class="wordmark">anatom<span class="le">le</span></div>
+    <div class="sub">finding today's puzzle…</div>
+    <div class="nb-dots"><i></i><i></i><i></i></div>
 </div>
 
 <!-- Shown if no seed exists for today's date -->
-<div id="no-puzzle">
-    <h2>No puzzle today</h2>
-    <p>Check back tomorrow — new puzzles added regularly.</p>
-    <a href="../index.html" style="color:#c8a882; font-size:0.9rem;">← Back to home</a>
+<div id="no-puzzle" class="nb-screen">
+    <div class="wordmark">anatom<span class="le">le</span></div>
+    <div class="sub">no puzzle today</div>
+    <p>Check back tomorrow. New puzzles are added regularly.</p>
+    <a class="nb-btn" href="../index.html">← Back to the notes</a>
 </div>
 
 <div id="cv"></div>
-<button onclick="if(window.resetCamera) window.resetCamera();" style="
-    position:fixed; bottom:80px; left:16px; z-index:50;
-    background:rgba(253,246,236,0.92); border:1.5px solid #e8d5c0;
-    border-radius:8px; padding:7px 10px; cursor:pointer;
-    font-size:16px; line-height:1; color:#9a8070;
-    box-shadow:0 2px 8px rgba(45,31,20,0.1); transition:all 0.15s;
-" title="Reset view" onmouseover="this.style.color='#2d1f14'" onmouseout="this.style.color='#9a8070'">⊙</button>
+<span class="tape cv-tape-l"></span><span class="tape pink cv-tape-r"></span>
+<button type="button" class="nb-btn reset-view" onclick="if(window.resetCamera) window.resetCamera();" title="Reset view" aria-label="Reset view">⊙</button>
 <div id="root"></div>
 
 <script src="../js/3d/skeletonEngine.js"></script>
@@ -208,7 +174,7 @@ function DailyGame() {
     return React.createElement(React.Fragment, null,
         React.createElement(window.HowToModal, { show: htp[0], onClose: htp[1] }),
         React.createElement(window.PathfindingUI, {
-            gameTitle: 'Osteomle \u00B7 Daily Puzzle', state: state, handlers: handlers
+            gameTitle: 'daily puzzle', state: state, handlers: handlers
         }),
         window.BoneTooltipLayer ? React.createElement(window.BoneTooltipLayer) : null
     );
