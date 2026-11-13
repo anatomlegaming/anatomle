@@ -46,6 +46,26 @@
             if (phase === 'playing' && inputRef.current) inputRef.current.focus();
         }, [phase]);
 
+        // Visual feedback after each guess: a note above the guess box, and a
+        // shake of the box on a wrong guess
+        var last = log.length ? log[log.length - 1] : null;
+        var fbState = useState(false), shaking = fbState[0], setShaking = fbState[1];
+        useEffect(function () {
+            if (!last || last.type !== 'bad') return;
+            setShaking(true);
+            var t = setTimeout(function () { setShaking(false); }, 450);
+            return function () { clearTimeout(t); };
+        }, [log.length]);
+
+        var themeState = useState(window.AnatomleTheme ? window.AnatomleTheme.get() : 'light');
+        useEffect(function () {
+            function on(ev) { themeState[1](ev.detail); }
+            window.addEventListener('anatomle-theme', on);
+            return function () { window.removeEventListener('anatomle-theme', on); };
+        }, []);
+        var isDark = themeState[0] === 'dark';
+
+        var things = /muscle/i.test(gameTitle) ? 'muscle' : 'bone';
         var danger = left <= 3;
         var home   = h.onHome ? h.onHome : function () { window.location.href = '../index.html'; };
 
@@ -59,6 +79,12 @@
             e('div', { className: 'acts' },
                 window.HowToModal
                     ? e('button', { type: 'button', className: 'nb-btn', onClick: function () { setShowHow(true); } }, 'How to play')
+                    : null,
+                window.AnatomleTheme
+                    ? e('button', { type: 'button', className: 'nb-btn theme-toggle',
+                        title: isDark ? 'Light mode' : 'Dark mode',
+                        'aria-label': isDark ? 'Switch to light mode' : 'Switch to dark mode',
+                        onClick: function () { window.AnatomleTheme.toggle(); } }, isDark ? '\u2600' : '\u263E')
                     : null,
                 e('a', { href: '../index.html', className: 'nb-btn dark' }, 'Menu')
             )
@@ -124,7 +150,7 @@
                 why = g.extra === null ? 'not linked to this route'
                     : 'too far off course to reach ' + goal + ' in time';
             }
-            return e('div', { key: g.n, className: 'g-log ' + cls + (g.type === 'bad' ? ' shake' : '') },
+            return e('div', { key: g.n, className: 'g-log ' + cls + (g === last ? ' new' : '') },
                 e('span', { className: 'num' }, g.n),
                 e('div', { className: 'txt' },
                     e('b', null, g.bone),
@@ -132,6 +158,36 @@
         });
         if (!logItems.length) logItems.push(e('div', { key: 'none', className: 'g-empty' }, 'your guesses show up here'));
         var mistakes = detours.length + bad.length;
+        var found = chain.filter(function (c, i) { return i > 0 && i < chain.length - 1 && c.guessed; }).length;
+        var slots = Math.max(chain.length - 2, 0);
+
+        // ── FEEDBACK NOTE (latest guess) + COLOUR KEY ─────────────────────────
+        var fbText, fbCls;
+        if (!last) {
+            fbCls = 'intro';
+            fbText = [e('b', { key: 'a' }, 'Your move: '), 'name any ' + things + ' that sits between ',
+                      e('span', { key: 'b', className: 'hl-green' }, target.start), ' and ',
+                      e('span', { key: 'c', className: 'hl-pink' }, target.end), '.'];
+        } else if (last.type === 'optimal') {
+            fbCls = 'ok';
+            fbText = [e('b', { key: 'a' }, '\u2713 ' + last.bone), ' is on the shortest route!'];
+        } else if (last.type === 'detour') {
+            fbCls = 'detour';
+            fbText = [e('b', { key: 'a' }, '~ ' + last.bone), ' connects, but adds ' + last.extra + ' step' + (last.extra === 1 ? '' : 's') + '.'];
+        } else {
+            fbCls = 'bad';
+            fbText = [e('b', { key: 'a' }, '\u2717 ' + last.bone), last.extra === null ? ' isn\u2019t linked to this route.' : ' is too far off course to reach ' + goal + ' in time.'];
+        }
+        var feedback = phase === 'playing' && !reviewing && !suggestions.length
+            ? e('div', { key: 'fb' + log.length, className: 'g-feedback ' + fbCls, role: 'status', 'aria-live': 'polite' }, fbText)
+            : null;
+
+        var colourKey = e('div', { className: 'g-key', 'aria-hidden': true },
+            e('span', null, e('i', { className: 'k start' }), 'start'),
+            e('span', null, e('i', { className: 'k end' }), 'goal'),
+            e('span', null, e('i', { className: 'k ok' }), 'shortest route'),
+            e('span', null, e('i', { className: 'k detour' }), 'long way'),
+            e('span', null, e('i', { className: 'k bad' }), 'can\u2019t reach'));
 
         // ── PANEL BUTTONS ─────────────────────────────────────────────────────
         var hintBtn = h.onHint
@@ -152,8 +208,8 @@
             e('div', { className: 'g-route' },
                 e('span', { className: 'tape pink' }),
                 e('div', { className: 'g-head' },
-                    e('span', { className: 't' }, 'my route'),
-                    e('span', { className: 'n' }, plural(guessesUsed, 'guess') + ' used')
+                    e('span', { className: 't' }, 'the route'),
+                    e('span', { className: 'n' }, found + ' of ' + slots + ' found')
                 ),
                 e('div', { className: 'g-list nb-scroll' }, chainItems)
             ),
@@ -181,7 +237,7 @@
             : null;
 
         var searchBar = e('div', { className: 'g-search' },
-            e('label', { className: 'g-field' + (input && suggestions.length === 0 ? ' err' : '') },
+            e('label', { className: 'g-field' + (input && suggestions.length === 0 ? ' err' : '') + (shaking ? ' shake' : '') },
                 dropdown,
                 e('span', { className: 'lbl' }, 'next:'),
                 e('input', {
@@ -192,7 +248,7 @@
                     'aria-label': 'Your guess',
                     autoComplete: 'off', spellCheck: false,
                     placeholder: phase === 'playing'
-                        ? 'type a name that connects…'
+                        ? 'type a ' + things + ' name…'
                         : (h.onNewGame ? 'game over, hit Next puzzle →' : 'game over, tap Results to review')
                 })
             )
@@ -274,7 +330,7 @@
             : null;
 
         return e(React.Fragment, null,
-            navbar, challengeBar, rightPanel,
+            navbar, challengeBar, colourKey, feedback, rightPanel,
             reviewing ? reviewBar : searchBar,
             overlay, howModal);
     }

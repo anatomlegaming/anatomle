@@ -102,57 +102,57 @@ window.reset3D = function() {
     if (!_skeleton) return;
     _skeleton.traverse(function(n) {
         if (!n.isMesh) return;
-        n.material = new THREE.MeshStandardMaterial({ color:0x8E9CC4, transparent:true, opacity:0.28 });
+        HL.apply(n, null, { instant: true });
         n._baseMaterial = n.material;
     });
 };
 
+function _matchBone(node, bones) {
+    for (var i = 0; i < bones.length; i++) {
+        var b = bones[i];
+        if (b.name === 'True Ribs (1-7)')        { for(var t=0;t<TRUE_RIB_NODES.length;t++)     if(node.name.indexOf(TRUE_RIB_NODES[t])    !=-1) return b; continue; }
+        if (b.name === 'False Ribs (8-10)')       { for(var f=0;f<FALSE_RIB_NODES.length;f++)    if(node.name.indexOf(FALSE_RIB_NODES[f])   !=-1) return b; continue; }
+        if (b.name === 'Floating Ribs (11-12)')   { for(var l=0;l<FLOATING_RIB_NODES.length;l++) if(node.name.indexOf(FLOATING_RIB_NODES[l])!=-1) return b; continue; }
+        if (b.name === 'Costal Cartilage (1-7)')  { for(var c=0;c<COSTAL_TRUE_NODES.length;c++)  if(node.name.indexOf(COSTAL_TRUE_NODES[c]) !=-1) return b; continue; }
+        if (b.name === 'Costal Cartilage (8-10)') { for(var d=0;d<COSTAL_FALSE_NODES.length;d++) if(node.name.indexOf(COSTAL_FALSE_NODES[d])!=-1) return b; continue; }
+        if (b.name === 'Hip Bone') { if(node.name.indexOf('Hip_boner')!=-1) return b; continue; }
+        var key = BONE_TO_3D_MODEL[b.name];
+        if (!key) continue;
+        if (key.indexOf('__group__') === 0) {
+            var parts = key.slice(9).split('|');
+            for (var p = 0; p < parts.length; p++) { if(node.name.indexOf(parts[p])!=-1) return b; }
+        } else if (node.name.indexOf(key) !== -1) return b;
+    }
+    return null;
+}
+
+// Colours every mesh for the game state. Newly guessed bones are drawn in
+// with a highlighter fill (see js/3d/hlFx.js); wrong ones also shake.
 window.update3D = function(bones) {
     if (!_skeleton) return;
     _skeleton.traverse(function(node) {
         if (!node.isMesh) return;
-        var matched = null;
-        for (var i = 0; i < bones.length; i++) {
-            var b = bones[i];
-            if (b.name === 'True Ribs (1-7)')        { for(var t=0;t<TRUE_RIB_NODES.length;t++)     if(node.name.indexOf(TRUE_RIB_NODES[t])    !=-1){matched=b;break;} if(matched)break; continue; }
-            if (b.name === 'False Ribs (8-10)')       { for(var f=0;f<FALSE_RIB_NODES.length;f++)    if(node.name.indexOf(FALSE_RIB_NODES[f])   !=-1){matched=b;break;} if(matched)break; continue; }
-            if (b.name === 'Floating Ribs (11-12)')   { for(var l=0;l<FLOATING_RIB_NODES.length;l++) if(node.name.indexOf(FLOATING_RIB_NODES[l])!=-1){matched=b;break;} if(matched)break; continue; }
-            if (b.name === 'Costal Cartilage (1-7)')  { for(var c=0;c<COSTAL_TRUE_NODES.length;c++)  if(node.name.indexOf(COSTAL_TRUE_NODES[c]) !=-1){matched=b;break;} if(matched)break; continue; }
-            if (b.name === 'Costal Cartilage (8-10)') { for(var d=0;d<COSTAL_FALSE_NODES.length;d++) if(node.name.indexOf(COSTAL_FALSE_NODES[d])!=-1){matched=b;break;} if(matched)break; continue; }
-            if (b.name === 'Hip Bone') { if(node.name.indexOf('Hip_boner')!=-1){matched=b;break;} continue; }
-            var key = BONE_TO_3D_MODEL[b.name];
-            if (!key) continue;
-            if (key.indexOf('__group__') === 0) {
-                var parts = key.slice(9).split('|');
-                for (var p = 0; p < parts.length; p++) { if(node.name.indexOf(parts[p])!=-1){matched=b;break;} }
-                if (matched) break;
-            } else {
-                if (node.name.indexOf(key) !== -1) { matched = b; break; }
-            }
-        }
-        var mat;
-        if (matched) {
-            var col = 0x22D36B, em = 0.55;
-            if (matched.type === 'start')  { col = 0x17B857; em = 0.45; }
-            if (matched.type === 'end')    { col = 0xFF4FA3; em = 0.6; }
-            if (matched.type === 'path')   { col = 0x34D16E; em = 0.32; }
-            if (matched.type === 'detour') { col = 0xFFD21F; em = 0.6; }
-            if (matched.type === 'bad')    { col = 0xF0283C; em = 0.75; }
-            if (matched.type === 'reveal') { col = 0x9A6BFF; em = 0.7; }
-            mat = new THREE.MeshStandardMaterial({ color:col, emissive:col, emissiveIntensity:em });
-        } else {
-            mat = new THREE.MeshStandardMaterial({ color:0x8E9CC4, transparent:true, opacity:0.28 });
-        }
-        node.material      = mat;
-        node._baseMaterial = mat;
+        var matched = _matchBone(node, bones);
+        HL.apply(node, matched ? matched.type : null);
+        node._baseMaterial = matched ? HL.typeMaterial(matched.type) : node.material;
     });
 };
+
+// Repaint with the other theme's colours
+window.addEventListener('anatomle-theme', function () {
+    if (!_skeleton) return;
+    _skeleton.traverse(function(n) {
+        if (!n.isMesh || !n._hlType) return;
+        HL.apply(n, n._hlType === 'ghost' ? null : n._hlType, { force: true, instant: true });
+        n._baseMaterial = n.material;
+    });
+});
 
 // ── HIGHLIGHT SINGLE BONE (from panel row hover) ──────────────────────────────
 window.highlight3D = function(displayName, on) {
     if (!_skeleton) return;
     _skeleton.traverse(function(node) {
-        if (!node.isMesh || !node._baseMaterial || node._baseMaterial.transparent) return;
+        if (!node.isMesh || !node._baseMaterial || node._baseMaterial.transparent || node._hlType === 'ghost') return;
         if (meshNameToDisplay(node.name) !== displayName) return;
         if (on) {
             var hl = node._baseMaterial.clone();
@@ -266,6 +266,7 @@ function _initSkeletonEngine() {
     _renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
     _renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     _renderer.setSize(cont.clientWidth, cont.clientHeight);
+    HL.enable(_renderer);
     cont.appendChild(_renderer.domElement);
 
     _ctrl = new THREE.OrbitControls(_cam, _renderer.domElement);
@@ -346,9 +347,11 @@ function _initSkeletonEngine() {
     }, { passive:false });
 
     // ── Lights ──
-    scene.add(new THREE.AmbientLight(0xffffff, 0.9));
-    var dl = new THREE.DirectionalLight(0xffffff, 0.7);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+    var dl = new THREE.DirectionalLight(0xffffff, 0.8);
     dl.position.set(5, 10, 7.5); scene.add(dl);
+    var dl2 = new THREE.DirectionalLight(0xffffff, 0.35);
+    dl2.position.set(-5, 2, -6); scene.add(dl2);
 
     // ── Load model ──
     var draco = new THREE.DRACOLoader();
@@ -375,7 +378,7 @@ function _initSkeletonEngine() {
         window.dispatchEvent(new CustomEvent('modelReady'));
     });
 
-    function animate() { requestAnimationFrame(animate); ctrl.update(); _renderer.render(scene, _cam); }
+    function animate() { requestAnimationFrame(animate); HL.tick(); ctrl.update(); _renderer.render(scene, _cam); }
     animate();
 
     var ro = new ResizeObserver(function() {

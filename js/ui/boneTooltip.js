@@ -21,12 +21,12 @@
     var useRef   = React.useRef;
 
     var C = {
-        cream:   '#FBFCFF',
-        card:    '#FFFFFF',
-        border:  '#C9D3EA',
-        ink:     '#17213A',
-        inkLight:'#2B3654',
-        muted:   '#4A5573',
+        cream:   'var(--paper)',
+        card:    'var(--card)',
+        border:  'var(--rule)',
+        ink:     'var(--ink)',
+        inkLight:'var(--ink-2)',
+        muted:   'var(--ink-3)',
         coral:   '#C2185B',
         coralDk: '#C8102E',
         sage:    '#1E9E52',
