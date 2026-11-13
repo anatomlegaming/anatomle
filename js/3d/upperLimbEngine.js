@@ -8,19 +8,6 @@
 var _model = null;
 if (window.HL) HL.ghostScale = 0.7; // muscles overlap a lot, keep the unguessed ones lighter
 
-// ── MATERIAL HELPERS ─────────────────────────────────────────────────────────
-function mat(color, emissive, opacity, transparent) {
-    return new THREE.MeshStandardMaterial({
-        color: color,
-        emissive: emissive !== undefined ? emissive : color,
-        emissiveIntensity: emissive !== undefined ? 0.55 : 0,
-        transparent: transparent !== undefined ? transparent : false,
-        opacity: opacity !== undefined ? opacity : 1,
-        depthWrite: opacity === undefined || opacity >= 1
-    });
-}
-
-
 // ── MESH LOOKUP ──────────────────────────────────────────────────────────────
 // Build a flat map of meshName → THREE.Mesh on model load
 var _meshMap = {};
@@ -37,15 +24,6 @@ function getMeshesForMuscle(muscleName) {
     var data = UPPER_LIMB_MUSCLES[muscleName];
     if (!data || !data.meshes) return [];
     return data.meshes.map(function(n){ return _meshMap[n]; }).filter(Boolean);
-}
-
-function getNerveMeshes(nerveHintNode) {
-    // nerveHintNode can be a single string or we look up the full group
-    if (!nerveHintNode) return [];
-    // Check NERVE_MESH_GROUPS first by matching supply string
-    var result = [];
-    if (_meshMap[nerveHintNode]) result.push(_meshMap[nerveHintNode]);
-    return result;
 }
 
 function getNerveMeshesForSupply(supply) {
@@ -70,6 +48,7 @@ var _hiddenMeshes = [];
 
 function hideNonMuscle() {
     _hiddenMeshes.forEach(function(m) { m.visible = false; });
+    HL.invalidate();
 }
 
 window.reset3D = function() {
@@ -79,6 +58,8 @@ window.reset3D = function() {
         if (n.isMesh) HL.apply(n, null, { instant: true, force: true });
     });
 };
+
+var PRIORITY = { start: 5, end: 5, path: 4, detour: 3, reveal: 2, bad: 1 };
 
 window.update3D = function(bones) {
     // bones = [{name, type}] where type: 'start'|'end'|'path'|'detour'|'bad'|'reveal'
@@ -92,8 +73,7 @@ window.update3D = function(bones) {
         meshes.forEach(function(mesh) {
             // Higher priority types win
             var current = highlighted[mesh.name];
-            var priority = {start:5, end:5, path:4, detour:3, reveal:2, bad:1};
-            if (!current || (priority[b.type] || 0) > (priority[current] || 0)) {
+            if (!current || (PRIORITY[b.type] || 0) > (PRIORITY[current] || 0)) {
                 highlighted[mesh.name] = b.type;
             }
         });
@@ -102,7 +82,7 @@ window.update3D = function(bones) {
     hideNonMuscle();
     _model.traverse(function(node) {
         if (!node.isMesh) return;
-        if (_hiddenMeshes.indexOf(node) !== -1) return;
+        if (node._hidden) return;
         HL.apply(node, highlighted[node.name] || null);
     });
 };
@@ -122,28 +102,25 @@ window.showNerveHint = function(muscleName) {
     // Also add all meshes from the supply group
     getNerveMeshesForSupply(data.supply).forEach(function(m){ nerveMeshes.add(m.name); });
 
-    _model.traverse(function(node) {
-        if (!node.isMesh) return;
-        if (nerveMeshes.has(node.name)) {
-            node.visible = true;
-            node.material = new THREE.MeshStandardMaterial({
-                color: 0x8FD0FF, emissive: 0x8FD0FF, emissiveIntensity: 0.8,
-                transparent: false, opacity: 1
-            });
-        }
+    if (!_nerveMat) _nerveMat = new THREE.MeshStandardMaterial({ color: 0x8FD0FF, emissive: 0x8FD0FF, emissiveIntensity: 0.8 });
+    nerveMeshes.forEach(function(name) {
+        var node = _meshMap[name];
+        if (!node) return;
+        node.visible = true;
+        node.material = _nerveMat;
     });
+    HL.invalidate();
 };
+var _nerveMat = null;
 
-window.clearNerveHint = function() {
-    // Called after a few seconds to fade nerve highlight back
-    // Just re-run update3D with current state — caller handles this
-};
+// Hide the nerves again once the hint is over
+window.clearNerveHint = hideNonMuscle;
 
 // Repaint with the other theme's colours
 window.addEventListener('anatomle-theme', function () {
     if (!_model) return;
     _model.traverse(function(n) {
-        if (!n.isMesh || !n._hlType || _hiddenMeshes.indexOf(n) !== -1) return;
+        if (!n.isMesh || !n._hlType || n._hidden) return;
         HL.apply(n, n._hlType === 'ghost' ? null : n._hlType, { force: true, instant: true });
     });
 });
@@ -193,7 +170,9 @@ function _initUpperLimbEngine() {
     var loader = new THREE.GLTFLoader();
     loader.setDRACOLoader(draco);
 
+    var note = HL.loadNote(cont);
     loader.load('../models/upper-limb.glb', function(gltf) {
+        note.done();
         _model = gltf.scene;
         scene.add(_model);
 
@@ -213,7 +192,7 @@ function _initUpperLimbEngine() {
                     name.indexOf('capsule') !== -1 || name.indexOf('synovia') !== -1 ||
                     name.indexOf('bursae') !== -1) {
                     node.traverse(function(child) {
-                        if (child.isMesh && _hiddenMeshes.indexOf(child) === -1) _hiddenMeshes.push(child);
+                        if (child.isMesh && !child._hidden) { child._hidden = true; _hiddenMeshes.push(child); }
                     });
                 }
             }
@@ -241,15 +220,17 @@ function _initUpperLimbEngine() {
 
         window.__modelIsReady = true;
         window.dispatchEvent(new Event('modelReady'));
-    }, undefined, function(err) {
+    }, note.progress, function(err) {
         console.error('Failed to load upper-limb.glb:', err);
+        note.fail();
     });
 
+    // Only draw when something changed (see skeletonEngine.js)
+    ctrl.addEventListener('change', HL.invalidate);
     function animate() {
         requestAnimationFrame(animate);
-        HL.tick();
         ctrl.update();
-        renderer.render(scene, cam);
+        if (HL.tick()) renderer.render(scene, cam);
     }
     animate();
 
@@ -257,6 +238,7 @@ function _initUpperLimbEngine() {
         cam.aspect = cont.clientWidth / cont.clientHeight;
         cam.updateProjectionMatrix();
         renderer.setSize(cont.clientWidth, cont.clientHeight);
+        HL.invalidate();
     });
     ro.observe(cont);
 }

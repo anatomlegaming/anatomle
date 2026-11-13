@@ -44,8 +44,7 @@
             if (window.showNerveHint) window.showNerveHint(game.puzzle.end);
             clearTimeout(hintTimer.current);
             hintTimer.current = setTimeout(function () {
-                // Fire a no-op highlight refresh: the engine's update3D hides the nerves again
-                window.dispatchEvent(new Event('modelReady'));
+                if (window.clearNerveHint) window.clearNerveHint();
             }, 4000);
         }
 
