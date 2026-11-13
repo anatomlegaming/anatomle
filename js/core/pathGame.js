@@ -11,7 +11,10 @@
 //
 // The game is won as soon as the start and end are joined by guessed bones
 // (optimal or detour). The result is then graded:
-//   3 stars  Perfect Path    shortest route, no mistakes
+//   3 stars  Perfect Path    shortest route, no mistakes, guessed in order
+//                            (each guess touches the one before, walking from
+//                            the start, or backwards from the goal)
+//   2 stars  Clean Route     shortest route, no mistakes, but out of order
 //   2 stars  Shortest Route  shortest route, one or two mistakes
 //   1 star   Path Found      a longer route, or 3+ mistakes
 //   Flatline                 ran out of guesses
@@ -129,7 +132,31 @@
         });
     }
 
-    function grade(phase, a, route, mistakes, used) {
+    // How many steps a guess adds over the shortest route (0 = on it).
+    // null when the bone has no route to both ends at all.
+    function extraSteps(bone, a) {
+        var s = a.dS[bone], t = a.dE[bone];
+        if (s === undefined || t === undefined) return null;
+        return s + t - a.L;
+    }
+
+    // True when the guesses walk the route one step at a time, from the start
+    // forwards or from the goal backwards, with nothing wasted.
+    function inOrder(a, bones) {
+        if (bones.length !== a.L - 1) return false;
+        function walk(from, dist) {
+            var prev = from;
+            for (var i = 0; i < bones.length; i++) {
+                var b = bones[i];
+                if (dist[b] !== i + 1 || (a.graph[prev] || []).indexOf(b) === -1) return false;
+                prev = b;
+            }
+            return true;
+        }
+        return walk(a.start, a.dS) || walk(a.end, a.dE);
+    }
+
+    function grade(phase, a, route, mistakes, used, ordered) {
         var steps = a.L - 1;
         if (phase === 'lost') {
             return { tier: 0, stars: 0, label: 'Flatline.', emoji: '💣',
@@ -138,15 +165,18 @@
         if (phase !== 'won') return null;
         var shortest = route && route.length - 1 === a.L;
         var usedTxt = used + ' guess' + (used !== 1 ? 'es' : '');
+        if (shortest && mistakes === 0 && ordered)
+            return { tier: 3, stars: 3, label: 'Perfect Path!', emoji: '🏆', detail: usedTxt + ', no mistakes, all in order' };
         if (shortest && mistakes === 0)
-            return { tier: 3, stars: 3, label: 'Perfect Path!', emoji: '🏆', detail: usedTxt + ' — no mistakes' };
+            return { tier: 2, stars: 2, label: 'Clean Route!', emoji: '🥇',
+                     detail: usedTxt + ', no mistakes' + (used > steps ? ', ' + (used - steps) + ' spare' : ', but not in order') };
         if (shortest && mistakes <= 2)
             return { tier: 2, stars: 2, label: 'Shortest Route!', emoji: '🥈',
-                     detail: usedTxt + ' — ' + mistakes + ' mistake' + (mistakes !== 1 ? 's' : '') };
+                     detail: usedTxt + ', ' + mistakes + ' mistake' + (mistakes !== 1 ? 's' : '') };
         return { tier: 1, stars: 1, label: 'Path Found', emoji: '✓',
                  detail: shortest
-                    ? usedTxt + ' — ' + mistakes + ' mistakes'
-                    : 'Took ' + (route.length - 2) + ' steps — shortest is ' + steps };
+                    ? usedTxt + ', ' + mistakes + ' mistakes'
+                    : 'Your route took ' + (route.length - 2) + ' steps, shortest is ' + steps };
     }
 
     var GRID = { optimal: '🟩', detour: '🟨', bad: '🟥' };
@@ -154,7 +184,8 @@
     window.PathScoring = {
         symmetric: symmetric, analyze: analyze, allowance: allowance, classify: classify,
         routeThrough: routeThrough, bestShortestRoute: bestShortestRoute,
-        buildChain: buildChain, grade: grade, GRID: GRID
+        buildChain: buildChain, grade: grade, GRID: GRID,
+        extraSteps: extraSteps, inOrder: inOrder
     };
 
     // ── REACT HOOK ───────────────────────────────────────────────────────────
@@ -212,7 +243,12 @@
 
         var chain = useMemo(function () { return a ? buildChain(a, optimal) : []; }, [a, guesses]);
         var route = useMemo(function () { return a ? routeThrough(a, optimal.concat(detours)) : null; }, [a, guesses]);
-        var result = a ? grade(phase, a, route, mistakes, guesses.length) : null;
+        var ordered = a ? inOrder(a, guesses.map(function (g) { return g.bone; })) : false;
+        var result = a ? grade(phase, a, route, mistakes, guesses.length, ordered) : null;
+        // Every guess in order, with how far off the shortest route it was
+        var log = a ? guesses.map(function (g, i) {
+            return { n: i + 1, bone: g.bone, type: g.type, extra: extraSteps(g.bone, a), onRoute: !!(route && route.indexOf(g.bone) !== -1) };
+        }) : [];
         var grid = '🟢' + guesses.map(function (g) { return GRID[g.type]; }).join('') +
                    (phase === 'won' ? '🎯' : phase === 'lost' ? '❌' : '');
 
@@ -335,7 +371,7 @@
                 target: target, chain: chain, left: left, max: max, bad: bad, detours: detours,
                 input: input, selIdx: selIdx, phase: phase, reveal: reveal, suggestions: suggestions,
                 shared: shared, reviewing: reviewing, guessesUsed: guesses.length,
-                grade: result, grid: grid
+                grade: result, grid: grid, log: log, goal: a ? a.end : ''
             },
             handlers: {
                 onInputChange: function (ev) { setInput(ev.target.value); setSelIdx(-1); },
