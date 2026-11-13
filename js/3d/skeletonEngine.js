@@ -15,6 +15,7 @@ var _renderer  = null;
 var _raycaster = new THREE.Raycaster();
 var _rafPending= false;
 var _lastHover = null;
+var _camFx    = null;
 
 // ── RIB / SPECIAL NODE LISTS ─────────────────────────────────────────────────
 var TRUE_RIB_NODES     = ['Rib_(1st)r','Rib_(2nd)r','Rib_(3rd)r','Rib_(4th)r','Rib_(5th)r','Rib_(6th)r','Rib_(7th)r'];
@@ -64,6 +65,12 @@ function litMeshes() {
     var out = [];
     _skeleton.traverse(function(n) { if (n.isMesh && n._hlType && n._hlType !== 'ghost') out.push(n); });
     return out;
+}
+
+var _allMeshes = null;
+function allMeshes() {
+    if (!_allMeshes) { _allMeshes = []; _skeleton.traverse(function(n) { if (n.isMesh) _allMeshes.push(n); }); }
+    return _allMeshes;
 }
 
 function raycastAt(clientX, clientY) {
@@ -171,11 +178,7 @@ window.highlight3D = function(displayName, on) {
 
 window.resetCamera = function() {
     if (!_initCenter || !_cam || !_ctrl) return;
-    _cam.position.set(_initCenter.x, _initCenter.y, _initCenter.z + _initDist);
-    _ctrl.target.set(_initCenter.x, _initCenter.y, _initCenter.z);
-    _cam.lookAt(_initCenter.x, _initCenter.y, _initCenter.z);
-    _ctrl.saveState && _ctrl.saveState();
-    _ctrl.update();
+    _camFx.fly(new THREE.Vector3(_initCenter.x, _initCenter.y, _initCenter.z + _initDist), _initCenter, 700);
 };
 
 // ── GET WORLD-SPACE CENTER OF A NAMED BONE ────────────────────────────────────
@@ -208,38 +211,11 @@ window.panToGameBones = function(startBone, endBone, duration) {
 
     // Distance — zoom in relative to how far apart the bones are
     var spread = startPos.distanceTo(endPos);
-    var targetDist = Math.max(1.5, Math.min(spread * 2.2, _initDist * 0.85));
+    var targetDist = Math.max(_initDist * 0.45, Math.min(spread * 2.2, _initDist * 0.85));
 
-    // Current camera state
-    var fromTarget = _ctrl.target.clone();
-    var fromPos    = _cam.position.clone();
-
-    // Destination
-    var toTarget = mid.clone();
-    // Keep same horizontal angle, just move closer
-    var dir = fromPos.clone().sub(fromTarget).normalize();
-    var toPos = mid.clone().add(dir.multiplyScalar(targetDist));
-
-    var start = performance.now();
-    var _panRaf;
-
-    function easeInOut(t) { return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; }
-
-    function step(now) {
-        var t = Math.min((now - start) / duration, 1);
-        var e = easeInOut(t);
-
-        _cam.position.lerpVectors(fromPos, toPos, e);
-        _ctrl.target.lerpVectors(fromTarget, toTarget, e);
-        _ctrl.update();
-
-        if (t < 1) {
-            _panRaf = requestAnimationFrame(step);
-        } else {
-            _ctrl.saveState && _ctrl.saveState();
-        }
-    }
-    _panRaf = requestAnimationFrame(step);
+    // Keep the same viewing angle, just glide closer
+    var dir = _cam.position.clone().sub(_ctrl.target).normalize();
+    _camFx.fly(mid.clone().add(dir.multiplyScalar(targetDist)), mid, duration);
 };
 function _initSkeletonEngine() {
     var cont  = document.getElementById('cv');
@@ -254,9 +230,8 @@ function _initSkeletonEngine() {
 
     _ctrl = new THREE.OrbitControls(_cam, _renderer.domElement);
     var ctrl = _ctrl;
-    ctrl.enableDamping = true; ctrl.dampingFactor = 0.05;
-    ctrl.maxPolarAngle = Math.PI;
-    ctrl.minDistance = 1; ctrl.maxDistance = 10; ctrl.enableZoom = false;
+    _camFx = HL.camera({ cam: _cam, ctrl: ctrl, dom: _renderer.domElement,
+                         pickables: function () { return _skeleton ? allMeshes() : []; } });
 
     // ── Mouse hover (rAF-throttled) ──
     _renderer.domElement.addEventListener('mousemove', function(e) {
@@ -306,29 +281,6 @@ function _initSkeletonEngine() {
         e.preventDefault();
     }, { passive:false });
 
-    // ── Mouse wheel zoom ──
-    _renderer.domElement.addEventListener('wheel', function(e) {
-        e.preventDefault();
-        var rect  = _renderer.domElement.getBoundingClientRect();
-        var mouse = new THREE.Vector2(
-            ((e.clientX - rect.left) / rect.width) * 2 - 1,
-            -((e.clientY - rect.top) / rect.height) * 2 + 1
-        );
-        var ray = new THREE.Raycaster(); ray.setFromCamera(mouse, _cam);
-        var t3d;
-        if (_skeleton) { var h = ray.intersectObjects([_skeleton], true); if (h.length) t3d = h[0].point.clone(); }
-        if (!t3d) t3d = ray.ray.at(_cam.position.distanceTo(ctrl.target), new THREE.Vector3());
-        var dist = _cam.position.distanceTo(ctrl.target);
-        if (e.deltaY < 0 && dist > ctrl.minDistance) {
-            _cam.position.lerp(t3d, 0.12);
-            ctrl.target.lerp(t3d, 0.08);
-        } else if (e.deltaY > 0 && dist < ctrl.maxDistance) {
-            _cam.position.lerp(t3d, -0.12);
-            ctrl.target.lerp(t3d, -0.08);
-        }
-        ctrl.update();
-    }, { passive:false });
-
     // ── Lights ──
     scene.add(new THREE.AmbientLight(0xffffff, 0.75));
     var dl = new THREE.DirectionalLight(0xffffff, 0.8);
@@ -353,6 +305,7 @@ function _initSkeletonEngine() {
         ctrl.target.copy(center);
         var fov    = _cam.fov * (Math.PI / 180);
         var maxDim = Math.max(size.x, size.y, size.z);
+        _camFx.setRange(maxDim);
         var dist = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.5;
         _initCenter = center.clone();
         _initDist   = dist;
@@ -371,6 +324,7 @@ function _initSkeletonEngine() {
     ctrl.addEventListener('change', HL.invalidate);
     function animate() {
         requestAnimationFrame(animate);
+        _camFx.step();
         ctrl.update();
         if (HL.tick()) _renderer.render(scene, _cam);
     }

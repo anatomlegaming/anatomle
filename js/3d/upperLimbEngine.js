@@ -137,23 +137,11 @@ function _initUpperLimbEngine() {
     cont.appendChild(renderer.domElement);
 
     var ctrl = new THREE.OrbitControls(cam, renderer.domElement);
-    ctrl.enableDamping = true;
-    ctrl.dampingFactor = 0.05;
-    ctrl.maxPolarAngle = Math.PI;
-    ctrl.minDistance = 0.5;
-    ctrl.maxDistance = 15;
-    ctrl.enableZoom = false;
-
-    // Scroll-to-zoom
-    renderer.domElement.addEventListener('wheel', function(e) {
-        e.preventDefault();
-        var dir = new THREE.Vector3().subVectors(cam.position, ctrl.target).normalize();
-        var dist = cam.position.distanceTo(ctrl.target);
-        var step = dist * 0.1;
-        if (e.deltaY < 0 && dist > ctrl.minDistance) cam.position.addScaledVector(dir, -step);
-        else if (e.deltaY > 0 && dist < ctrl.maxDistance) cam.position.addScaledVector(dir, step);
-        ctrl.update();
-    }, { passive: false });
+    var camFx = HL.camera({ cam: cam, ctrl: ctrl, dom: renderer.domElement, pickables: function () {
+        var out = [];
+        if (_model) _model.traverse(function(n) { if (n.isMesh && n.visible) out.push(n); });
+        return out;
+    } });
 
     // Warm lighting
     scene.add(new THREE.AmbientLight(0xffffff, 0.9));
@@ -208,15 +196,12 @@ function _initUpperLimbEngine() {
         ctrl.target.copy(center);
         var fov = cam.fov * (Math.PI / 180);
         var maxDim = Math.max(size.x, size.y, size.z);
+        camFx.setRange(maxDim);
         cam.position.set(center.x, center.y, center.z + Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.3);
         cam.lookAt(center);
         ctrl.update();
         var homePos = cam.position.clone(), homeTarget = center.clone();
-        window.resetCamera = function() {
-            cam.position.copy(homePos);
-            ctrl.target.copy(homeTarget);
-            ctrl.update();
-        };
+        window.resetCamera = function() { camFx.fly(homePos, homeTarget, 700); };
 
         window.__modelIsReady = true;
         window.dispatchEvent(new Event('modelReady'));
@@ -229,6 +214,7 @@ function _initUpperLimbEngine() {
     ctrl.addEventListener('change', HL.invalidate);
     function animate() {
         requestAnimationFrame(animate);
+        camFx.step();
         ctrl.update();
         if (HL.tick()) renderer.render(scene, cam);
     }

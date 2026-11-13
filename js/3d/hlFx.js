@@ -8,6 +8,7 @@
 //                       when something changed and the scene needs a redraw.
 // HL.invalidate()       ask for a redraw on the next frame (camera moved, etc).
 // HL.enable(renderer)   turn on the clipping the fill animation needs.
+// HL.camera(opts)       smooth orbit / zoom / pan setup shared by both models.
 // Colours follow the page theme (light / dark) and update on 'anatomle-theme'.
 // ============================================================================
 (function () {
@@ -191,11 +192,101 @@
         };
     }
 
+    // ── Camera ──────────────────────────────────────────────────────────────
+    // Orbit with a short, soft glide; no flipping over the top or bottom.
+    // The mouse wheel zooms smoothly towards whatever is under the cursor
+    // (trackpads and mouse wheels feel the same); pinch zooms on touch.
+    // opts: { cam, ctrl, dom, pickables: fn -> meshes, onUser: fn }
+    // Returns { step(), fly(toPos, toTarget, ms), cancel(), setRange(size) }.
+    function camera(o) {
+        var cam = o.cam, ctrl = o.ctrl, dom = o.dom;
+        ctrl.enableDamping = true;
+        ctrl.dampingFactor = 0.12;
+        ctrl.rotateSpeed = 0.75;
+        ctrl.panSpeed = 0.8;
+        ctrl.zoomSpeed = 0.8;
+        ctrl.enableZoom = true;            // pinch on touch; the wheel is handled below
+        ctrl.screenSpacePanning = true;
+        ctrl.minPolarAngle = 0.1;
+        ctrl.maxPolarAngle = Math.PI - 0.1;
+
+        var goal = null;                   // distance we are easing towards
+        var pivot = new THREE.Vector3();   // point that stays put while zooming
+        var ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
+        var lastPick = 0, flight = null;
+
+        function cancel() { flight = null; }
+        ctrl.addEventListener('start', function () { cancel(); if (o.onUser) o.onUser(); });
+
+        // Capture on the parent, so OrbitControls' own (jumpy) wheel zoom never runs
+        dom.parentNode.addEventListener('wheel', function (e) {
+            if (e.target !== dom) return;
+            e.preventDefault(); e.stopPropagation();
+            cancel(); if (o.onUser) o.onUser();
+            var dy = e.deltaY * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? 400 : 1);
+            dy = Math.max(-120, Math.min(120, dy));
+            var d = cam.position.distanceTo(ctrl.target);
+            var from = goal === null ? d : goal;
+            goal = Math.min(ctrl.maxDistance, Math.max(ctrl.minDistance, from * Math.exp(dy * 0.0025)));
+            if (dy > 0) { pivot.copy(ctrl.target); }            // zoom out from the middle
+            else if (performance.now() - lastPick > 180) {      // zoom in towards the cursor
+                lastPick = performance.now();
+                var r = dom.getBoundingClientRect();
+                mouse.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+                ray.setFromCamera(mouse, cam);
+                var hits = o.pickables ? ray.intersectObjects(o.pickables(), false) : [];
+                if (hits.length) pivot.copy(hits[0].point);
+                else ray.ray.at(d, pivot);
+            }
+            dirty = true;
+        }, { passive: false, capture: true });
+
+        function ease(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+        var tmp = new THREE.Vector3();
+
+        function step() {
+            if (flight) {
+                var t = Math.min((performance.now() - flight.t0) / flight.ms, 1), k = ease(t);
+                cam.position.lerpVectors(flight.p0, flight.p1, k);
+                ctrl.target.lerpVectors(flight.q0, flight.q1, k);
+                if (t >= 1) flight = null;
+                dirty = true;
+                return;
+            }
+            if (goal === null) return;
+            var d = cam.position.distanceTo(ctrl.target);
+            var next = d + (goal - d) * 0.2;
+            if (Math.abs(goal - next) < d * 0.002) { next = goal; }
+            var s = next / d;
+            cam.position.sub(pivot).multiplyScalar(s).add(pivot);
+            ctrl.target.sub(pivot).multiplyScalar(s).add(pivot);
+            if (next === goal) goal = null;
+            dirty = true;
+        }
+
+        function fly(toPos, toTarget, ms) {
+            goal = null;
+            flight = { p0: cam.position.clone(), p1: toPos.clone(), q0: ctrl.target.clone(), q1: toTarget.clone(),
+                       t0: performance.now(), ms: reduceMotion ? 1 : (ms || 900) };
+            dirty = true;
+        }
+
+        // zoom limits that fit the model, and a near plane that never cuts it
+        function setRange(size) {
+            ctrl.minDistance = size * 0.12;
+            ctrl.maxDistance = size * 2.6;
+            cam.near = size * 0.005; cam.far = size * 50;
+            cam.updateProjectionMatrix();
+        }
+
+        return { step: step, fly: fly, cancel: cancel, setRange: setRange };
+    }
+
     var renderers = [];
     function enable(renderer) { renderer.localClippingEnabled = true; renderers.push(renderer); }
 
     window.HL = {
-        apply: apply, tick: tick, invalidate: invalidate, enable: enable, loadNote: loadNote,
+        apply: apply, tick: tick, invalidate: invalidate, enable: enable, loadNote: loadNote, camera: camera,
         ghostMaterial: ghostMaterial, typeMaterial: typeMaterial, hoverMaterial: hoverMaterial,
         theme: theme, palette: pal,
         // for debugging in the console: what is animating right now
