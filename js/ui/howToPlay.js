@@ -419,8 +419,8 @@
     var STEPS = [
         { icon:'📍', head:'Start & End given',    body:'Each puzzle gives you two bones. The start is revealed — the end is shown but locked. Find what connects them.' },
         { icon:'🔗', head:'Guess the stops',       body:'Type any bone that lies on the connecting path. Each correct guess lights up that step in the chain.' },
-        { icon:'⚠️', head:'Every guess counts',    body:'Straying off the optimal path is penalised — and taking a wildly wrong turn will hit your score hard. Choose carefully.' },
-        { icon:'🏆', head:'Complete the chain',    body:'Fill every stop between start and end to win. The fewer guesses used, the better your result.' },
+        { icon:'⚠️', head:'Every guess counts',    body:'Green is on a shortest route. Yellow works but takes the long way. Red can never get you there. Every guess uses one of your turns.' },
+        { icon:'🏆', head:'Connect the ends',      body:'Win once your guesses join start to end. Shortest route with no mistakes is Perfect, with one or two mistakes is Shortest Route, any other route is Path Found.' },
     ];
 
     // ── MODAL CONTENT ─────────────────────────────────────────────────────────
@@ -495,9 +495,9 @@
                     border:'1.5px solid '+C.border, borderRadius:10
                 }},
                     [
-                        { col:C.sage,    label:'On the optimal path' },
-                        { col:C.golden,  label:'Detour (valid, longer)' },
-                        { col:C.coralDk, label:'Wrong bone' },
+                        { col:C.sage,    label:'On a shortest route' },
+                        { col:C.golden,  label:'Detour (longer, still winnable)' },
+                        { col:C.coralDk, label:'Can\'t reach the end' },
                         { col:'#8b5cf6', label:'Revealed after loss' },
                     ].map(function(k, i) {
                         return e('div', { key:i, style:{

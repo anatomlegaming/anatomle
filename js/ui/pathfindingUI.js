@@ -71,6 +71,8 @@
         var reviewing   = s.reviewing  || false;
         var guessesUsed = s.guessesUsed || (max - left);
         var streak      = s.streak || null;
+        var grade       = s.grade  || null;   // {tier, stars, label, emoji, detail} from PathScoring
+        var gridText    = s.grid   || null;
 
         var accent   = C.coral;
         var accentDk = C.coralDk;
@@ -216,7 +218,7 @@
                 transition:'filter 0.15s'
             }},
                 e('div', { style:{ display:'flex', alignItems:'center', flexWrap:'wrap' } },
-                    e('span', null, shown ? item.bone : '???')
+                    e('span', null, shown ? item.bone + (item.alts && item.alts.length ? ' / ' + item.alts.join(' / ') : '') : '???')
                 ),
                 e('span', { style:{ fontSize:16, lineHeight:1 } }, ico)
             );
@@ -413,7 +415,8 @@
                 }},
                     // Emoji
                     e('div', { style:{ fontSize:48, marginBottom:10, lineHeight:1 } },
-                        phase === 'won'
+                        grade ? grade.emoji
+                        : phase === 'won'
                             ? (detours.length === 0 ? '\uD83C\uDFC6' : '\u2713')
                             : '\uD83D\uDCA3'),
                     // Headline
@@ -422,7 +425,8 @@
                         color: phase === 'won' ? C.ink : C.coralDk,
                         margin:'0 0 6px', letterSpacing:'-0.03em', lineHeight:1
                     }},
-                        phase === 'won'
+                        grade ? grade.label
+                        : phase === 'won'
                             ? (detours.length === 0 && bad.length === 0 ? 'Perfect Path!' : 'Path Found!')
                             : 'Flatline.'),
                     // Scoring block
@@ -430,9 +434,8 @@
                         var used = guessesUsed;
                         var optimal = target.path.length - 2; // start + end are free, only mid bones count
                         var extra = used - optimal;
-                        var stars = phase === 'won'
-                            ? (extra === 0 ? 3 : extra <= 2 ? 2 : 1)
-                            : 0;
+                        var stars = grade ? grade.stars
+                            : phase === 'won' ? (extra === 0 ? 3 : extra <= 2 ? 2 : 1) : 0;
                         var starRow = ['⭐','⭐','⭐'].map(function(s, i) {
                             return e('span', { key:i, style:{
                                 fontSize:22, opacity: i < stars ? 1 : 0.2,
@@ -445,7 +448,8 @@
                                 fontFamily:'DM Sans,sans-serif', color:C.muted,
                                 fontSize:13, margin:0
                             }},
-                                phase === 'won'
+                                grade ? grade.detail
+                                : phase === 'won'
                                     ? used+' guess'+(used!==1?'es':'')+' — optimal is '+optimal
                                     : bad.length+' wrong guess'+(bad.length!==1?'es':'')+' · '+used+' total'
                             )
@@ -534,18 +538,18 @@
                                 padding:'10px 14px', background:'rgba(45,31,20,0.03)',
                                 borderRadius:10, border:'1.5px solid '+C.border,
                             }},
-                                // start
-                                '\uD83D\uDFE2',
+                                gridText ? gridText : null,
+                                gridText ? null : '\uD83D\uDFE2',
                                 // chain bones (skip first=start, skip last=end)
-                                chain.slice(1, -1).map(function(item) {
+                                gridText ? null : chain.slice(1, -1).map(function(item) {
                                     return item.guessed ? '\uD83D\uDFE6' : '\u2B1C';
                                 }).join(''),
                                 // detours
-                                detours.map(function() { return '\uD83D\uDFE1'; }).join(''),
+                                gridText ? null : detours.map(function() { return '\uD83D\uDFE1'; }).join(''),
                                 // wrong
-                                bad.map(function() { return '\uD83D\uDD34'; }).join(''),
+                                gridText ? null : bad.map(function() { return '\uD83D\uDD34'; }).join(''),
                                 // end
-                                '\u2B1B'
+                                gridText ? null : '\u2B1B'
                             ),
                             e('button', { onClick: h.onShare, style:{
                                 padding:'8px 20px', width:'100%',

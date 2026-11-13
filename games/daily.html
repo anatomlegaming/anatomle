@@ -9,7 +9,6 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="../js/data/skeletonGraph.js"></script>
@@ -20,6 +19,7 @@
     <script src="../js/core/pathfinding.js"></script>
     <script src="../js/core/gameLogic.js"></script>
     <script src="../js/core/seededRandom.js"></script>
+    <script src="../js/core/pathGame.js"></script>
     <style>
         * { box-sizing: border-box; }
         body { font-family: 'DM Sans', sans-serif; background: #fdf6ec; color: #2d1f14; margin: 0; overflow: hidden; }
@@ -151,261 +151,70 @@ fetch('https://worldtimeapi.org/api/timezone/UTC')
     });
 </script>
 
-<script type="text/babel">
-const { useState, useEffect, useMemo, useCallback, useRef } = React;
-
+<script>
+// Daily puzzle: one fixed puzzle per UTC day, progress saved locally,
+// streak recorded when the game ends. Rules live in js/core/pathGame.js
 function DailyGame() {
-    const [ready, setReady]     = useState(false);
-    const [target, setTarget]   = useState({ start: '', end: '', path: [] });
-    const [chain, setChain]     = useState([]);
-    const [left, setLeft]       = useState(10);
-    const [max, setMax]         = useState(10);
-    const [bad, setBad]         = useState([]);
-    const [detours, setDetours] = useState([]);
-    const [input, setInput]     = useState('');
-    const [selIdx, setSelIdx]   = useState(-1);
-    const [phase, setPhase]     = useState('playing');
-    const [reveal, setReveal]   = useState(false);
-    const [shared, setShared]   = useState(false);
-    const [guessesUsed, setGuessesUsed] = useState(0);
-    const [guessOrder, setGuessOrder]   = useState([]);
-    const [reviewing, setReviewing]     = useState(false);
-    const [streak, setStreak]           = useState({ count: 0, best: 0, isNew: false });
-    const [showHtp, dismissHtp] = window.useFirstVisit('daily');
+    var _r = React.useState(!!window.DAILY_GAME_DATA), ready = _r[0], setReady = _r[1];
+    var _s = React.useState(function () {
+        var s = window.StreakManager ? window.StreakManager.get() : { count: 0, best: 0 };
+        return { count: s.count, best: s.best, isNew: false };
+    }), streak = _s[0], setStreak = _s[1];
+    var htp = window.useFirstVisit('daily');
 
-    // ── SAVE / RESTORE progress via localStorage ────────────────────────────
-    const saveKey = () => `anatomle_daily_${window.DAILY_DATE_STR}`;
+    // Called by the date loader above once today's puzzle is known
+    window.__dailyAppReady = function () { setReady(true); };
 
-    const saveProgress = (state) => {
-        try {
-            localStorage.setItem(saveKey(), JSON.stringify(state));
-        } catch(e) {}
-    };
+    var dateStr = window.DAILY_DATE_STR;
+    var saveKey = 'anatomle_daily_v2_' + dateStr;
+    var saved = React.useMemo(function () {
+        if (!ready || !dateStr) return null;
+        try { var raw = localStorage.getItem(saveKey); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
+    }, [ready, dateStr]);
 
-    const loadSaved = (dateStr) => {
-        try {
-            const raw = localStorage.getItem(`anatomle_daily_${dateStr}`);
-            return raw ? JSON.parse(raw) : null;
-        } catch(e) { return null; }
-    };
+    var game = window.usePathGame({
+        graph: SKELETON_GRAPH,
+        bonus: 2,
+        puzzle: ready && window.DAILY_GAME_DATA
+            ? { start: window.DAILY_GAME_DATA.start, end: window.DAILY_GAME_DATA.end } : null,
+        saved: saved,
+        onChange: function (snap) {
+            if (!dateStr) return;
+            try {
+                localStorage.setItem(saveKey, JSON.stringify({
+                    guesses: snap.guesses, phase: snap.phase, reveal: snap.reveal, shared: snap.shared
+                }));
+            } catch (e) {}
+        },
+        replayCode: 'fs',
+        replayExtra: '&daily=1',
+        shareTitle: 'Osteomle \u2013 Daily Puzzle',
+        shareDate: dateStr
+    });
 
-    // Called once worldtimeapi fetch resolves
-    window.__dailyAppReady = () => setReady(true);
+    // Record the streak once the game ends (StreakManager ignores repeats)
+    React.useEffect(function () {
+        if (game.phase === 'playing' || !dateStr || !window.StreakManager) return;
+        setStreak(window.StreakManager.record(dateStr, game.phase === 'won'));
+    }, [game.phase]);
 
-    // Load current streak on mount
-    useEffect(() => {
-        if (window.StreakManager) {
-            const s = window.StreakManager.get();
-            setStreak({ count: s.count, best: s.best, isNew: false });
-        }
-    }, []);
+    if (!game.ready) return null;
 
-    // Handle case where fetch finished before React mounted
-    useEffect(() => {
-        if (window.DAILY_GAME_DATA) setReady(true);
-    }, []);
-
-    const loadGame = (g, saved) => {
-        if (saved) {
-            // Restore saved state
-            setTarget(g);
-            setChain(saved.chain);
-            setLeft(saved.left);
-            setMax(saved.max);
-            setBad(saved.bad);
-            setDetours(saved.detours);
-            setPhase(saved.phase);
-            setReveal(saved.reveal || false);
-            setShared(saved.shared || false);
-        } else {
-            setTarget(g);
-            setChain(g.path.map((bone, i) => ({ bone, type: i === 0 ? 'start' : 'path', guessed: i === 0 })));
-            const total = calculateGuessCount(g.path.length, 2);
-            setLeft(total); setMax(total);
-            setBad([]); setDetours([]);
-            setPhase('playing'); setReveal(false); setShared(false);
-        }
-        setInput(''); setSelIdx(-1);
-        try { window.reset3D && window.reset3D(); } catch(e) {}
-    };
-
-    useEffect(() => {
-        if (!ready || !window.DAILY_GAME_DATA || !window.DAILY_DATE_STR) return;
-        const saved = loadSaved(window.DAILY_DATE_STR);
-        loadGame(window.DAILY_GAME_DATA, saved);
-        // Pan camera to midpoint between start and end bones
-        const { start, end } = window.DAILY_GAME_DATA;
-        if (window.__modelIsReady) {
-            setTimeout(() => { window.panToGameBones && window.panToGameBones(start, end, 1800); }, 100);
-        } else {
-            window.addEventListener('modelReady', function onReady() {
-                window.removeEventListener('modelReady', onReady);
-                setTimeout(() => { window.panToGameBones && window.panToGameBones(start, end, 1800); }, 400);
-            });
-        }
-    }, [ready]);
-
-    // Highlights
-    const highlightRef = useRef([]);
-    useEffect(() => {
-        const h = [];
-        if (reveal && phase === 'lost') {
-            chain.forEach((item, idx) => {
-                const isLast = idx === chain.length - 1;
-                if (item.guessed && !isLast) h.push({ name: item.bone, type: item.type });
-                else if (!item.guessed && !isLast) h.push({ name: item.bone, type: 'reveal' });
-                else if (isLast) h.push({ name: item.bone, type: 'end' });
-            });
-        } else {
-            chain.forEach((item, idx) => {
-                const isLast = idx === chain.length - 1;
-                if (item.guessed && !isLast) h.push({ name: item.bone, type: item.type });
-                else if (isLast) h.push({ name: item.bone, type: 'end' });
-            });
-            detours.forEach(g => h.push({ name: g, type: 'detour' }));
-            bad.forEach(g => h.push({ name: g, type: 'bad' }));
-        }
-        highlightRef.current = h;
-        try { window.update3D && window.update3D(h); } catch(e) {}
-    }, [chain, bad, detours, reveal, phase]);
-
-    useEffect(() => {
-        const onReady = () => { try { window.update3D && window.update3D(highlightRef.current); } catch(e){} };
-        window.addEventListener('modelReady', onReady);
-        return () => window.removeEventListener('modelReady', onReady);
-    }, []);
-
-    const suggestions = useMemo(() => {
-        if (!input.trim()) return [];
-        const guessedBones = chain.filter(c => c.guessed).map(c => c.bone);
-        return Object.keys(SKELETON_GRAPH).filter(b =>
-            b.toLowerCase().includes(input.toLowerCase()) &&
-            !guessedBones.includes(b) &&
-            b !== target.end &&
-            !bad.includes(b) &&
-            !detours.includes(b)
-        ).slice(0, 7);
-    }, [input, chain, target.end, bad, detours]);
-
-    useEffect(() => { setSelIdx(-1); }, [suggestions.length]);
-
-    // Save progress whenever key state changes
-    useEffect(() => {
-        if (!target.start || !window.DAILY_DATE_STR) return;
-        saveProgress({ chain, left, max, bad, detours, phase, reveal, shared });
-    }, [chain, left, bad, detours, phase, reveal, shared]);
-
-    // Record streak when game ends
-    useEffect(() => {
-        if (phase === 'playing' || !window.DAILY_DATE_STR) return;
-        if (window.StreakManager) {
-            const result = window.StreakManager.record(window.DAILY_DATE_STR, phase === 'won');
-            setStreak(result);
-        }
-    }, [phase]);
-
-    const submit = useCallback((guess) => {
-        if (phase !== 'playing' || !guess) return;
-        setInput(''); setSelIdx(-1);
-        setGuessesUsed(u => u + 1);
-        setGuessOrder(o => [...o, guess]);
-
-        if (target.path.includes(guess)) {
-            const updatedChain = chain.map(item => item.bone === guess ? { ...item, guessed: true } : item);
-            setChain(updatedChain);
-            const guessedOptimal = updatedChain.filter(c => c.guessed).map(c => c.bone);
-            if (canReachTargetWithGuessed(target.start, target.end, guessedOptimal, detours, SKELETON_GRAPH)) {
-                setPhase('won'); return;
-            }
-            return;
-        }
-
-        const result = validateGuess(guess, target.path, target.start, target.end, SKELETON_GRAPH);
-        const nl = left - 1; setLeft(nl);
-
-        if (result.type === 'detour') {
-            const updatedDetours = [...new Set([...detours, guess])];
-            setDetours(updatedDetours);
-            const guessedOptimal = chain.filter(c => c.guessed).map(c => c.bone);
-            if (canReachTargetWithGuessed(target.start, target.end, guessedOptimal, updatedDetours, SKELETON_GRAPH)) {
-                setPhase('won'); return;
-            }
-        } else {
-            setBad(prev => [...new Set([...prev, guess])]);
-        }
-
-        if (nl <= 0) setPhase('lost');
-    }, [phase, chain, detours, target, left]);
-
-    const handleKey = (e) => {
-        if (e.key === 'ArrowDown') { e.preventDefault(); setSelIdx(i => Math.min(i + 1, suggestions.length - 1)); }
-        else if (e.key === 'ArrowUp') { e.preventDefault(); setSelIdx(i => Math.max(i - 1, 0)); }
-        else if (e.key === 'Enter') {
-            const exact = suggestions.find(b => b.toLowerCase() === input.trim().toLowerCase());
-            if (selIdx >= 0 && suggestions[selIdx]) submit(suggestions[selIdx]);
-            else if (exact) submit(exact);
-            else if (suggestions.length === 1) submit(suggestions[0]);
-        }
-        else if (e.key === 'Escape') { setInput(''); setSelIdx(-1); }
-    };
-
-    const handleShare = () => {
-        const dateStr = window.DAILY_DATE_STR || '';
-        const used    = guessesUsed;
-        const optimal = target.path.length - 2;
-        const extra   = used - optimal;
-        const stars   = phase === 'won' ? (extra === 0 ? '⭐⭐⭐' : extra <= 2 ? '⭐⭐' : '⭐') : '';
-        const result  = phase === 'won' ? `${used}/${optimal} guesses ${stars}` : `❌ ${bad.length} wrong`;
-
-        // Emoji grid
-        const guessGrid = ['🟢'];
-        chain.slice(1,-1).forEach(item => guessGrid.push(item.guessed ? '🟦' : '⬜'));
-        detours.forEach(() => guessGrid.push('🟡'));
-        bad.forEach(() => guessGrid.push('🔴'));
-        guessGrid.push('⬛');
-        const grid = guessGrid.join('');
-
-        // Replay link with daily=1 flag for spoiler gate
-        const qs = window.encodeReplay && window.encodeReplay('fs', target.start, target.end, target.path, guessOrder, detours, bad);
-        const replayLink = qs ? `https://anatomle.com/replay.html?${qs}&daily=1` : '';
-        const replayLine = replayLink ? `\n\n🔁 Watch my path:\n${replayLink}` : '';
-
-        const text = `Osteomle – Daily Puzzle\n${dateStr}\n${result}\n${grid}${replayLine}`;
-        navigator.clipboard.writeText(text).then(() => setShared(true));
-    };
-
-    if (!ready || !target.start) return null;
-
-    return (
-        <>
-        <window.HowToModal show={showHtp} onClose={dismissHtp} />
-        <window.PathfindingUI
-            gameTitle="Osteomle · Daily Puzzle"
-            mode="standard"
-            state={{ target, chain, left, max, bad, detours, input, selIdx, phase, reveal, suggestions, hintUsed: false, shared, guessesUsed, reviewing, streak }}
-            handlers={{
-                onInputChange: e => setInput(e.target.value),
-                onKeyDown: handleKey,
-                onSubmit: submit,
-                onNewGame: null,
-                onGiveUp: () => setPhase('lost'),
-                onReveal: () => setReveal(true),
-                onReview: () => setReviewing(true),
-                onStopReview: () => { setReviewing(false); setReveal(false); },
-                onShare: handleShare,
-                onHome: () => window.location.href = '../index.html',
-            }}
-        />
-        </>
+    var state = Object.assign({}, game.state, { streak: streak });
+    var handlers = Object.assign({}, game.handlers, {
+        onNewGame: null,
+        onHome: function () { window.location.href = '../index.html'; }
+    });
+    return React.createElement(React.Fragment, null,
+        React.createElement(window.HowToModal, { show: htp[0], onClose: htp[1] }),
+        React.createElement(window.PathfindingUI, {
+            gameTitle: 'Osteomle \u00B7 Daily Puzzle', state: state, handlers: handlers
+        }),
+        window.BoneTooltipLayer ? React.createElement(window.BoneTooltipLayer) : null
     );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(
-    <>
-        <DailyGame />
-        {typeof window.BoneTooltipLayer !== 'undefined' && <window.BoneTooltipLayer />}
-    </>
-);
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(DailyGame));
 </script>
 </body>
 </html>
