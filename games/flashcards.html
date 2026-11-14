@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="color-scheme" content="light dark">
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="../favicon.png" type="image/png" sizes="32x32">
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anatomle · Flash cards</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/notebook.css">
+    <script src="../js/ui/theme.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        // ?deck=muscles for the upper-limb muscles, anything else is bones
+        window.DECK = /deck=muscles/.test(location.search) ? 'muscles' : 'bones';
+        if (DECK === 'muscles') {
+            document.write('<script src="../js/data/upperLimbGraph.js"><\/script>');
+        } else {
+            document.write('<script src="../js/data/skeletonGraph.js"><\/script>');
+            document.write('<script src="../js/data/boneMappings.js"><\/script>');
+            document.write('<script src="../js/core/boneDescriptions.js"><\/script>');
+        }
+    </script>
+</head>
+<body class="game nb-margin">
+<div class="page-turn"></div>
+
+<nav class="g-nav">
+    <div class="brand">
+        <a class="wordmark" href="../index.html">anatom<span class="le">le</span></a>
+        <span class="mode">flash cards</span>
+    </div>
+    <div class="acts">
+        <a class="nb-btn fc-deck" data-deck="bones" href="flashcards.html?deck=bones">Bones</a>
+        <a class="nb-btn fc-deck" data-deck="muscles" href="flashcards.html?deck=muscles">Muscles</a>
+        <button type="button" class="nb-btn theme-toggle" onclick="AnatomleTheme.toggle()" aria-label="Switch theme">☾</button>
+        <a class="nb-btn dark" href="../index.html">Menu</a>
+    </div>
+</nav>
+
+<div class="g-bar">
+    <div class="ends"><span class="bone" id="fc-q">Which bone is this?</span></div>
+    <div class="counts"><div class="left" id="fc-score"><b>0</b> right</div><div class="need" id="fc-learned"></div></div>
+</div>
+
+<div id="cv"></div>
+<div class="ad-rail" aria-label="Advertisement"></div>
+<span class="tape cv-tape-l"></span>
+<button type="button" class="nb-btn reset-view" onclick="if(window.resetCamera) window.resetCamera();" title="Reset view" aria-label="Reset view">⊙</button>
+
+<aside class="g-panel fc-panel">
+    <div class="g-guess">
+        <div class="g-search g-ask" id="fc-ask">
+            <div class="ask-head"><span class="ask-t">Your answer</span><span class="ask-k">Enter ↵</span></div>
+            <label class="g-field" id="fc-field">
+                <div class="g-drop nb-scroll" id="fc-drop" role="listbox" hidden></div>
+                <input id="fc-input" autocomplete="off" spellcheck="false" aria-label="Your answer" placeholder="Type a name…">
+            </label>
+        </div>
+    </div>
+
+    <div class="g-route fc-card" id="fc-card">
+        <span class="tape pink"></span>
+        <div class="fc-front" id="fc-front">
+            <div class="hand fc-kicker">the pink one</div>
+            <div class="fc-mask" id="fc-mask"></div>
+            <p class="fc-tip">Name the part lit up in pink. Stuck? Use a hint or show the answer.</p>
+        </div>
+        <div class="fc-back" id="fc-back" hidden>
+            <div class="fc-verdict" id="fc-verdict"></div>
+            <h2 class="fc-name" id="fc-name"></h2>
+            <p class="fc-fact" id="fc-fact"></p>
+            <p class="fc-links" id="fc-links"></p>
+        </div>
+    </div>
+
+    <div class="g-btns">
+        <button type="button" class="nb-btn wide" id="fc-hint">💡 Hint</button>
+        <button type="button" class="nb-btn wide" id="fc-show">Show answer</button>
+        <button type="button" class="nb-btn wide big hl-btn" id="fc-next" hidden>Next card →</button>
+    </div>
+</aside>
+
+<script src="../js/3d/hlFx.js"></script>
+<script>
+    document.write('<script src="../js/3d/' + (DECK === 'muscles' ? 'upperLimbEngine' : 'skeletonEngine') + '.js"><\/script>');
+</script>
+<script src="../js/ui/flashcards.js"></script>
+</body>
+</html>

@@ -139,7 +139,7 @@ function _initUpperLimbEngine() {
     var ctrl = new THREE.OrbitControls(cam, renderer.domElement);
     var camFx = HL.camera({ cam: cam, ctrl: ctrl, dom: renderer.domElement, pickables: function () {
         var out = [];
-        if (_model) _model.traverse(function(n) { if (n.isMesh && n.visible) out.push(n); });
+        if (_model) _model.traverse(function(n) { if (n.isMesh && n.visible && !n._hlOverlay) out.push(n); });
         return out;
     } });
 
@@ -202,6 +202,7 @@ function _initUpperLimbEngine() {
         ctrl.update();
         var homePos = cam.position.clone(), homeTarget = center.clone();
         window.resetCamera = function() { camFx.fly(homePos, homeTarget, 700); };
+        window.focusPart = function(name, ms) { return HL.focus(camFx, cam, ctrl, [].concat(name).reduce(function (acc, n) { return acc.concat(getMeshesForMuscle(n) || []); }, []), ms); };
 
         window.__modelIsReady = true;
         window.dispatchEvent(new Event('modelReady'));

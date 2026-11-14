@@ -18,6 +18,7 @@
 //   2 stars  Nice!           shortest route, one or two mistakes
 //   1 star   Made it         a longer route, or 3+ mistakes
 //   Out of guesses           ran out of guesses
+//   Gave up                  pressed Give up with guesses left
 //   Too far to finish        ended early: the goal needs more bones than
 //                            there are guesses left (the game shows a live
 //                            "need at least N more" counter so this is no surprise)
@@ -189,6 +190,9 @@
             if (left > 0 && need > left)
                 return { tier: 0, stars: 0, label: 'Too far to finish', emoji: '🚧', early: true,
                          detail: 'You needed ' + need + ' more but had ' + left + ' left.' };
+            if (left > 0)
+                return { tier: 0, stars: 0, label: 'Gave up', emoji: '🏳️',
+                         detail: mistakes + ' mistake' + (mistakes !== 1 ? 's' : '') };
             return { tier: 0, stars: 0, label: 'Out of guesses', emoji: '💣',
                      detail: mistakes + ' mistake' + (mistakes !== 1 ? 's' : '') };
         }
@@ -231,6 +235,9 @@
     //   shareTitle   first line of share text
     //   shareDate    date line (default: today, en-GB)
     //   replayExtra  extra query string for the replay link
+    //   hints        allow hints (default: on for unlimited play, off for daily).
+    //                A hint fills in the next missing bone. It uses a guess and
+    //                counts as a mistake, so it lowers the score.
     if (typeof React === 'undefined') return;
     var useState = React.useState, useEffect = React.useEffect,
         useMemo = React.useMemo, useRef = React.useRef;
@@ -269,7 +276,9 @@
         var optimal = guesses.filter(function (g) { return g.type === 'optimal'; }).map(function (g) { return g.bone; });
         var detours = guesses.filter(function (g) { return g.type === 'detour'; }).map(function (g) { return g.bone; });
         var bad     = guesses.filter(function (g) { return g.type === 'bad'; }).map(function (g) { return g.bone; });
-        var mistakes = detours.length + bad.length;
+        var hinted = guesses.filter(function (g) { return g.hint; }).length;
+        var mistakes = detours.length + bad.length + hinted;
+        var hintsOn = opts.hints === undefined ? !!opts.newPuzzle : !!opts.hints;
 
         var chain = useMemo(function () { return a ? buildChain(a, optimal) : []; }, [a, guesses]);
         var route = useMemo(function () { return a ? routeThrough(a, optimal.concat(detours)) : null; }, [a, guesses]);
@@ -278,9 +287,9 @@
         var result = a ? grade(phase, a, route, mistakes, guesses.length, ordered, left, need) : null;
         // Every guess in order, with how far off the shortest route it was
         var log = a ? guesses.map(function (g, i) {
-            return { n: i + 1, bone: g.bone, type: g.type, extra: extraSteps(g.bone, a), onRoute: !!(route && route.indexOf(g.bone) !== -1) };
+            return { n: i + 1, bone: g.bone, type: g.type, hint: !!g.hint, extra: extraSteps(g.bone, a), onRoute: !!(route && route.indexOf(g.bone) !== -1) };
         }) : [];
-        var grid = '🟢' + guesses.map(function (g) { return GRID[g.type]; }).join('') +
+        var grid = '🟢' + guesses.map(function (g) { return g.hint ? '💡' : GRID[g.type]; }).join('') +
                    (phase === 'won' ? '🎯' : phase === 'lost' ? '❌' : '');
 
         // Report changes (daily uses this to save progress)
@@ -294,17 +303,22 @@
         useEffect(function () {
             if (!a) return;
             var h = [{ name: a.start, type: 'start' }];
-            optimal.forEach(function (b) { h.push({ name: b, type: 'path' }); });
-            if (reveal && phase === 'lost') {
-                chain.forEach(function (c, i) { if (!c.guessed && i < chain.length - 1) h.push({ name: c.bone, type: 'reveal' }); });
+            if (reviewing && phase !== 'playing') {
+                // Review: one correct route only. Bones you found stay green,
+                // the ones you missed show in purple. Guesses stay in the side list.
+                chain.forEach(function (c, i) {
+                    if (i === 0 || i === chain.length - 1) return;
+                    h.push({ name: c.bone, type: c.guessed ? 'path' : 'reveal' });
+                });
             } else {
+                optimal.forEach(function (b) { h.push({ name: b, type: 'path' }); });
                 detours.forEach(function (b) { h.push({ name: b, type: 'detour' }); });
                 bad.forEach(function (b) { h.push({ name: b, type: 'bad' }); });
             }
             h.push({ name: a.end, type: 'end' });
             highlightRef.current = h;
             try { window.update3D && window.update3D(h); } catch (e) {}
-        }, [a, guesses, reveal, phase]);
+        }, [a, guesses, reviewing, phase]);
 
         useEffect(function () {
             function onReady() { try { window.update3D && window.update3D(highlightRef.current); } catch (e) {} }
@@ -345,14 +359,16 @@
         }, [input, guesses, puzzle, phase]);
 
         // ── Actions ──────────────────────────────────────────────────────────
-        function submit(bone) {
+        function submit(bone, isHint) {
             if (phase !== 'playing' || !a || !bone || names.indexOf(bone) === -1) return;
             if (bone === a.start || bone === a.end) return;
             if (guesses.some(function (g) { return g.bone === bone; })) return;
             setInput(''); setSelIdx(-1);
 
-            var type = classify(bone, a, max);
-            var next = guesses.concat([{ bone: bone, type: type }]);
+            var type = isHint ? 'optimal' : classify(bone, a, max);
+            var entry = { bone: bone, type: type };
+            if (isHint) entry.hint = true;
+            var next = guesses.concat([entry]);
             setGuesses(next);
 
             var good = next.filter(function (g) { return g.type !== 'bad'; }).map(function (g) { return g.bone; });
@@ -361,6 +377,16 @@
             else if (next.length >= max ||
                      stillNeeded(a, good, next.filter(function (g) { return g.type === 'bad'; }).map(function (g) { return g.bone; })) > max - next.length)
                 setPhase('lost');
+        }
+
+        // Fill in the first missing bone of the best route through what is found
+        function hint() {
+            if (!hintsOn || phase !== 'playing' || !a) return;
+            var good = guesses.filter(function (g) { return g.type !== 'bad'; }).map(function (g) { return g.bone; });
+            var r = bestShortestRoute(a, good) || [];
+            var done = {}; good.forEach(function (b) { done[b] = true; });
+            var missing = r.slice(1, -1).filter(function (b) { return !done[b]; });
+            if (missing.length) submit(missing[0], true);
         }
 
         function handleKey(ev) {
@@ -374,6 +400,16 @@
                 else if (suggestions.length === 1) submit(suggestions[0]);
             }
             else if (ev.key === 'Escape') { setInput(''); setSelIdx(-1); }
+        }
+
+        function startReview() {
+            setReviewing(true);
+            // frame the whole route
+            var bones = chain.map(function (c) { return c.bone; });
+            setTimeout(function () {
+                if (!(window.focusPart && window.focusPart(bones, 1200)) && puzzle && window.panToGameBones)
+                    window.panToGameBones(puzzle.start, puzzle.end, 1200);
+            }, 50);
         }
 
         function startNew() {
@@ -410,7 +446,8 @@
                 target: target, chain: chain, left: left, max: max, bad: bad, detours: detours,
                 input: input, selIdx: selIdx, phase: phase, reveal: reveal, suggestions: suggestions,
                 shared: shared, reviewing: reviewing, guessesUsed: guesses.length,
-                grade: result, grid: grid, log: log, goal: a ? a.end : '', need: need
+                grade: result, grid: grid, log: log, goal: a ? a.end : '', need: need,
+                hints: hintsOn, hintsUsed: hinted
             },
             handlers: {
                 onInputChange: function (ev) { setInput(ev.target.value); setSelIdx(-1); },
@@ -418,10 +455,11 @@
                 onSubmit: submit,
                 onNewGame: opts.newPuzzle ? startNew : null,
                 onGiveUp: function () { if (phase === 'playing') setPhase('lost'); },
-                onReveal: function () { setReveal(true); },
-                onReview: function () { setReviewing(true); },
+                onReveal: function () { setReveal(true); startReview(); },
+                onReview: function () { startReview(); },
                 onStopReview: function () { setReviewing(false); setReveal(false); },
-                onShare: share
+                onShare: share,
+                onClue: hintsOn ? hint : null
             }
         };
     }

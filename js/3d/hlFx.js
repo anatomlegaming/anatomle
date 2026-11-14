@@ -89,14 +89,41 @@
         });
     }
 
-    // Fill, like a progress bar: the mesh is split by a level that rises from
-    // the bottom to the top. Below the level it has the new colour, above it
-    // keeps the old grey, so the two never overlap.
+    // Fill, like ink soaking in: the new colour starts at the side touching
+    // the nearest part that is already lit (the bone it joins onto) and flows
+    // to the far end. If nothing is lit yet it rises from the bottom. The mesh
+    // is split by a moving plane: past the level it keeps the old grey, behind
+    // it the new colour, so the two never overlap.
+    var _c = new THREE.Vector3(), _f = new THREE.Vector3(), _p = new THREE.Vector3();
     function fill(mesh, mat, duration, delay, ghostScale) {
         var box = new THREE.Box3().setFromObject(mesh);
         if (box.isEmpty()) { mesh.material = mat; return; }
-        var below = new THREE.Plane(new THREE.Vector3(0, -1, 0), box.min.y);   // keeps y <= level
-        var above = new THREE.Plane(new THREE.Vector3(0, 1, 0), -box.min.y);   // keeps y >= level
+        box.getCenter(_c);
+
+        // the closest part that is already coloured (and not itself filling in)
+        var filling = anims.map(function (a) { return a.kind === 'fill' && a.mesh; });
+        var near = null, best = Infinity;
+        known.forEach(function (m) {
+            if (m === mesh || !m.visible || !m._hlType || m._hlType === 'ghost' || filling.indexOf(m) !== -1) return;
+            var b = new THREE.Box3().setFromObject(m);
+            if (b.isEmpty()) return;
+            var d = b.distanceToPoint(_c);
+            if (d < best) { best = d; near = b; }
+        });
+        var axis = new THREE.Vector3(0, 1, 0);
+        if (near) {
+            near.clampPoint(_c, _f);
+            if (_c.distanceTo(_f) > 1e-6) axis.subVectors(_c, _f).normalize();
+        }
+        // how far along the axis the mesh starts and ends
+        var lo = Infinity, hi = -Infinity;
+        for (var k = 0; k < 8; k++) {
+            _p.set(k & 1 ? box.max.x : box.min.x, k & 2 ? box.max.y : box.min.y, k & 4 ? box.max.z : box.min.z);
+            var d2 = _p.dot(axis);
+            if (d2 < lo) lo = d2; if (d2 > hi) hi = d2;
+        }
+        var below = new THREE.Plane(axis.clone().negate(), lo);   // keeps the coloured part
+        var above = new THREE.Plane(axis.clone(), -lo);           // keeps the grey part
         var gm = newGhost(ghostScale);
         gm.clippingPlanes = [above];
         mesh.material = gm;
@@ -104,9 +131,11 @@
         om.clippingPlanes = [below];
         om.emissiveIntensity = mat.emissiveIntensity + 0.25;   // the fresh ink glows a little
         var overlay = new THREE.Mesh(mesh.geometry, om);
+        overlay._hlOverlay = true;
+        overlay.raycast = function () {};                      // never picked or hovered
         mesh.add(overlay);
         anims.push({ kind: 'fill', mesh: mesh, overlay: overlay, below: below, above: above, final: mat, om: om, gm: gm,
-                     y0: box.min.y, y1: box.max.y, t0: performance.now() + (delay || 0), dur: duration });
+                     y0: lo, y1: hi, t0: performance.now() + (delay || 0), dur: duration });
     }
 
     function shake(mesh, delay) {
@@ -155,8 +184,11 @@
     // type: null (ghost) or start / end / path / detour / bad / reveal.
     // order: position among the meshes changed in this update, used to
     // stagger several fills a little.
+    var known = [];   // every mesh HL has coloured, to find the lit ones
     function apply(mesh, type, opts) {
+        if (mesh._hlOverlay) return false;   // a fill's coloured layer, not a part
         opts = opts || {};
+        if (mesh._hlType === undefined) known.push(mesh);
         var key = type || 'ghost';
         if (mesh._hlType === key && !opts.force) return false;
         var was = mesh._hlType;
@@ -193,9 +225,12 @@
     }
 
     // ── Camera ──────────────────────────────────────────────────────────────
-    // Turntable feel: dragging sideways spins the model, dragging up/down
-    // tilts it only so far (never top-down), and it is slow enough to aim.
-    // Right-drag moves it, but it can never be dragged out of view.
+    // Controls, the same on phone and computer:
+    //   one finger / left-drag    move the model around
+    //   two fingers / right-drag  turn it (two fingers also pinch to zoom)
+    //   scroll                    zoom towards the cursor
+    //   double-click              glide to that spot
+    // Tilt stops short of top-down, and the model can't be moved out of view.
     // The mouse wheel zooms smoothly towards whatever is under the cursor
     // (trackpads and mouse wheels feel the same); pinch zooms on touch.
     // opts: { cam, ctrl, dom, pickables: fn -> meshes, onUser: fn }
@@ -203,9 +238,11 @@
     function camera(o) {
         var cam = o.cam, ctrl = o.ctrl, dom = o.dom;
         ctrl.enableDamping = true;
-        ctrl.dampingFactor = 0.16;
-        ctrl.rotateSpeed = 0.45;           // a drag the height of the view turns ~80°
-        ctrl.panSpeed = 0.7;
+        ctrl.dampingFactor = 0.14;
+        ctrl.rotateSpeed = 0.8;
+        ctrl.panSpeed = 1.1;
+        ctrl.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
+        ctrl.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
         ctrl.zoomSpeed = 0.8;
         ctrl.enableZoom = true;            // pinch on touch; the wheel is handled below
         ctrl.screenSpacePanning = true;
@@ -220,8 +257,8 @@
         // How to move it, until the player first does
         var hint = document.createElement('div');
         hint.className = 'cv-hint';
-        hint.innerHTML = '<b>drag</b> to turn · <b>scroll</b> to zoom · <b>double-click</b> to jump to a spot';
-        if (matchMedia('(pointer: coarse)').matches) hint.innerHTML = '<b>drag</b> to turn · <b>pinch</b> to zoom · <b>two fingers</b> to move';
+        hint.innerHTML = '<b>drag</b> to move · <b>right-drag</b> to turn · <b>scroll</b> to zoom';
+        if (matchMedia('(pointer: coarse)').matches) hint.innerHTML = '<b>one finger</b> to move · <b>two fingers</b> to turn and zoom';
         dom.parentNode.appendChild(hint);
         function used() { if (hint.parentNode) { hint.classList.add('gone'); setTimeout(function () { if (hint.parentNode) hint.parentNode.removeChild(hint); }, 400); } }
 
@@ -336,17 +373,38 @@
             cam.updateProjectionMatrix();
         }
 
-        return { step: step, fly: fly, cancel: cancel, setRange: setRange };
+        return { step: step, fly: fly, cancel: cancel, setRange: setRange, size: function () { return size; } };
+    }
+
+    // Glide the camera to frame some meshes. Paired parts (left and right)
+    // are framed on one side only, so the camera doesn't aim at the gap
+    // between them. camFx is the object HL.camera returned.
+    function focus(camFx, cam, ctrl, meshes, ms) {
+        if (!meshes.length) return false;
+        var boxes = meshes.map(function (m) { return new THREE.Box3().setFromObject(m); })
+                          .filter(function (b) { return !b.isEmpty(); });
+        if (!boxes.length) return false;
+        var all = boxes.reduce(function (acc, b) { return acc.union(b); }, new THREE.Box3());
+        var mid = all.getCenter(new THREE.Vector3()).x;
+        var side = boxes.filter(function (b) { return b.getCenter(new THREE.Vector3()).x <= mid; });
+        var other = boxes.filter(function (b) { return b.getCenter(new THREE.Vector3()).x > mid; });
+        var pick = side.length && other.length && all.getSize(new THREE.Vector3()).x > 0.15 * (camFx.size() || 1) ? side : boxes;
+        var box = pick.reduce(function (acc, b) { return acc.union(b); }, new THREE.Box3());
+        var c = box.getCenter(new THREE.Vector3());
+        var r = box.getSize(new THREE.Vector3()).length() / 2;
+        var dist = Math.min(ctrl.maxDistance * 0.5, Math.max(ctrl.minDistance * 1.5, r * 3.2));
+        var dir = cam.position.clone().sub(ctrl.target).normalize();
+        camFx.fly(c.clone().add(dir.multiplyScalar(dist)), c, ms || 900);
+        return true;
     }
 
     var renderers = [];
     function enable(renderer) { renderer.localClippingEnabled = true; renderers.push(renderer); }
 
     window.HL = {
-        apply: apply, tick: tick, invalidate: invalidate, enable: enable, loadNote: loadNote, camera: camera,
+        apply: apply, tick: tick, invalidate: invalidate, enable: enable, loadNote: loadNote, camera: camera, focus: focus,
         ghostMaterial: ghostMaterial, typeMaterial: typeMaterial, hoverMaterial: hoverMaterial,
         theme: theme, palette: pal,
-        // for debugging in the console: what is animating right now
         active: function () { return anims.map(function (a) { return a.kind + ':' + (a.mesh.name || '') + ':' + (a.below ? (-a.above.constant).toFixed(3) : ''); }); }
     };
 })();
