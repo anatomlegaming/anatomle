@@ -712,3 +712,170 @@ body.nb-page {
 /* hint letters: "Sca____" in the route list and the note */
 .clue { font-weight: 700; letter-spacing: .14em; color: var(--ink); }
 .g-row .clue { background: linear-gradient(transparent 55%, var(--hl-purple) 55%); }
+
+/* ── MUSCLE MINI (js/ui/miniCrosswordUI.js) ──────────────────────────────────
+   The model card on the left as in the other games; the clue, the grid and
+   the clue lists in the side panel. On phones the model is dropped and the
+   grid sits over an on-screen keyboard. */
+:root { --mx-block: #17213A; --mx-cell: var(--card); }
+:root[data-theme="dark"] { --mx-block: #070A12; --mx-cell: #2E3A58; }
+.mx-bar .counts .left b { font-variant-numeric: tabular-nums; }
+.mx-done-t { color: var(--green-dk); }
+.mx-lit {
+    display: inline-flex; align-items: center; gap: 7px; min-width: 0;
+    margin-left: 8px; padding: 3px 10px; cursor: pointer;
+    font: 600 13px var(--font); color: var(--ink);
+    background: var(--card); border: 1.5px solid var(--rule); border-radius: 999px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mx-lit:hover { border-color: var(--ink); }
+.mx-lit i { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; background: var(--hl-pink); border: 1.5px solid var(--ink); }
+
+.mx-panel { gap: 12px; }
+.mx-clue {
+    flex-shrink: 0; display: flex; align-items: stretch; min-height: 62px;
+    background: var(--ask-bg); color: var(--ask-ink);
+    border: 3px solid var(--ink); border-radius: 10px; box-shadow: 6px 6px 0 var(--shadow);
+}
+.mx-arr {
+    flex-shrink: 0; width: 38px; border: none; background: transparent; color: inherit;
+    font: 700 28px var(--font); cursor: pointer; opacity: .85;
+}
+.mx-arr:hover { opacity: 1; }
+.mx-clue-txt {
+    flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 6px 2px;
+    font-size: 16px; font-weight: 600; line-height: 1.25; cursor: pointer;
+}
+.mx-clue-n {
+    flex-shrink: 0; padding: 2px 7px; border-radius: 6px;
+    background: rgba(255,255,255,.18); font-weight: 700; font-size: 14px;
+}
+
+/* the grid scales to fit its box: as wide as it can, as tall as it can */
+.mx-board {
+    flex-shrink: 0; height: min(calc(var(--panel) - 24px), 46vh);
+    container-type: size; display: flex; align-items: center; justify-content: center;
+}
+.mx-grid {
+    --cell: min(100cqw / var(--cols), 100cqh / var(--rows));
+    width: calc(var(--cell) * var(--cols)); height: calc(var(--cell) * var(--rows));
+    display: grid; gap: 0;
+    border: 3px solid var(--mx-block); border-radius: 4px; background: var(--mx-block);
+    box-shadow: 6px 6px 0 var(--shadow);
+    user-select: none; -webkit-user-select: none; touch-action: manipulation;
+}
+.mx-cell {
+    position: relative; display: flex; align-items: center; justify-content: center;
+    background: var(--mx-cell); color: var(--ink); cursor: pointer;
+    box-shadow: inset 0 0 0 .5px var(--ink-3);
+}
+.mx-cell.block { background: var(--mx-block); cursor: default; box-shadow: none; }
+.mx-cell.word { background: #CDE6FF; }
+.mx-cell.sel  { background: var(--hl-yellow); }
+:root[data-theme="dark"] .mx-cell.word { background: #2F5A93; }
+:root[data-theme="dark"] .mx-cell.sel  { background: #8A6F12; }
+.mx-num {
+    position: absolute; top: 2px; left: 4px; line-height: 1;
+    font-size: calc(var(--cell) * .24); font-weight: 700; color: var(--ink-2);
+}
+.mx-ltr { font-size: calc(var(--cell) * .56); font-weight: 700; line-height: 1; margin-top: calc(var(--cell) * .08); }
+.mx-cell.bad .mx-ltr { color: var(--red); }
+.mx-cell.bad::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(to top right, transparent calc(50% - 1px), var(--red) 50%, transparent calc(50% + 1px));
+    opacity: .7;
+}
+.mx-cell.good .mx-ltr { color: var(--pen); }
+.mx-cell.shown .mx-ltr { color: var(--purple); }
+.mx-cell.shown::before {
+    content: ''; position: absolute; top: 0; right: 0; pointer-events: none;
+    border-style: solid; border-width: 0 calc(var(--cell) * .2) calc(var(--cell) * .2) 0;
+    border-color: transparent var(--purple) transparent transparent;
+}
+.mx-grid.solved .mx-cell:not(.block) { background: var(--hl-green); animation: mxWave .5s ease both; }
+:root[data-theme="dark"] .mx-grid.solved .mx-cell:not(.block) { background: #1E5A3A; }
+@keyframes mxWave { 0% { transform: scale(.85); } 60% { transform: scale(1.06); } 100% { transform: scale(1); } }
+
+.mx-note {
+    flex-shrink: 0; padding: 8px 12px; font-size: 14px; font-weight: 600;
+    background: var(--hl-yellow); color: #17213A; border: 2px solid var(--ink); border-radius: 8px;
+}
+.mx-tools { flex-shrink: 0; display: flex; gap: 8px; }
+.mx-tools > * { flex: 1 1 0; }
+.mx-tools .nb-btn { width: 100%; }
+.mx-menu-wrap { position: relative; }
+.mx-menu {
+    position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 30;
+    display: flex; flex-direction: column; overflow: hidden;
+    background: var(--card); border: 2px solid var(--ink); border-radius: 8px; box-shadow: 4px 4px 0 var(--shadow);
+}
+.mx-menu button {
+    padding: 10px 14px; border: none; border-bottom: 1.5px solid var(--paper-line);
+    background: transparent; color: var(--ink); text-align: left; cursor: pointer;
+    font: 600 15px var(--font); text-transform: capitalize;
+}
+.mx-menu button:last-child { border-bottom: none; }
+.mx-menu button:hover { background: var(--hl-yellow); color: #17213A; }
+
+.mx-clues { overflow-y: auto; padding: 4px 16px 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; align-content: start; }
+.mx-list-h { font-family: var(--hand); font-weight: 700; font-size: 26px; padding: 6px 0 2px; }
+.mx-li { display: flex; gap: 8px; padding: 6px 6px; margin: 0 -6px; font-size: 14px; line-height: 1.3; border-radius: 6px; cursor: pointer; }
+.mx-li b { flex-shrink: 0; min-width: 16px; }
+.mx-li:hover { background: var(--soft-bg); }
+.mx-li.on { background: #CDE6FF; color: #17213A; }
+:root[data-theme="dark"] .mx-li.on { background: #24406B; color: var(--ink); }
+.mx-li.filled span { color: var(--ink-3); }
+.mx-li.on.filled span { color: inherit; }
+
+.mx-kb { display: none; }
+.mx-kb { flex-direction: column; gap: 6px; flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom); }
+.mx-kb-row { display: flex; justify-content: center; gap: 4px; }
+.mx-kb button {
+    flex: 1 1 0; max-width: 40px; height: 46px; padding: 0;
+    font: 700 17px var(--font); color: var(--ink);
+    background: var(--card); border: 1.5px solid var(--ink); border-radius: 6px;
+    box-shadow: 0 2px 0 var(--shadow); touch-action: manipulation;
+}
+.mx-kb button:active { background: var(--hl-yellow); color: #17213A; }
+.mx-kb button.wide { max-width: 60px; flex-grow: 1.5; }
+/* touch screens have no keyboard of their own here (nothing to type into),
+   so phones and tablets get the on-screen one */
+@media (max-width: 760px), (pointer: coarse) { .mx-kb { display: flex; } }
+.mx-model-btn { display: none; }
+.mx-how ul { text-align: left; margin: 0 0 20px; padding-left: 20px; font-size: 15px; line-height: 1.45; color: var(--ink-2); }
+.mx-how li { margin-bottom: 6px; }
+
+/* narrower desktops: one clue list column */
+@media (max-width: 1100px) and (min-width: 761px) {
+    .mx-clues { grid-template-columns: 1fr; }
+    .mx-bar .to, .mx-lit { display: none; }
+}
+
+/* phones (and tablets held upright): no model, an on-screen keyboard */
+@media (max-width: 760px) {
+    /* the model is a sheet over the grid, opened with the Model button */
+    body.mini #cv {
+        top: calc(var(--nav) + var(--bar) + 66px); bottom: 220px; height: auto; z-index: 250;
+        visibility: hidden; pointer-events: none;
+    }
+    body.mini.show-model #cv { visibility: visible; pointer-events: auto; }
+    body.mini .cv-tape-l, body.mini .reset-view, body.mini .cv-pad { display: none; }
+    .mx-model-btn { display: block; }
+    body.mini { --bar: 40px; }
+    .mx-bar .bone { font-size: 16px; }
+    .mx-bar .to { font-size: 18px; }
+    .mx-lit { display: none; }
+    .mx-panel {
+        top: calc(var(--nav) + var(--bar) + 4px); left: 10px; right: 10px; bottom: 0; width: auto;
+        overflow: hidden; gap: 8px; padding: 0 4px 6px 0;
+    }
+    @supports (height: 1dvh) { .mx-panel { bottom: calc(100vh - 100dvh); } }
+    .mx-clue { min-height: 54px; box-shadow: 3px 3px 0 var(--shadow); border-width: 2px; }
+    .mx-clue-txt { font-size: 15px; }
+    .mx-board { flex: 1 1 0; min-height: 0; height: auto; }
+    .mx-grid { box-shadow: 3px 3px 0 var(--shadow); }
+    .mx-tools .nb-btn { height: 36px; font-size: 13px; padding: 0 8px; box-shadow: 2px 2px 0 var(--shadow); }
+    .mx-menu { top: auto; bottom: calc(100% + 6px); }
+    .mx-note { font-size: 13px; padding: 6px 10px; }
+    .mx-clues { display: none; }
+}
