@@ -82,7 +82,7 @@
         var navbar = e('header', { className: 'g-nav' },
             e('div', { className: 'brand' },
                 e('a', { href: '../index.html', className: 'wordmark', title: 'Back to the notes' },
-                    'anatom', e('span', { className: 'le' }, 'le')),
+                    e('span', { className: 'hl-a' }, 'a'), 'natomle'),
                 e('span', { className: 'mode' }, gameTitle)
             ),
             e('div', { className: 'acts' },
