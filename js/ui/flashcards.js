@@ -35,6 +35,20 @@
         return (muscles ? 'Shares a bone with: ' : 'Joins: ') + n.join(', ') + ((graph[name] || []).length > 5 ? '…' : '');
     }
 
+    // Muscles: origin, insertion, action and antagonist (js/data/muscleFacts.js)
+    function studyFacts(name) {
+        var box = $('fc-facts'), f = muscles && window.MUSCLE_FACTS_BY_NAME && MUSCLE_FACTS_BY_NAME[name];
+        box.innerHTML = '';
+        box.hidden = !f;
+        if (!f) return;
+        [['Origin', f.o], ['Insertion', f.i], ['Action', f.a], ['Antagonist', f.x]].forEach(function (row) {
+            if (!row[1]) return;
+            var dt = document.createElement('dt'), dd = document.createElement('dd');
+            dt.textContent = row[0]; dd.textContent = row[1];
+            box.appendChild(dt); box.appendChild(dd);
+        });
+    }
+
     var learned = {};
     try { learned = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) {}
     function saveLearned() { try { localStorage.setItem(KEY, JSON.stringify(learned)); } catch (e) {} }
@@ -85,6 +99,7 @@
         card = queue.shift();
         hints = 0; done = false;
         front.hidden = false; back.hidden = true;
+        document.querySelector('.fc-panel').classList.remove('fc-done');
         mask.textContent = masked(card, 0);
         hintBtn.hidden = false; showBtn.hidden = false; nextBtn.hidden = true;
         hintBtn.disabled = false;
@@ -109,8 +124,10 @@
         $('fc-verdict').className = 'fc-verdict ' + (correct ? 'ok' : 'bad');
         $('fc-name').textContent = card;
         $('fc-fact').textContent = fact(card);
-        $('fc-links').textContent = links(card);
+        $('fc-links').textContent = muscles ? '' : links(card);
+        studyFacts(card);
         front.hidden = true; back.hidden = false;
+        document.querySelector('.fc-panel').classList.add('fc-done');
         hintBtn.hidden = true; showBtn.hidden = true; nextBtn.hidden = false;
         input.disabled = true; input.value = ''; closeDrop(); field.classList.remove('err');
         nextBtn.focus();

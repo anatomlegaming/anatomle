@@ -621,7 +621,7 @@ body.nb-page {
 .htp-body .htp-warn { font-size: 14px; color: var(--ink); background: var(--hl-yellow); border-radius: 6px; padding: 6px 10px; }
 
 /* ── FLASH CARDS (games/flashcards.html) ─────────────────────────────────── */
-.fc-card { padding: 22px 24px; justify-content: center; text-align: center; }
+.fc-card { padding: 22px 24px; justify-content: center; justify-content: safe center; text-align: center; overflow-y: auto; }
 .fc-kicker { font-size: 26px; color: var(--pink-dk); }
 .fc-mask { margin: 14px 0 10px; font-size: 26px; font-weight: 700; letter-spacing: .04em; word-break: break-word; }
 .fc-tip { margin: 0; font-size: 14px; color: var(--ink-3); }
@@ -631,6 +631,10 @@ body.nb-page {
 .fc-name { margin: 4px 0 12px; font-size: 34px; letter-spacing: -.03em; line-height: 1.1; }
 .fc-fact { margin: 0 0 10px; font-size: 15px; line-height: 1.45; color: var(--ink-2); }
 .fc-links { margin: 0; font-size: 14px; font-weight: 700; color: var(--ink-2); }
+/* muscle cards: origin, insertion, action, antagonist */
+.fc-facts { margin: 0 0 12px; text-align: left; display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 14.5px; line-height: 1.4; }
+.fc-facts dt { font-weight: 700; color: var(--ink); }
+.fc-facts dd { margin: 0; color: var(--ink-2); }
 .fc-panel .g-route { flex: 1 1 auto; }
 .g-nav a.nb-btn.fc-deck.hl-btn { box-shadow: 3px 3px 0 var(--shadow); }
 [hidden] { display: none !important; }
@@ -713,6 +717,11 @@ body.nb-page {
     .fc-panel .fc-mask { font-size: 20px; margin: 8px 0 6px; }
     .fc-panel .fc-name { font-size: 26px; margin: 2px 0 8px; }
     .fc-panel .fc-kicker { font-size: 20px; }
+    .fc-panel .fc-verdict { font-size: 22px; }
+    .fc-panel.fc-done .g-guess { display: none; }   /* room for the facts */
+    .fc-panel .fc-name { font-size: 22px; }
+    .fc-facts { grid-template-columns: 1fr; gap: 0; font-size: 13.5px; }
+    .fc-facts dd { margin-bottom: 6px; }
 }
 
 /* hint letters: "Sca____" in the route list and the note */
