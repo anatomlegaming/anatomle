@@ -444,6 +444,8 @@ body.game { overflow: hidden; }
 .cv-pad .pad-mid { grid-area: 2 / 2; font-size: 16px; }
 .cv-pad .pad-right { grid-area: 2 / 3; }
 .cv-pad .pad-down { grid-area: 3 / 2; }
+.cv-pad .pad-in { grid-area: 1 / 3; font-size: 18px; font-weight: 700; }
+.cv-pad .pad-out { grid-area: 3 / 3; font-size: 18px; font-weight: 700; }
 .lbl-short { display: none; }
 
 /* static pages set their own body colour; keep the graph paper */

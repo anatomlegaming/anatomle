@@ -269,23 +269,24 @@
         hint.innerHTML = '<b>drag</b> to move · <b>right-drag</b> to turn · <b>scroll</b> to zoom';
         if (matchMedia('(pointer: coarse)').matches) hint.innerHTML = '<b>one finger</b> to move · <b>two fingers</b> to turn and zoom';
         dom.parentNode.appendChild(hint);
-        // Turn pad: ◀ ▶ turn around, ▲ ▼ tilt, the middle resets the view.
+        // Turn pad: ◀ ▶ turn around, ▲ ▼ tilt, + − zoom, the middle resets the view.
         // Holding a button speeds up smoothly and letting go glides to a
         // stop; a quick tap still turns a little (it counts as a short hold).
-        var spin = { x: 0, y: 0 }, want = { x: 0, y: 0 }, holdEnd = 0, lastStep = performance.now();
+        var spin = { x: 0, y: 0, z: 0 }, want = { x: 0, y: 0, z: 0 }, holdEnd = 0, lastStep = performance.now();
         var MAX = 1.5;   // radians per second at full speed
         var pad = document.createElement('div');
         pad.className = 'cv-pad';
         [['up', 0, -1, '\u25B2', 'Tilt up'], ['left', -1, 0, '\u25C0', 'Turn left'], ['mid', 0, 0, '\u2299', 'Reset view'],
-         ['right', 1, 0, '\u25B6', 'Turn right'], ['down', 0, 1, '\u25BC', 'Tilt down']].forEach(function (b) {
+         ['right', 1, 0, '\u25B6', 'Turn right'], ['down', 0, 1, '\u25BC', 'Tilt down'],
+         ['in', 0, 0, '+', 'Zoom in', -1], ['out', 0, 0, '\u2212', 'Zoom out', 1]].forEach(function (b) {
             var btn = document.createElement('button');
             btn.type = 'button'; btn.className = 'pad-' + b[0]; btn.textContent = b[3];
             btn.title = b[4]; btn.setAttribute('aria-label', b[4]);
             if (b[0] === 'mid') {
                 btn.addEventListener('click', function () { used(); if (window.resetCamera) window.resetCamera(); });
             } else {
-                var dx = b[1], dy = b[2], t0 = 0;
-                var go = function () { used(); flight = null; if (o.onUser) o.onUser(); want.x = dx; want.y = dy; t0 = performance.now(); dirty = true; };
+                var dx = b[1], dy = b[2], dz = b[5] || 0, t0 = 0;
+                var go = function () { used(); flight = null; goal = null; if (o.onUser) o.onUser(); want.x = dx; want.y = dy; want.z = dz; t0 = performance.now(); dirty = true; };
                 var stop = function () { holdEnd = t0 + 220; };   // a tap still moves a bit
                 btn.addEventListener('pointerdown', function (e) {
                     e.preventDefault(); go();
@@ -303,15 +304,18 @@
         function spinStep() {
             var now = performance.now(), dt = Math.min((now - lastStep) / 1000, 0.1);
             lastStep = now;
-            if (holdEnd && now >= holdEnd) { want.x = want.y = 0; holdEnd = 0; }
-            var k = 1 - Math.exp(-dt * (want.x || want.y ? 4 : 5));   // ease in and out
+            if (holdEnd && now >= holdEnd) { want.x = want.y = want.z = 0; holdEnd = 0; }
+            var held = want.x || want.y || want.z;
+            var k = 1 - Math.exp(-dt * (held ? 4 : 5));   // ease in and out
             spin.x += (want.x * MAX - spin.x) * k;
             spin.y += (want.y * MAX * 0.7 - spin.y) * k;
-            if (Math.abs(spin.x) < 0.005 && Math.abs(spin.y) < 0.005 && !want.x && !want.y) { spin.x = spin.y = 0; return; }
+            spin.z += (want.z * 1.2 - spin.z) * k;          // zoom: x e^1.2 per second
+            if (Math.abs(spin.x) < 0.005 && Math.abs(spin.y) < 0.005 && Math.abs(spin.z) < 0.005 && !held) { spin.x = spin.y = spin.z = 0; return; }
             off.subVectors(cam.position, ctrl.target);
             sph.setFromVector3(off);
             sph.theta -= spin.x * dt;
             sph.phi = Math.max(ctrl.minPolarAngle, Math.min(ctrl.maxPolarAngle, sph.phi + spin.y * dt));
+            sph.radius = Math.max(ctrl.minDistance, Math.min(ctrl.maxDistance, sph.radius * Math.exp(spin.z * dt)));
             sph.makeSafe();
             off.setFromSpherical(sph);
             cam.position.copy(ctrl.target).add(off);
