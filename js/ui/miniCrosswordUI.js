@@ -74,6 +74,15 @@
         useEffect(function () {
             document.body.classList.toggle('show-model', model);
         }, [model]);
+        // If the page held the model back (phones) and the screen becomes wide
+        // enough to show it, start it then
+        useEffect(function () {
+            if (!window.matchMedia) return;
+            var mq = window.matchMedia('(max-width: 760px)');
+            function on() { if (!mq.matches && window.startUpperLimbModel) window.startUpperLimbModel(); }
+            if (mq.addEventListener) mq.addEventListener('change', on); else mq.addListener(on);
+            return function () { if (mq.removeEventListener) mq.removeEventListener('change', on); else mq.removeListener(on); };
+        }, []);
         useEffect(function () {
             if (!sure) return;
             var t = setTimeout(function () { setSure(false); }, 3000);
@@ -132,7 +141,8 @@
             var tries = 0, timer = null;
             function paint() {
                 if (!window.update3D || !window.__modelIsReady) {
-                    if (tries++ < 60) timer = setTimeout(paint, 500);
+                    // keep waiting: on phones the model may only start loading later
+                    timer = setTimeout(paint, tries++ < 60 ? 500 : 2000);
                     return;
                 }
                 window.update3D(muscle ? [{ name: muscle, type: 'end' }] : []);
@@ -343,7 +353,14 @@
             e('button', { type: 'button', className: 'nb-btn mx-model-btn' + (model ? ' hl-btn' : ''), onClick: function () {
                 setMenu(null);
                 setModel(!model);
-                if (!model && muscle && window.focusPart) setTimeout(function () { window.focusPart(muscle); }, 60);
+                if (model) return;
+                if (window.startUpperLimbModel) window.startUpperLimbModel();
+                // zoom to the clue's muscle once the model is there
+                var tries = 0;
+                (function zoom() {
+                    if (window.__modelIsReady && window.focusPart) { if (muscle) window.focusPart(muscle); return; }
+                    if (tries++ < 120) setTimeout(zoom, 250);
+                })();
             } }, model ? 'Hide model' : 'Model'),
             done
                 ? e('button', { type: 'button', className: 'nb-btn hl-btn', onClick: function () { setShowDone(true); } }, 'Results')

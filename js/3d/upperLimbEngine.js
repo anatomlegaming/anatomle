@@ -230,10 +230,22 @@ function _initUpperLimbEngine() {
     ro.observe(cont);
 }
 
+// Starts the engine once. A page can set window.DEFER_UPPER_LIMB_MODEL
+// before loading this script to hold off the download (the muscle mini
+// does on phones) and call window.startUpperLimbModel() when it is wanted.
+var _engineStarted = false;
+window.startUpperLimbModel = function () {
+    if (_engineStarted) return;
+    _engineStarted = true;
+    _initUpperLimbEngine();
+};
+
 // Run now if the page has already loaded (e.g. replay.html injects this
 // script after DOMContentLoaded), otherwise wait for the DOM.
-if (document.readyState === 'loading') {
-    window.addEventListener('DOMContentLoaded', _initUpperLimbEngine);
-} else {
-    _initUpperLimbEngine();
+if (!window.DEFER_UPPER_LIMB_MODEL) {
+    if (document.readyState === 'loading') {
+        window.addEventListener('DOMContentLoaded', window.startUpperLimbModel);
+    } else {
+        window.startUpperLimbModel();
+    }
 }

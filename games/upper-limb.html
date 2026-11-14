@@ -34,6 +34,10 @@
 <button type="button" class="nb-btn reset-view" onclick="if(window.resetCamera) window.resetCamera();" title="Reset view" aria-label="Reset view">⊙</button>
 <div id="root"></div>
 
+<script>
+// phones get the crossword alone; the 3D model only downloads if they tap Model
+window.DEFER_UPPER_LIMB_MODEL = window.matchMedia('(max-width: 760px)').matches;
+</script>
 <script src="../js/3d/hlFx.js?v=20261114d"></script>
 <script src="../js/3d/upperLimbEngine.js?v=20261114d"></script>
 <script src="../js/ui/miniCrosswordUI.js?v=20261114d"></script>
