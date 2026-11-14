@@ -343,7 +343,7 @@
 
         var navbar = e('header', { className: 'g-nav' },
             e('div', { className: 'brand' },
-                e('a', { href: '../index.html', className: 'wordmark', title: 'Back to the notes' }, 'anatom', e('span', { className: 'le' }, 'le')),
+                e('a', { href: '../index.html', className: 'wordmark', title: 'Back to the notes' }, e('span', { className: 'hl-a' }, 'a'), 'natomle'),
                 e('span', { className: 'mode' }, props.title || 'muscle mini')),
             e('div', { className: 'acts' },
                 e('button', { type: 'button', className: 'nb-btn htp-btn', title: 'How to play', 'aria-label': 'How to play', onClick: function () { setHowTo(true); } },

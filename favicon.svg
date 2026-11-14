@@ -1,5 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect x="1.5" y="1.5" width="61" height="61" rx="14" fill="#FFFFFF" stroke="#17213A" stroke-width="3"/>
-  <rect x="6" y="35" width="52" height="14" rx="3" fill="#FFE047" transform="rotate(-4 32 42)"/>
-  <text x="32" y="45" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="34" fill="#17213A" letter-spacing="-1.5">am</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><clipPath id="c"><rect x="1.5" y="1.5" width="61" height="61" rx="12"/></clipPath></defs><rect x="1.5" y="1.5" width="61" height="61" rx="12" fill="#FBFCFF"/><g clip-path="url(#c)" stroke="#C9D7F5" stroke-width="1.2"><path d="M0 14H64M0 26H64M0 38H64M0 50H64"/><path d="M11 0V64" stroke="#E98AA8" stroke-width="1.8"/></g><rect x="1.5" y="1.5" width="61" height="61" rx="12" fill="none" stroke="#17213A" stroke-width="3"/><rect x="15" y="15" width="38" height="34" rx="3" fill="#FFE047" opacity=".9" transform="rotate(-5 34 32)"/><path transform="translate(16.70 50.00) scale(0.0514 -0.0514)" d="M18 0 202 700H432L616 0H480L442 154H192L154 0ZM223 276H411L326 617H308Z" fill="#17213A"/></svg>

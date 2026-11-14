@@ -87,7 +87,11 @@ a:hover { color: var(--pen-dk); }
     color: var(--ink); text-decoration: none; line-height: 1;
 }
 .wordmark:hover { color: var(--ink); }
-.wordmark .le { background: linear-gradient(transparent 56%, var(--hl-yellow) 56%, var(--hl-yellow) 90%, transparent 90%); }
+/* the brand mark: the first "a" swiped with highlighter, like the favicon */
+.wordmark .hl-a, .nb-page .nav-logo span {
+    background: linear-gradient(transparent 22%, var(--hl-yellow) 22%, var(--hl-yellow) 94%, transparent 94%);
+    padding: 0 .05em; margin-right: .02em; border-radius: 2px;
+}
 
 /* buttons */
 .nb-btn {
@@ -416,7 +420,7 @@ body.game { overflow: hidden; }
     border-bottom: 2px solid var(--ink) !important; height: 64px !important;
 }
 .nb-page .nav-logo { font-family: var(--font) !important; font-weight: 700; letter-spacing: -.045em; color: var(--ink) !important; font-style: normal; }
-.nb-page .nav-logo span { color: var(--ink) !important; font-style: normal !important; background: linear-gradient(transparent 55%, var(--hl-yellow) 55%); }
+.nb-page .nav-logo span { color: var(--ink) !important; font-style: normal !important; }
 .nb-page .nav-menu { border: 2px solid var(--ink) !important; border-radius: 10px !important; color: var(--ink) !important; font-weight: 700 !important; box-shadow: 3px 3px 0 var(--shadow); background: var(--card) !important; }
 .nb-page .nav-menu:hover { background: var(--ink) !important; color: var(--on-ink) !important; }
 .nb-page main { position: relative; z-index: 2; }
@@ -887,3 +891,5 @@ body.mini .mx-board { height: auto; aspect-ratio: 1; max-height: calc(100vh - va
     body.reviewing .mx-board, body.reviewing .mx-clue, body.reviewing .mx-kb { display: none; }
     body.reviewing.mini .mx-clues { display: block; flex: 1 1 0; min-height: 0; max-height: none; overflow-y: auto; transform: none; box-shadow: 3px 3px 0 var(--shadow); }
 }
+/* home page: the favicon mark beside the name, tilted like a sticker */
+.brand-mark { width: clamp(50px, 7.5vw, 72px); height: auto; margin-right: -8px; flex-shrink: 0; transform: rotate(-4deg); filter: drop-shadow(3px 3px 0 var(--shadow)); align-self: center; }
