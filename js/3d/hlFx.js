@@ -230,6 +230,7 @@
     //   two fingers / right-drag  turn it (two fingers also pinch to zoom)
     //   scroll                    zoom towards the cursor
     //   double-click              glide to that spot
+    //   ⟲ ⟳ buttons               turn 45° (hold to keep turning)
     // Tilt stops short of top-down, and the model can't be moved out of view.
     // The mouse wheel zooms smoothly towards whatever is under the cursor
     // (trackpads and mouse wheels feel the same); pinch zooms on touch.
@@ -260,6 +261,48 @@
         hint.innerHTML = '<b>drag</b> to move · <b>right-drag</b> to turn · <b>scroll</b> to zoom';
         if (matchMedia('(pointer: coarse)').matches) hint.innerHTML = '<b>one finger</b> to move · <b>two fingers</b> to turn and zoom';
         dom.parentNode.appendChild(hint);
+        // Turn buttons: tap to turn 45°, hold to keep turning
+        var spinGoal = 0, spinDone = 0, holdDir = 0, holdT = 0, lastStep = performance.now();
+        var turn = document.createElement('div');
+        turn.className = 'cv-turn';
+        [['-1', '\u27F2', 'Turn left'], ['1', '\u27F3', 'Turn right']].forEach(function (b) {
+            var btn = document.createElement('button');
+            btn.type = 'button'; btn.className = 'nb-btn'; btn.textContent = b[1];
+            btn.title = b[2]; btn.setAttribute('aria-label', b[2]);
+            var dir = +b[0];
+            btn.addEventListener('pointerdown', function (e) {
+                e.preventDefault(); used(); flight = null; if (o.onUser) o.onUser();
+                holdDir = dir; holdT = performance.now();
+                spinGoal += dir * Math.PI / 4;
+                try { btn.setPointerCapture(e.pointerId); } catch (x) {}
+            });
+            function up() { holdDir = 0; }
+            btn.addEventListener('pointerup', up);
+            btn.addEventListener('pointercancel', up);
+            btn.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); spinGoal += dir * Math.PI / 4; dirty = true; }
+            });
+            turn.appendChild(btn);
+        });
+        dom.parentNode.appendChild(turn);
+        var yAxis = new THREE.Vector3(0, 1, 0), off = new THREE.Vector3();
+        function spinStep() {
+            var now = performance.now(), dt = Math.min((now - lastStep) / 1000, 0.05);
+            lastStep = now;
+            // held for a moment: keep turning at a steady pace
+            if (holdDir && now - holdT > 350) {
+                var lead = spinDone + holdDir * 0.14;
+                if ((lead - spinGoal) * holdDir > 0) spinGoal = lead;
+            }
+            var d = spinGoal - spinDone;
+            if (Math.abs(d) < 1e-4) { spinGoal = spinDone = 0; return; }
+            var a = Math.abs(d) < 0.002 ? d : d * Math.min(1, dt * 9);
+            spinDone += a;
+            off.subVectors(cam.position, ctrl.target).applyAxisAngle(yAxis, a);
+            cam.position.copy(ctrl.target).add(off);
+            dirty = true;
+        }
+
         function used() { if (hint.parentNode) { hint.classList.add('gone'); setTimeout(function () { if (hint.parentNode) hint.parentNode.removeChild(hint); }, 400); } }
 
         var goal = null;                   // distance we are easing towards
@@ -335,6 +378,7 @@
         }
 
         function step() {
+            spinStep();
             keepInView();
             if (flight) {
                 var t = Math.min((performance.now() - flight.t0) / flight.ms, 1), k = ease(t);

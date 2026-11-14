@@ -87,7 +87,8 @@
             ),
             e('div', { className: 'acts' },
                 window.HowToModal
-                    ? e('button', { type: 'button', className: 'nb-btn', onClick: function () { setShowHow(true); } }, 'How to play')
+                    ? e('button', { type: 'button', className: 'nb-btn htp-btn', title: 'How to play', 'aria-label': 'How to play', onClick: function () { setShowHow(true); } },
+                        e('span', { className: 'lbl-long' }, 'How to play'), e('span', { className: 'lbl-short' }, '?'))
                     : null,
                 window.AnatomleTheme
                     ? e('button', { type: 'button', className: 'nb-btn theme-toggle',
