@@ -8,19 +8,34 @@
 // Plain JS (no React). Needs: hlFx.js, an engine, and the deck's data files.
 // ============================================================================
 (function () {
-    var deck = window.DECK;
-    var muscles = deck === 'muscles';
-    var thing = muscles ? 'muscle' : 'bone';
+    var deck = window.DECK;                       // 'bones' | 'muscles' | 'mixed'
     var KEY = 'anatomle_fc_' + deck;
 
     // ── The deck ──────────────────────────────────────────────────────────────
-    var graph = muscles ? UPPER_LIMB_BONE_GRAPH : SKELETON_GRAPH;
-    var names = muscles
-        ? Object.keys(UPPER_LIMB_MUSCLES).filter(function (n) { return (UPPER_LIMB_MUSCLES[n].meshes || []).length; })
-        : Object.keys(SKELETON_GRAPH);
+    // The mixed deck runs on the arm model: its muscles plus the upper limb
+    // bones, which the engine shows only while one is the card.
+    var ARM_BONES = {
+        'Clavicle': ['Clavicle.r'], 'Scapula': ['Scapula.r.'], 'Humerus': ['Humerus.r'],
+        'Radius': ['Radius.r'], 'Ulna': ['Ulna.r'],
+        'Scaphoid': ['Scaphoid.r'], 'Lunate': ['Lunate bone.r'], 'Triquetrum': ['Triquetrum.r'], 'Pisiform': ['Pisiform.r'],
+        'Trapezium': ['Trapezium.r'], 'Trapezoid': ['Trapezoid.r'], 'Capitate': ['Capitate.r'], 'Hamate': ['Hamate.r'],
+        'Metacarpal I': ['1st metacarpal bone.r'], 'Metacarpal II': ['2nd metacarpal bone.r'], 'Metacarpal III': ['3rd metacarpal bone.r'],
+        'Metacarpal IV': ['4th metacarpal bone.r'], 'Metacarpal V': ['5th metacarpal bone.r'],
+        'Proximal Phalanx (Hand)': ['Proximal phalanx of 1st finger.r', 'Proximal phalanx of 2d finger.r', 'Proximal phalanx of 3rd finger.r', 'Proximal phalanx of 4th finger.r', 'Proximal phalanx of 5th finger.r'],
+        'Middle Phalanx (Hand)': ['Middle phalanx of 2d finger.r', 'Middle phalanx of 3rd finger.r', 'Middle phalanx of 4th finger.r', 'Middle phalanx of 5th finger.r'],
+        'Distal Phalanx (Hand)': ['Distal phalanx of 1st finger.r', 'Distal phalanx of 2d finger.r', 'Distal phalanx of 3d finger.r', 'Distal phalanx of 4th finger.r', 'Distal phalanx of 5th finger.r']
+    };
+    if (deck === 'mixed') window.UL_EXTRA_PARTS = ARM_BONES;
+
+    var muscleNames = deck === 'bones' ? [] :
+        Object.keys(UPPER_LIMB_MUSCLES).filter(function (n) { return (UPPER_LIMB_MUSCLES[n].meshes || []).length; });
+    var boneNames = deck === 'bones' ? Object.keys(SKELETON_GRAPH) : deck === 'mixed' ? Object.keys(ARM_BONES) : [];
+    var names = boneNames.concat(muscleNames);
+    function isBone(name) { return boneNames.indexOf(name) !== -1; }
+    function thingOf(name) { return isBone(name) ? 'bone' : 'muscle'; }
 
     function fact(name) {
-        if (muscles) {
+        if (!isBone(name)) {
             var m = UPPER_LIMB_MUSCLES[name];
             return m.supply ? 'Nerve supply: ' + m.supply + '.' : '';
         }
@@ -30,9 +45,11 @@
         return cut;
     }
     function links(name) {
-        var n = (graph[name] || []).slice(0, 5);
+        var bone = isBone(name);
+        var all = (bone ? SKELETON_GRAPH[name] : UPPER_LIMB_BONE_GRAPH[name]) || [];
+        var n = all.slice(0, 5);
         if (!n.length) return '';
-        return (muscles ? 'Shares a bone with: ' : 'Joins: ') + n.join(', ') + ((graph[name] || []).length > 5 ? '…' : '');
+        return (bone ? 'Joins: ' : 'Shares a bone with: ') + n.join(', ') + (all.length > 5 ? '…' : '');
     }
 
     var learned = {};
@@ -53,10 +70,9 @@
     var front = $('fc-front'), back = $('fc-back'), mask = $('fc-mask');
     var hintBtn = $('fc-hint'), showBtn = $('fc-show'), nextBtn = $('fc-next');
 
-    $('fc-q').textContent = 'Which ' + thing + ' is this?';
-    input.placeholder = 'Type a ' + thing + '…';
+    input.placeholder = deck === 'mixed' ? 'Type a bone or muscle…' : 'Type a ' + (deck === 'bones' ? 'bone' : 'muscle') + '…';
     document.querySelectorAll('.fc-deck').forEach(function (a) {
-        if (a.getAttribute('data-deck') === deck) a.classList.add('hl-btn');
+        if (a.getAttribute('data-deck') === deck) { a.classList.add('on'); a.setAttribute('aria-current', 'true'); }
     });
 
     var card = null, hints = 0, done = false, right = 0, streak = 0, sel = -1, sugs = [];
@@ -86,6 +102,7 @@
         hints = 0; done = false;
         front.hidden = false; back.hidden = true;
         mask.textContent = masked(card, 0);
+        $('fc-q').textContent = 'Which ' + thingOf(card) + ' is this?';
         hintBtn.hidden = false; showBtn.hidden = false; nextBtn.hidden = true;
         hintBtn.disabled = false;
         input.disabled = false; input.value = ''; closeDrop(); input.focus();

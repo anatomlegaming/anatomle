@@ -16,7 +16,7 @@
     <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../css/notebook.css?v=20261114d">
+    <link rel="stylesheet" href="../css/notebook.css?v=20261114j">
     <script src="../js/ui/theme.js?v=20261114d"></script>
     <script src="../js/data/skeletonGraph.js?v=20261114d"></script>
     <script src="../js/data/boneMappings.js?v=20261114d"></script>
@@ -34,14 +34,14 @@
 
 <!-- Loading screen shown while fetching UTC date -->
 <div id="loading-screen" class="nb-screen">
-    <div class="wordmark"><span class="hl-a">a</span>natomle</div>
+    <div class="wordmark"><span class="hl-a">A</span>natomle</div>
     <div class="sub">finding today's puzzle…</div>
     <div class="nb-dots"><i></i><i></i><i></i></div>
 </div>
 
 <!-- Shown if no seed exists for today's date -->
 <div id="no-puzzle" class="nb-screen">
-    <div class="wordmark"><span class="hl-a">a</span>natomle</div>
+    <div class="wordmark"><span class="hl-a">A</span>natomle</div>
     <div class="sub">no puzzle today</div>
     <p>Check back tomorrow. New puzzles are added regularly.</p>
     <a class="nb-btn" href="../index.html">← Back to the notes</a>
@@ -55,7 +55,8 @@
 
 <script src="../js/3d/hlFx.js?v=20261114d"></script>
 <script src="../js/3d/skeletonEngine.js?v=20261114d"></script>
-<script src="../js/ui/pathfindingUI.js?v=20261114d"></script>
+<script src="../js/ui/gameSwitch.js?v=20261114j"></script>
+<script src="../js/ui/pathfindingUI.js?v=20261114j"></script>
 <script src="../js/ui/howToPlay.js?v=20261114d"></script>
 <script src="../js/core/boneDescriptions.js?v=20261114d"></script>
 <script src="../js/ui/boneInfo.js?v=20261114d"></script>
@@ -173,7 +174,7 @@ function DailyGame() {
 
     if (!game.ready) return null;
 
-    var state = Object.assign({}, game.state, { streak: streak });
+    var state = Object.assign({}, game.state, { streak: streak, gameId: 'bones', daily: true });
     var handlers = Object.assign({}, game.handlers, {
         onNewGame: null,
         onHome: function () { window.location.href = '../index.html'; }
