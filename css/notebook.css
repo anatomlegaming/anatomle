@@ -707,3 +707,7 @@ body.nb-page {
     .fc-panel .fc-name { font-size: 26px; margin: 2px 0 8px; }
     .fc-panel .fc-kicker { font-size: 20px; }
 }
+
+/* hint letters: "Sca____" in the route list and the note */
+.clue { font-weight: 700; letter-spacing: .14em; color: var(--ink); }
+.g-row .clue { background: linear-gradient(transparent 55%, var(--hl-purple) 55%); }

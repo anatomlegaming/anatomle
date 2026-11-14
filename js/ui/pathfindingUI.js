@@ -148,10 +148,13 @@
                         item.alts && item.alts.length
                             ? e('span', { className: 'alts' }, ' or ' + item.alts.join(' or '))
                             : null)
-                    : e('span', null, '________'),
+                    : s.clue && s.clue.bone === item.bone && s.clue.shown
+                        ? e('span', { className: 'clue' }, s.clue.mask)
+                        : e('span', null, '________'),
                 isFirst ? e('span', { className: 'tag' }, 'start')
                 : isLast ? e('span', { className: 'tag' }, 'goal')
                 : revealed ? e('span', { className: 'tag' }, 'missed')
+                : !shown && s.clue && s.clue.bone === item.bone && s.clue.shown ? e('span', { className: 'tag' }, '\uD83D\uDCA1 hint')
                 : null
             );
         });
@@ -175,13 +178,16 @@
                     e('span', { className: 'why' }, why)));
         });
         if (!logItems.length) logItems.push(e('div', { key: 'none', className: 'g-empty' }, 'nothing yet'));
-        var mistakes = detours.length + bad.length + log.filter(function (g) { return g.hint; }).length;
+        var mistakes = detours.length + bad.length + (s.hintsUsed || 0);
         var found = chain.filter(function (c, i) { return i > 0 && i < chain.length - 1 && c.guessed; }).length;
         var slots = Math.max(chain.length - 2, 0);
 
         // ── FEEDBACK NOTE (latest guess) + COLOUR KEY ─────────────────────────
         var fbText, fbCls;
-        if (!last) {
+        if (s.lastHint && s.clue) {
+            fbCls = 'hint';
+            fbText = [e('b', { key: 'a' }, '\uD83D\uDCA1 Next ' + things + ': '), e('span', { key: 'm', className: 'clue' }, s.clue.mask)];
+        } else if (!last) {
             fbCls = 'intro';
             fbText = 'Name a ' + things + ' that links them.';
         } else if (last.hint) {
@@ -262,9 +268,10 @@
         var clueBtn = h.onClue
             ? e('button', {
                 type: 'button', className: 'nb-btn wide',
-                onClick: h.onClue, disabled: phase !== 'playing',
-                title: 'Fills in the next ' + things + '. Uses a guess and counts as a mistake.'
-              }, '\uD83D\uDCA1 Hint', e('span', { className: 'btn-sub' }, '\u2212 counts as a mistake'))
+                onClick: h.onClue, disabled: phase !== 'playing' || !s.clue || s.clue.maxed,
+                title: 'Shows a letter of the next ' + things + '. Each hint counts as a mistake.'
+              }, s.clue && s.clue.maxed ? '\uD83D\uDCA1 No more letters' : '\uD83D\uDCA1 Hint',
+                 s.clue && s.clue.maxed ? null : e('span', { className: 'btn-sub' }, '\u2212 counts as a mistake'))
             : null;
 
         var mainBtn = e('button', {
@@ -287,7 +294,7 @@
                 e('div', { className: 'g-head' },
                     e('span', { className: 't' }, 'guesses'),
                     e('span', { className: 'n' + (mistakes ? ' warn' : '') },
-                        log.length ? (mistakes ? mistakes + ' mistake' + (mistakes === 1 ? '' : 's') : 'no mistakes') : '')
+                        (log.length || mistakes) ? (mistakes ? mistakes + ' mistake' + (mistakes === 1 ? '' : 's') : 'no mistakes') : '')
                 ),
                 e('div', { className: 'g-chipwrap nb-scroll' }, logItems)
             ),
