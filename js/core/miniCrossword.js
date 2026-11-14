@@ -1,16 +1,21 @@
 // ============================================================================
 // ANATOMLE - Muscle Mini: daily crossword generator
 // ============================================================================
-// Builds a small crossword (at most 8 x 8) from MUSCLE_CLUES. The same date
+// Builds a small crossword (at most 10 x 10) from MUSCLE_CLUES. The same date
 // always gives the same grid, so every player gets the same puzzle, and any
 // date works, so the daily puzzle never runs out.
+//
+// Clues don't come back for weeks: the whole clue list is shuffled into a
+// cycle and each day may only use its own slice of POOL clues, so no clue is
+// offered on two days of the same cycle. A cycle lasts
+// floor(clues / POOL) days (about 520 clues: 17 days), and more clues make it longer.
 //
 //   var p = buildMiniCrossword('2026-11-14');
 //   p.rows, p.cols               grid size
 //   p.cells[r][c]                null for a black square, else
 //                                {r, c, letter, num, across, down}  (word ids)
 //   p.words[id]                  {id, dir:'across'|'down', num, r, c, answer,
-//                                 clue, muscles:[…], cells:[[r,c]…]}
+//                                 clue, cells:[[r,c]…]}
 //   p.order                      word ids, across first then down, by number
 //
 // Works in the browser (window.buildMiniCrossword) and in Node (module.exports)
@@ -18,9 +23,11 @@
 // ============================================================================
 
 (function (root) {
-    var MAX = 8;          // the grid is never bigger than MAX x MAX
+    var MAX = 10;         // the grid is never bigger than MAX x MAX
     var TARGET = 10;      // stop adding words once there are this many
     var TRIES = 40;       // grids tried per day; the best one wins
+    var POOL = 30;        // clues each day may choose from
+    var EPOCH = Date.UTC(2026, 0, 1);
 
     function rng(seed) {
         var s = seed >>> 0;
@@ -46,12 +53,12 @@
         return arr;
     }
 
-    // { ANSWER: [{clue, muscle}, …] }
+    // { ANSWER: [{clue}, …] }
     function bank(rows) {
         var out = {};
         rows.forEach(function (r) {
             if (mentions(r[1], r[0])) return;   // a clue never gives itself away
-            (out[r[0]] = out[r[0]] || []).push({ clue: r[1], muscles: [].concat(r[2] || []) });
+            (out[r[0]] = out[r[0]] || []).push({ clue: r[1] });
         });
         return out;
     }
@@ -107,7 +114,7 @@
             }
             box = { r0: Math.min(box.r0, r), r1: Math.max(box.r1, r + dr * (word.length - 1)),
                     c0: Math.min(box.c0, c), c1: Math.max(box.c1, c + dc * (word.length - 1)) };
-            words.push({ answer: word, dir: dir, r: r, c: c, cells: cells, clue: option.clue, muscles: option.muscles });
+            words.push({ answer: word, dir: dir, r: r, c: c, cells: cells, clue: option.clue });
         }
 
         // Pick a clue for a new word that names none of the words already in,
@@ -137,7 +144,7 @@
             for (var a = 0; a < answers.length && words.length < TARGET; a++) {
                 var word = answers[a];
                 if (used[word]) continue;
-                if (words.some(function (w) { return w.answer.indexOf(word) >= 0 || word.indexOf(w.answer) >= 0; })) continue;
+                if (words.some(function (w) { return w.answer.indexOf(word) >= 0 || word.indexOf(w.answer) >= 0 || w.answer.slice(0, 5) === word.slice(0, 5); })) continue;   // no ROTATE with ROTATION
                 // every spot where this word crosses a letter already down
                 var best = null;
                 Object.keys(grid).forEach(function (k) {
@@ -157,7 +164,7 @@
                 if (!best) continue;
                 var pick = clueFor(word);
                 if (!pick) continue;
-                pick.swaps.forEach(function (s) { words[s[0]].clue = s[1].clue; words[s[0]].muscles = s[1].muscles; });
+                pick.swaps.forEach(function (s) { words[s[0]].clue = s[1].clue; });
                 place(word, best.r, best.c, best.dir, pick.option);
                 used[word] = true;
                 progress = true;
@@ -172,9 +179,7 @@
         var w = g.box.c1 - g.box.c0 + 1, h = g.box.r1 - g.box.r0 + 1;
         var balance = { across: 0, down: 0 };
         g.words.forEach(function (x) { balance[x.dir]++; });
-        var anatomy = g.words.filter(function (x) { return x.muscles.length; }).length;
-        var tiny = g.words.filter(function (x) { return x.answer.length === 3; }).length;
-        return g.words.length * 12 + crossed * 6 + anatomy * 5 - tiny * 5 + cells.length * 1.5 / (w * h) * 20
+        return g.words.length * 12 + crossed * 6 + cells.length * 1.5 / (w * h) * 20
              - Math.abs(balance.across - balance.down) * 4 - Math.abs(w - h) * 3;
     }
 
@@ -190,7 +195,7 @@
         });
         var words = g.words.map(function (w, id) {
             return { id: id, dir: w.dir, num: null, r: w.r - g.box.r0, c: w.c - g.box.c0, answer: w.answer,
-                     clue: w.clue, muscles: w.muscles,
+                     clue: w.clue,
                      cells: w.cells.map(function (x) { return [x[0] - g.box.r0, x[1] - g.box.c0]; }) };
         });
         var n = 0;
@@ -207,10 +212,20 @@
         return { date: date, rows: rows, cols: cols, cells: cells, words: words, order: order };
     }
 
+    // This day's slice of the shuffled clue cycle (see the note at the top)
+    function dayPool(date, rows) {
+        var day = Math.floor((Date.parse(date + 'T00:00:00Z') - EPOCH) / 86400000);
+        var per = Math.max(1, Math.floor(rows.length / POOL));          // days in a cycle
+        var cycle = Math.floor(day / per), slot = day - cycle * per;
+        if (slot < 0) { slot += per; cycle -= 1; }
+        var order = shuffle(rows.map(function (r, i) { return i; }), rng(hash('anatomle-mini-cycle:' + cycle)));
+        return order.slice(slot * POOL, slot * POOL + POOL).map(function (i) { return rows[i]; });
+    }
+
     function buildMiniCrossword(date, rows) {
         // a top-level const is not a window property, so look it up by name
         rows = rows || (typeof MUSCLE_CLUES !== 'undefined' ? MUSCLE_CLUES : root.MUSCLE_CLUES);
-        var clues = bank(rows);
+        var clues = bank(dayPool(date, rows));
         var rand = rng(hash('anatomle-mini:' + date));
         var best = null, bestScore = -Infinity;
         for (var i = 0; i < TRIES; i++) {

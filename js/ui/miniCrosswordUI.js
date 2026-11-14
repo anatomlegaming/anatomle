@@ -2,9 +2,7 @@
 // ANATOMLE - Muscle Mini: the daily crossword  (styles in css/notebook.css, .mx-*)
 // Pure React.createElement, loads as a plain <script> tag.
 // Needs: React, MUSCLE_CLUES, buildMiniCrossword (js/core/miniCrossword.js).
-// Optional: the upper limb 3D engine (window.update3D / focusPart). It stays
-// out of the game itself: after solving, "Review on model" loads it and
-// lights up the muscles each clue is about.
+// After solving, the clue list shows every answer ("See answers").
 //
 //   ReactDOM.createRoot(el).render(React.createElement(MuscleMini, { title: 'muscle mini' }));
 //
@@ -69,14 +67,10 @@
         var _nq = useState(false), notQuite = _nq[0], setNotQuite = _nq[1];
         var _mn = useState(null), menu = _mn[0], setMenu = _mn[1];                 // 'check' | 'reveal' | null
         var _hw = useState(!load(HOWTO, false)), howTo = _hw[0], setHowTo = _hw[1];
-        var _md = useState(false), review = _md[0], setReview = _md[1];             // after solving: answers on the 3D model
+        var _md = useState(false), review = _md[0], setReview = _md[1];             // after solving: the answers list
         var _rs = useState(false), sure = _rs[0], setSure = _rs[1];                 // "Reset" asks once
 
-        // The model stays out of the game; it only loads for the review
-        useEffect(function () {
-            document.body.classList.toggle('reviewing', review);
-            if (review && window.startUpperLimbModel) window.startUpperLimbModel();
-        }, [review]);
+        useEffect(function () { document.body.classList.toggle('reviewing', review); }, [review]);
         useEffect(function () {
             if (!sure) return;
             var t = setTimeout(function () { setSure(false); }, 3000);
@@ -129,21 +123,6 @@
         }, [full, right]);
         useEffect(function () { if (saved && saved.done) setStreak(recordStreak(date)); }, []);
 
-        // ── review: light up the selected clue's muscles on the 3D model ─────
-        var muscles = word.muscles || [];
-        var musclesKey = muscles.join('|');
-        useEffect(function () {
-            if (!review) return;
-            var timer = null;
-            function paint() {
-                if (!window.update3D || !window.__modelIsReady) { timer = setTimeout(paint, 400); return; }
-                window.update3D(muscles.map(function (m, i) { return { name: m, type: i === muscles.length - 1 ? 'end' : 'start' }; }));
-                if (muscles.length && window.focusPart) window.focusPart(muscles);
-                else if (window.resetCamera) window.resetCamera();
-            }
-            paint();
-            return function () { clearTimeout(timer); };
-        }, [review, musclesKey]);
 
         // ── moving around ────────────────────────────────────────────────────
         function select(r, c) {
@@ -273,7 +252,7 @@
             var help = !checks && !reveals ? 'no help' :
                 [checks ? checks + ' check' + (checks === 1 ? '' : 's') : null,
                  reveals ? reveals + ' reveal' + (reveals === 1 ? '' : 's') : null].filter(Boolean).join(', ');
-            return 'Anatomle Muscle Mini · ' + prettyDate(date) + '\n⏱ ' + clock(time) + ' · ' + help + '\nhttps://anatomle.com/games/upper-limb.html';
+            return 'Anatomle Muscle Mini · ' + prettyDate(date) + '\n⏱ ' + clock(time) + ' · ' + help + '\nhttps://anatomle.com/games/muscle-mini.html';
         }
         function share() {
             var text = shareText();
@@ -330,8 +309,7 @@
                         } },
                         e('b', null, w.num),
                         e('span', null, w.clue,
-                            review ? e('em', { className: 'mx-ans' }, w.answer) : null,
-                            review && w.muscles.length ? e('small', { className: 'mx-mus' }, w.muscles.join(' \u00b7 ')) : null));
+                            done ? e('em', { className: 'mx-ans' }, w.answer) : null));
                 }));
         }
 
@@ -348,8 +326,8 @@
         var tools = e('div', { className: 'mx-tools' },
             menuBtn('check', 'Check', check),
             menuBtn('reveal', 'Reveal', reveal),
-            done ? e('button', { type: 'button', className: 'nb-btn' + (review ? ' hl-btn' : ''), onClick: function () { setMenu(null); setReview(!review); } },
-                review ? 'Back to grid' : 'Review on model') : null,
+            done ? e('button', { type: 'button', className: 'nb-btn mx-ans-btn' + (review ? ' hl-btn' : ''), onClick: function () { setMenu(null); setReview(!review); } },
+                review ? 'Back to grid' : 'See answers') : null,
             done
                 ? e('button', { type: 'button', className: 'nb-btn hl-btn', onClick: function () { setShowDone(true); } }, 'Results')
                 : e('button', { type: 'button', className: 'nb-btn' + (sure ? ' hl-btn' : ''), onClick: reset }, sure ? 'Sure?' : 'Reset'));
@@ -379,9 +357,6 @@
             e('div', { className: 'ends' },
                 e('span', { className: 'bone' }, e('span', { className: 'hl' }, 'Muscle Mini')),
                 e('span', { className: 'to' }, prettyDate(date))),
-            review && muscles.length ? e('button', { type: 'button', className: 'mx-lit', title: 'Zoom to it on the model',
-                onClick: function () { if (window.focusPart) window.focusPart(muscles); } },
-                e('i', null), muscles.join(' \u00b7 ')) : null,
             e('div', { className: 'counts' },
                 e('span', { className: 'left' + (done ? ' mx-done-t' : '') }, e('b', null, clock(time)))));
 
@@ -400,12 +375,11 @@
                 e('div', { className: 'g-card mx-how', role: 'dialog', 'aria-label': 'How to play', onClick: function (ev) { ev.stopPropagation(); } },
                     e('span', { className: 'tape pink' }),
                     e('h2', null, 'Muscle ', e('span', { className: 'hl' }, 'Mini')),
-                    e('p', { className: 'detail' }, 'A small anatomy crossword, new every day.'),
+                    e('p', { className: 'detail' }, 'A small muscle crossword, new every day.'),
                     e('ul', null,
-                        e('li', null, 'Every clue is upper limb muscle trivia: antagonists, origins and insertions, and actions.'),
-                        e('li', null, 'Answers are short: bones, landmarks, actions and muscle names.'),
+                        e('li', null, 'Every clue is muscle trivia from head to toe: antagonists, origins and insertions, and actions.'),
+                        e('li', null, 'Answers are 5 to 10 letters: bones, landmarks, actions and muscle names.'),
                         e('li', null, 'Tap a square to pick it; tap it again (or the clue) to switch between across and down.'),
-                        e('li', null, 'Once it\u2019s solved, review each clue\u2019s muscles on the 3D model.'),
                         e('li', null, 'Stuck? Check or reveal a square, a word or the whole puzzle.')),
                     e('button', { type: 'button', className: 'nb-btn wide big hl-btn', onClick: function () { save(HOWTO, true); setHowTo(false); } }, 'Start')));
         } else if (showDone) {
@@ -425,8 +399,7 @@
                     e('div', { className: 'row' },
                         e('button', { type: 'button', className: 'nb-btn big', onClick: share }, shared ? '✓ Copied' : '📋 Share')),
                     e('div', { className: 'row' },
-                        e('button', { type: 'button', className: 'nb-btn hl-btn', onClick: function () { setShowDone(false); setReview(true); } }, 'Review on the model'),
-                        e('button', { type: 'button', className: 'nb-btn', onClick: function () { setShowDone(false); } }, 'See the grid'),
+                        e('button', { type: 'button', className: 'nb-btn', onClick: function () { setShowDone(false); setReview(true); } }, 'See answers'),
                         e('a', { className: 'nb-btn dark', href: '../index.html' }, 'Menu'))));
         }
 

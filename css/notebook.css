@@ -716,25 +716,13 @@ body.nb-page {
 .g-row .clue { background: linear-gradient(transparent 55%, var(--hl-purple) 55%); }
 
 /* ── MUSCLE MINI (js/ui/miniCrosswordUI.js) ──────────────────────────────────
-   Playing: the clue, the grid and the clue lists, no model. On phones the
-   grid sits over an on-screen keyboard.
-   Reviewing (body.reviewing, after solving): the model card comes back on
-   the left as in the other games and the clue list, with answers, sits in
-   the side panel. */
+   Wide screens: the clue and the grid, with the clue lists beside them.
+   Phones: the clue, the grid and an on-screen keyboard; after solving,
+   "See answers" (body.reviewing) swaps the grid for the clue list. */
 :root { --mx-block: #17213A; --mx-cell: var(--card); }
 :root[data-theme="dark"] { --mx-block: #070A12; --mx-cell: #2E3A58; }
 .mx-bar .counts .left b { font-variant-numeric: tabular-nums; }
 .mx-done-t { color: var(--green-dk); }
-.mx-lit {
-    display: inline-flex; align-items: center; gap: 7px; min-width: 0;
-    margin-left: 8px; padding: 3px 10px; cursor: pointer;
-    font: 600 13px var(--font); color: var(--ink);
-    background: var(--card); border: 1.5px solid var(--rule); border-radius: 999px;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.mx-lit:hover { border-color: var(--ink); }
-.mx-lit i { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; background: var(--hl-pink); border: 1.5px solid var(--ink); }
-
 .mx-panel { gap: 12px; }
 .mx-clue {
     flex-shrink: 0; display: flex; align-items: stretch; min-height: 62px;
@@ -848,66 +836,54 @@ body.nb-page {
 .mx-how ul { text-align: left; margin: 0 0 20px; padding-left: 20px; font-size: 15px; line-height: 1.45; color: var(--ink-2); }
 .mx-how li { margin-bottom: 6px; }
 
-/* ── playing on a wide screen: no model, the grid with the clues beside it */
-body.mini:not(.reviewing) #cv, body.mini .cv-tape-l, body.mini .reset-view { display: none; }
-body.mini:not(.reviewing) .mx-bar,
-body.mini:not(.reviewing) .mx-panel {
+/* ── wide screens: the grid with the clues beside it */
+body.mini .mx-bar,
+body.mini .mx-panel {
     left: 50%; right: auto; transform: translateX(-50%);
     width: min(1040px, calc(100vw - 88px - var(--ad)));
 }
-body.mini:not(.reviewing) .mx-panel {
+body.mini .mx-panel {
     top: calc(var(--nav) + var(--bar) + 4px);
     flex-direction: row; align-items: flex-start; justify-content: center; gap: 32px;
 }
-.mx-main { display: contents; }   /* only a column of its own while playing on a wide screen */
-body.mini:not(.reviewing) .mx-main { display: flex; flex-direction: column; gap: 12px; flex: 0 1 600px; min-width: 0; }
-body.mini:not(.reviewing) .mx-clues { flex: 0 1 400px; min-width: 260px; max-height: 100%; grid-template-columns: 1fr; }
-body.mini:not(.reviewing) .mx-board { height: auto; aspect-ratio: 1; max-height: calc(100vh - var(--nav) - var(--bar) - 210px); }   /* grids are (nearly) square */
-
-/* ── reviewing: the model, and the answers beside it */
-body.reviewing .mx-kb { display: none; }
-body.reviewing .mx-board { height: min(calc(var(--panel) - 24px), 32vh); }
-body.reviewing .mx-clues { flex: 1 1 0; min-height: 0; }
+.mx-main { display: flex; flex-direction: column; gap: 12px; flex: 0 1 600px; min-width: 0; }
+body.mini .mx-clues { flex: 0 1 400px; min-width: 260px; max-height: 100%; grid-template-columns: 1fr; }
+body.mini .mx-board { height: auto; aspect-ratio: 1; max-height: calc(100vh - var(--nav) - var(--bar) - 210px); }   /* grids are (nearly) square */
+.mx-ans-btn { display: none; }   /* wide screens show the answers in the clue list already */
 .mx-ans {
     display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 4px;
     font-style: normal; font-weight: 700; letter-spacing: .06em; background: var(--hl-green); color: #17213A;
 }
-.mx-mus { display: block; margin-top: 2px; font-size: 12px; color: var(--ink-3); }
-.mx-li.on .mx-mus { color: inherit; opacity: .8; }
 
-/* narrower desktops */
 @media (max-width: 1100px) and (min-width: 761px) {
-    body.reviewing .mx-clues { grid-template-columns: 1fr; }
-    body.reviewing .mx-bar .to { display: none; }
-    body.mini:not(.reviewing) .mx-panel { gap: 20px; }
-    body.mini:not(.reviewing) .mx-clues { min-width: 220px; }
+    body.mini .mx-panel { gap: 20px; }
+    body.mini .mx-clues { min-width: 220px; }
 }
 
-/* ── phones: on-screen keyboard while playing; model on top while reviewing */
+/* ── phones */
 @media (max-width: 760px) {
     body.mini { --bar: 40px; }
-    body.mini .cv-pad { display: none; }
     .mx-bar .bone { font-size: 16px; }
     .mx-bar .to { font-size: 18px; }
-    .mx-lit { display: none; }
-    body.mini:not(.reviewing) .mx-bar, body.mini:not(.reviewing) .mx-panel { left: 10px; right: 10px; width: auto; transform: none; }
-    body.mini:not(.reviewing) .mx-bar { left: 12px; }
-    body.mini:not(.reviewing) .mx-panel { flex-direction: column; align-items: stretch; gap: 8px; }
-    body.mini:not(.reviewing) .mx-main { display: contents; }
-    .mx-panel {
-        top: calc(var(--nav) + var(--bar) + 4px); left: 10px; right: 10px; bottom: 0; width: auto;
-        overflow: hidden; gap: 8px; padding: 0 4px 6px 0;
+    body.mini .mx-bar, body.mini .mx-panel { left: 10px; right: 10px; width: auto; transform: none; }
+    body.mini .mx-bar { left: 12px; }
+    body.mini .mx-panel {
+        top: calc(var(--nav) + var(--bar) + 4px); bottom: 0;
+        flex-direction: column; align-items: stretch; gap: 8px;
+        overflow: hidden; padding: 0 4px 6px 0;
     }
-    @supports (height: 1dvh) { .mx-panel { bottom: calc(100vh - 100dvh); } }
+    @supports (height: 1dvh) { body.mini .mx-panel { bottom: calc(100vh - 100dvh); } }
+    .mx-main { display: contents; }
     .mx-clue { min-height: 54px; box-shadow: 3px 3px 0 var(--shadow); border-width: 2px; }
     .mx-clue-txt { font-size: 15px; }
-    body.mini:not(.reviewing) .mx-board { flex: 1 1 0; min-height: 0; height: auto; }
+    body.mini .mx-board { flex: 1 1 0; min-height: 0; height: auto; aspect-ratio: auto; max-height: none; }
     .mx-grid { box-shadow: 3px 3px 0 var(--shadow); }
     .mx-tools .nb-btn { height: 36px; font-size: 13px; padding: 0 8px; box-shadow: 2px 2px 0 var(--shadow); }
     .mx-note { font-size: 13px; padding: 6px 10px; }
-    body.mini:not(.reviewing) .mx-clues { display: none; }
+    body.mini .mx-clues { display: none; }
+    .mx-ans-btn { display: block; }
 
-    body.reviewing .mx-panel { top: calc(var(--nav) + var(--bar) + var(--cvh) + 10px); }
-    body.reviewing .mx-board, body.reviewing .mx-clue { display: none; }
-    body.reviewing .mx-clues { display: block; overflow-y: auto; transform: none; box-shadow: 3px 3px 0 var(--shadow); }
+    /* after solving: the answers in place of the grid */
+    body.reviewing .mx-board, body.reviewing .mx-clue, body.reviewing .mx-kb { display: none; }
+    body.reviewing.mini .mx-clues { display: block; flex: 1 1 0; min-height: 0; max-height: none; overflow-y: auto; transform: none; box-shadow: 3px 3px 0 var(--shadow); }
 }
