@@ -343,11 +343,12 @@
 
         var navbar = e('header', { className: 'g-nav' },
             e('div', { className: 'brand' },
-                e('a', { href: '../index.html', className: 'wordmark', title: 'Back to the notes' }, e('span', { className: 'hl-a' }, 'a'), 'natomle'),
+                e('a', { href: '../index.html', className: 'wordmark', title: 'Back to the notes' }, e('span', { className: 'hl-a' }, 'A'), 'natomle'),
                 e('span', { className: 'mode' }, props.title || 'muscle mini')),
             e('div', { className: 'acts' },
                 e('button', { type: 'button', className: 'nb-btn htp-btn', title: 'How to play', 'aria-label': 'How to play', onClick: function () { setHowTo(true); } },
                     e('span', { className: 'lbl-long' }, 'How to play'), e('span', { className: 'lbl-short' }, '?')),
+                window.AnatomleGames ? window.AnatomleGames.navButton('mini') : null,
                 window.AnatomleTheme ? e('button', { type: 'button', className: 'nb-btn theme-toggle',
                     title: isDark ? 'Light mode' : 'Dark mode', 'aria-label': isDark ? 'Switch to light mode' : 'Switch to dark mode',
                     onClick: function () { window.AnatomleTheme.toggle(); } }, isDark ? '☀' : '☾') : null,
@@ -398,6 +399,7 @@
                             e('div', { className: 'sub' }, 'Best: ' + streak.best + ' · new mini at midnight UTC'))) : null,
                     e('div', { className: 'row' },
                         e('button', { type: 'button', className: 'nb-btn big', onClick: share }, shared ? '✓ Copied' : '📋 Share')),
+                    window.AnatomleGames ? window.AnatomleGames.nextUp('mini') : null,
                     e('div', { className: 'row' },
                         e('button', { type: 'button', className: 'nb-btn', onClick: function () { setShowDone(false); setReview(true); } }, 'See answers'),
                         e('a', { className: 'nb-btn dark', href: '../index.html' }, 'Menu'))));

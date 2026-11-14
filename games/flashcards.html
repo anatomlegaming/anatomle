@@ -10,35 +10,51 @@
     <title>Anatomle · Flash cards</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../css/notebook.css?v=20261114d">
+    <link rel="stylesheet" href="../css/notebook.css?v=20261114j">
     <script src="../js/ui/theme.js?v=20261114d"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script>
-        // ?deck=muscles for the upper-limb muscles, anything else is bones
-        window.DECK = /deck=muscles/.test(location.search) ? 'muscles' : 'bones';
-        if (DECK === 'muscles') {
-            document.write('<script src="../js/data/upperLimbGraph.js?v=20261114d"><\/script>');
-        } else {
-            document.write('<script src="../js/data/skeletonGraph.js?v=20261114d"><\/script>');
-            document.write('<script src="../js/data/boneMappings.js?v=20261114d"><\/script>');
-            document.write('<script src="../js/core/boneDescriptions.js?v=20261114d"><\/script>');
+        // ?deck=bones | muscles (upper body) | mixed (both, on the arm model).
+        // No deck: ask which one first.
+        window.DECK = (/[?&]deck=(bones|muscles|mixed)/.exec(location.search) || [])[1] || null;
+        if (DECK === 'muscles' || DECK === 'mixed') {
+            document.write('<script src="../js/data/upperLimbGraph.js?v=20261114j"><\/script>');
+        }
+        if (DECK === 'bones' || DECK === 'mixed') {
+            document.write('<script src="../js/data/skeletonGraph.js?v=20261114j"><\/script>');
+            document.write('<script src="../js/core/boneDescriptions.js?v=20261114j"><\/script>');
+        }
+        if (DECK === 'bones') {
+            document.write('<script src="../js/data/boneMappings.js?v=20261114j"><\/script>');
         }
     </script>
 </head>
 <body class="game nb-margin">
 <div class="page-turn"></div>
 
+<!-- No deck chosen yet: ask what to practise -->
+<div id="fc-pick" class="nb-screen fc-pick" hidden>
+    <a class="wordmark" href="../index.html"><span class="hl-a">A</span>natomle</a>
+    <div class="sub">flash cards: what do you want to practise?</div>
+    <div class="fc-pick-list">
+        <a class="gs-item tone-yellow" href="flashcards.html?deck=bones"><span class="gs-name">Bones</span><span class="gs-sub">the whole skeleton</span></a>
+        <a class="gs-item tone-blue" href="flashcards.html?deck=muscles"><span class="gs-name">Upper body muscles</span><span class="gs-sub">shoulder, arm and hand</span></a>
+        <a class="gs-item tone-green" href="flashcards.html?deck=mixed"><span class="gs-name">Both combined</span><span class="gs-sub">upper body bones and muscles, mixed</span></a>
+    </div>
+    <a class="nb-btn" href="../index.html#practice">← Back to practice</a>
+</div>
+<script>if (!DECK) document.getElementById('fc-pick').hidden = false;</script>
+
 <nav class="g-nav">
     <div class="brand">
-        <a class="wordmark" href="../index.html"><span class="hl-a">a</span>natomle</a>
+        <a class="wordmark" href="../index.html"><span class="hl-a">A</span>natomle</a>
         <span class="mode">flash cards</span>
     </div>
     <div class="acts">
-        <a class="nb-btn fc-deck" data-deck="bones" href="flashcards.html?deck=bones">Bones</a>
-        <a class="nb-btn fc-deck" data-deck="muscles" href="flashcards.html?deck=muscles">Muscles</a>
+        <button type="button" class="nb-btn games-btn" data-games="cards" title="Switch game" aria-label="Games"><span class="gs-ico"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false"><rect x="2" y="2" width="7" height="7" rx="1.5" fill="currentColor"/><rect x="11" y="2" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><rect x="2" y="11" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><rect x="11" y="11" width="7" height="7" rx="1.5" fill="currentColor"/></svg></span><span class="lbl-long">Games</span></button>
         <button type="button" class="nb-btn theme-toggle" onclick="AnatomleTheme.toggle()" aria-label="Switch theme">☾</button>
         <a class="nb-btn dark" href="../index.html">Menu</a>
     </div>
@@ -80,6 +96,12 @@
         </div>
     </div>
 
+    <div class="fc-decks" role="group" aria-label="Deck">
+        <a class="fc-deck" data-deck="bones" href="flashcards.html?deck=bones">Bones</a>
+        <a class="fc-deck" data-deck="muscles" href="flashcards.html?deck=muscles">Upper body muscles</a>
+        <a class="fc-deck" data-deck="mixed" href="flashcards.html?deck=mixed">Both</a>
+    </div>
+
     <div class="g-btns">
         <button type="button" class="nb-btn wide" id="fc-hint">💡 Hint</button>
         <button type="button" class="nb-btn wide" id="fc-show">Show answer</button>
@@ -87,10 +109,13 @@
     </div>
 </aside>
 
-<script src="../js/3d/hlFx.js?v=20261114d"></script>
+<script src="../js/ui/gameSwitch.js?v=20261114j"></script>
 <script>
-    document.write('<script src="../js/3d/' + (DECK === 'muscles' ? 'upperLimbEngine' : 'skeletonEngine') + '.js?v=20261114d"><\/script>');
+    if (DECK) {
+        document.write('<script src="../js/3d/hlFx.js?v=20261114j"><\/script>');
+        document.write('<script src="../js/3d/' + (DECK === 'bones' ? 'skeletonEngine' : 'upperLimbEngine') + '.js?v=20261114j"><\/script>');
+        document.write('<script src="../js/ui/flashcards.js?v=20261114j"><\/script>');
+    }
 </script>
-<script src="../js/ui/flashcards.js?v=20261114d"></script>
 </body>
 </html>
