@@ -215,12 +215,20 @@
         el.setAttribute('role', 'status');
         el.textContent = 'drawing the model…';
         cont.appendChild(el);
+        // If it takes far too long, say so and offer a refresh instead of
+        // leaving the note up for ever
+        var slow = setTimeout(function () {
+            if (!el.parentNode || el.classList.contains('err')) return;
+            el.classList.add('err');
+            el.innerHTML = 'This is taking longer than it should. <button type="button" class="nb-btn">Refresh</button>';
+            el.querySelector('button').onclick = function () { location.reload(); };
+        }, 30000);
         return {
             progress: function (ev) {
                 if (ev && ev.lengthComputable && ev.total) el.textContent = 'drawing the model… ' + Math.round(ev.loaded / ev.total * 100) + '%';
             },
-            done: function () { if (el.parentNode) el.parentNode.removeChild(el); },
-            fail: function () { el.classList.add('err'); el.textContent = 'The 3D model didn’t load. Check your connection and refresh the page.'; }
+            done: function () { clearTimeout(slow); if (el.parentNode) el.parentNode.removeChild(el); },
+            fail: function () { clearTimeout(slow); el.classList.add('err'); el.textContent = 'The 3D model didn’t load. Check your connection and refresh the page.'; }
         };
     }
 

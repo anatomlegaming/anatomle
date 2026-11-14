@@ -170,7 +170,8 @@ body.game { overflow: hidden; }
     max-width: 80%; text-align: center; pointer-events: none;
     font-family: var(--hand); font-weight: 700; font-size: 28px; color: var(--ink-3);
 }
-.cv-load.err { font-family: var(--font); font-size: 16px; color: var(--red); }
+.cv-load.err { font-family: var(--font); font-size: 16px; color: var(--red); pointer-events: auto; }
+.cv-load .nb-btn { margin-left: 8px; vertical-align: middle; }
 
 /* "drag to turn · scroll to zoom" until the player first moves the model */
 .cv-hint {

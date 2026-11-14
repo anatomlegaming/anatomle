@@ -154,7 +154,7 @@ function _initUpperLimbEngine() {
 
     // Load model
     var draco = new THREE.DRACOLoader();
-    draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
+    draco.setDecoderPath('../vendor/draco/');   // our own copy (from three r128), so no outside server can stall it
     var loader = new THREE.GLTFLoader();
     loader.setDRACOLoader(draco);
 
