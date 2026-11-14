@@ -236,11 +236,25 @@
     //   shareDate    date line (default: today, en-GB)
     //   replayExtra  extra query string for the replay link
     //   hints        allow hints (default: on for unlimited play, off for daily).
-    //                A hint fills in the next missing bone. It uses a guess and
-    //                counts as a mistake, so it lowers the score.
+    //                A hint shows letters of the next missing bone: the first
+    //                letter, then one more each time, up to half the name. It
+    //                never gives the whole answer. Each hint counts as a mistake.
     if (typeof React === 'undefined') return;
     var useState = React.useState, useEffect = React.useEffect,
         useMemo = React.useMemo, useRef = React.useRef;
+
+    // "Sca___a" style: the first `shown` letters, the rest as blanks.
+    // Spaces, brackets and dashes stay so the shape of the name shows.
+    function maskName(name, shown) {
+        var k = 0;
+        return name.split('').map(function (ch) {
+            if (!/[A-Za-z0-9]/.test(ch)) return ch;
+            k++;
+            return k <= shown ? ch : '_';
+        }).join('');
+    }
+    // Hints stop at half the letters (at least one), so they never give it away
+    function clueCap(name) { return Math.max(1, Math.floor(name.replace(/[^A-Za-z0-9]/g, '').length / 2)); }
 
     function usePathGame(opts) {
         var graph = useMemo(function () { return symmetric(opts.graph); }, [opts.graph]);
@@ -255,6 +269,8 @@
         var _rv = useState(saved.reveal || false), reveal = _rv[0], setReveal = _rv[1];
         var _sh = useState(saved.shared || false), shared = _sh[0], setShared = _sh[1];
         var _rw = useState(false), reviewing = _rw[0], setReviewing = _rw[1];
+        var _cl = useState({}), clues = _cl[0], setClues = _cl[1];          // bone -> letters shown
+        var _lh = useState(false), lastHint = _lh[0], setLastHint = _lh[1]; // was the last action a hint?
         var _in = useState(''), input = _in[0], setInput = _in[1];
         var _si = useState(-1), selIdx = _si[0], setSelIdx = _si[1];
 
@@ -276,7 +292,8 @@
         var optimal = guesses.filter(function (g) { return g.type === 'optimal'; }).map(function (g) { return g.bone; });
         var detours = guesses.filter(function (g) { return g.type === 'detour'; }).map(function (g) { return g.bone; });
         var bad     = guesses.filter(function (g) { return g.type === 'bad'; }).map(function (g) { return g.bone; });
-        var hinted = guesses.filter(function (g) { return g.hint; }).length;
+        var hinted = guesses.filter(function (g) { return g.hint; }).length +
+                     Object.keys(clues).reduce(function (n, k) { return n + clues[k]; }, 0);
         var mistakes = detours.length + bad.length + hinted;
         var hintsOn = opts.hints === undefined ? !!opts.newPuzzle : !!opts.hints;
 
@@ -290,7 +307,18 @@
             return { n: i + 1, bone: g.bone, type: g.type, hint: !!g.hint, extra: extraSteps(g.bone, a), onRoute: !!(route && route.indexOf(g.bone) !== -1) };
         }) : [];
         var grid = '🟢' + guesses.map(function (g) { return g.hint ? '💡' : GRID[g.type]; }).join('') +
-                   (phase === 'won' ? '🎯' : phase === 'lost' ? '❌' : '');
+                   (phase === 'won' ? '🎯' : phase === 'lost' ? '❌' : '') +
+                   (hinted ? ' 💡' + hinted : '');
+        // The bone a hint points at: the first empty slot on the route
+        var clueBone = null;
+        if (a && hintsOn && phase === 'playing') {
+            for (var ci = 1; ci < chain.length - 1; ci++) if (!chain[ci].guessed) { clueBone = chain[ci].bone; break; }
+        }
+        var clue = clueBone ? {
+            bone: clueBone, shown: clues[clueBone] || 0,
+            mask: maskName(clueBone, clues[clueBone] || 0),
+            maxed: (clues[clueBone] || 0) >= clueCap(clueBone)
+        } : null;
 
         // Report changes (daily uses this to save progress)
         var onChangeRef = useRef(opts.onChange); onChangeRef.current = opts.onChange;
@@ -363,7 +391,7 @@
             if (phase !== 'playing' || !a || !bone || names.indexOf(bone) === -1) return;
             if (bone === a.start || bone === a.end) return;
             if (guesses.some(function (g) { return g.bone === bone; })) return;
-            setInput(''); setSelIdx(-1);
+            setInput(''); setSelIdx(-1); setLastHint(false);
 
             var type = isHint ? 'optimal' : classify(bone, a, max);
             var entry = { bone: bone, type: type };
@@ -379,14 +407,12 @@
                 setPhase('lost');
         }
 
-        // Fill in the first missing bone of the best route through what is found
+        // Show one more letter of the next missing bone (never the whole name)
         function hint() {
-            if (!hintsOn || phase !== 'playing' || !a) return;
-            var good = guesses.filter(function (g) { return g.type !== 'bad'; }).map(function (g) { return g.bone; });
-            var r = bestShortestRoute(a, good) || [];
-            var done = {}; good.forEach(function (b) { done[b] = true; });
-            var missing = r.slice(1, -1).filter(function (b) { return !done[b]; });
-            if (missing.length) submit(missing[0], true);
+            if (!clue || clue.maxed) return;
+            var c = {}; Object.keys(clues).forEach(function (k) { c[k] = clues[k]; });
+            c[clue.bone] = clue.shown + 1;
+            setClues(c); setLastHint(true);
         }
 
         function handleKey(ev) {
@@ -416,6 +442,7 @@
             if (!opts.newPuzzle) return;
             setPuzzle(opts.newPuzzle());
             setGuesses([]); setPhase('playing'); setReveal(false); setShared(false); setReviewing(false);
+            setClues({}); setLastHint(false);
             setInput(''); setSelIdx(-1);
             try { window.reset3D && window.reset3D(); } catch (e) {}
         }
@@ -447,7 +474,7 @@
                 input: input, selIdx: selIdx, phase: phase, reveal: reveal, suggestions: suggestions,
                 shared: shared, reviewing: reviewing, guessesUsed: guesses.length,
                 grade: result, grid: grid, log: log, goal: a ? a.end : '', need: need,
-                hints: hintsOn, hintsUsed: hinted
+                hints: hintsOn, hintsUsed: hinted, clue: clue, lastHint: lastHint
             },
             handlers: {
                 onInputChange: function (ev) { setInput(ev.target.value); setSelIdx(-1); },

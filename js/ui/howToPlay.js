@@ -66,7 +66,7 @@
                         e('li', null, e('i', { className: 'k ok' }), e('b', null, 'Green'), ' on the route'),
                         e('li', null, e('i', { className: 'k detour' }), e('b', null, 'Yellow'), ' works, but the long way'),
                         e('li', null, e('i', { className: 'k bad' }), e('b', null, 'Red'), ' wrong')),
-                    e('p', { className: 'htp-note' }, 'Stuck? \uD83D\uDCA1 Hint fills one in, but counts as a mistake. (Not in the Daily.)'),
+                    e('p', { className: 'htp-note' }, 'Stuck? \uD83D\uDCA1 Hint shows the first letters of the next one. Each hint counts as a mistake. (Not in the Daily.)'),
                     e('p', { className: 'htp-warn' }, 'Every guess counts. If the ', e('b', null, 'more needed'),
                         ' count goes above your guesses left, the game ends.')),
 
