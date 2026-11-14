@@ -125,7 +125,7 @@
         var chainItems = chain.map(function (item, idx) {
             var isFirst = item.bone === target.start;
             var isLast  = item.bone === target.end;
-            var revealed = reveal && phase === 'lost' && !item.guessed && !isFirst && !isLast;
+            var revealed = reviewing && phase !== 'playing' && !item.guessed && !isFirst && !isLast;
             var shown   = item.guessed || isFirst || isLast || revealed;
             var n = step++;
 
@@ -150,7 +150,7 @@
                     : e('span', null, '________'),
                 isFirst ? e('span', { className: 'tag' }, 'start')
                 : isLast ? e('span', { className: 'tag' }, 'goal')
-                : revealed ? e('span', { className: 'tag' }, 'answer')
+                : revealed ? e('span', { className: 'tag' }, 'missed')
                 : null
             );
         });
@@ -158,7 +158,8 @@
         // ── GUESS LOG: every guess in order, with what it did ────────────────
         var logItems = log.slice().reverse().map(function (g) {
             var why, cls;
-            if (g.type === 'optimal') { cls = 'ok'; why = 'on the route'; }
+            if (g.hint) { cls = 'hint'; why = 'hint (counts as a mistake)'; }
+            else if (g.type === 'optimal') { cls = 'ok'; why = 'on the route'; }
             else if (g.type === 'detour') {
                 cls = 'detour';
                 why = 'long way (+' + g.extra + ')';
@@ -173,7 +174,7 @@
                     e('span', { className: 'why' }, why)));
         });
         if (!logItems.length) logItems.push(e('div', { key: 'none', className: 'g-empty' }, 'nothing yet'));
-        var mistakes = detours.length + bad.length;
+        var mistakes = detours.length + bad.length + log.filter(function (g) { return g.hint; }).length;
         var found = chain.filter(function (c, i) { return i > 0 && i < chain.length - 1 && c.guessed; }).length;
         var slots = Math.max(chain.length - 2, 0);
 
@@ -182,6 +183,9 @@
         if (!last) {
             fbCls = 'intro';
             fbText = 'Name a ' + things + ' that links them.';
+        } else if (last.hint) {
+            fbCls = 'hint';
+            fbText = [e('b', { key: 'a' }, '\uD83D\uDCA1 ', Pop(last.bone, 'p')), ' is on the route'];
         } else if (last.type === 'optimal') {
             fbCls = 'ok';
             fbText = [e('b', { key: 'a' }, '\u2713 ', Pop(last.bone, 'p')), ' is on the route'];
@@ -200,7 +204,13 @@
             ? e('div', { key: 'fb' + log.length, className: 'g-feedback ' + fbCls, role: 'status', 'aria-live': 'polite' }, fbText)
             : null;
 
-        var colourKey = e('div', { className: 'g-key', 'aria-hidden': true },
+        var colourKey = reviewing
+          ? e('div', { className: 'g-key', 'aria-hidden': true },
+            e('span', null, e('i', { className: 'k start' }), 'start'),
+            e('span', null, e('i', { className: 'k end' }), 'goal'),
+            e('span', null, e('i', { className: 'k ok' }), 'you found'),
+            e('span', null, e('i', { className: 'k reveal' }), 'missed'))
+          : e('div', { className: 'g-key', 'aria-hidden': true },
             e('span', null, e('i', { className: 'k start' }), 'start'),
             e('span', null, e('i', { className: 'k end' }), 'goal'),
             e('span', null, e('i', { className: 'k ok' }), 'on route'),
@@ -248,6 +258,14 @@
               }, hintUsed ? '⚡ Hint used' : '⚡ Nerve hint')
             : null;
 
+        var clueBtn = h.onClue
+            ? e('button', {
+                type: 'button', className: 'nb-btn wide',
+                onClick: h.onClue, disabled: phase !== 'playing',
+                title: 'Fills in the next ' + things + '. Uses a guess and counts as a mistake.'
+              }, '\uD83D\uDCA1 Hint', e('span', { className: 'btn-sub' }, '\u2212 counts as a mistake'))
+            : null;
+
         var mainBtn = e('button', {
             type: 'button',
             className: 'nb-btn wide big ' + (phase === 'playing' ? '' : 'hl-btn'),
@@ -259,7 +277,7 @@
             e('div', { className: 'g-route' },
                 e('span', { className: 'tape pink' }),
                 e('div', { className: 'g-head' },
-                    e('span', { className: 't' }, 'the route'),
+                    e('span', { className: 't' }, reviewing ? 'the shortest route' : 'the route'),
                     e('span', { className: 'n' }, found + '/' + slots)
                 ),
                 e('div', { className: 'g-list nb-scroll' }, chainItems)
@@ -272,12 +290,15 @@
                 ),
                 e('div', { className: 'g-chipwrap nb-scroll' }, logItems)
             ),
-            e('div', { className: 'g-btns' }, hintBtn, mainBtn)
+            reviewing
+                ? e('div', { className: 'g-btns' },
+                    e('button', { type: 'button', className: 'nb-btn wide big hl-btn', onClick: h.onStopReview }, '\u2190 Back to results'))
+                : e('div', { className: 'g-btns' }, clueBtn, hintBtn, mainBtn)
         );
 
         // ── END OVERLAY ───────────────────────────────────────────────────────
         var overlay = null;
-        if (phase !== 'playing' && !reveal && !reviewing) {
+        if (phase !== 'playing' && !reviewing) {
             var won = phase === 'won';
             var optimal = target.path.length - 2;
             var stars = grade ? grade.stars : won ? (guessesUsed - optimal === 0 ? 3 : guessesUsed - optimal <= 2 ? 2 : 1) : 0;
@@ -314,7 +335,7 @@
                         : bad.length + ' wrong · ' + guessesUsed + ' total'),
                     log.length ? e('div', { className: 'g-trail' },
                         log.map(function (g) {
-                            return e('span', { key: g.n, className: 'chip ' + (g.type === 'optimal' ? 'ok' : g.type) }, g.n + '. ' + g.bone);
+                            return e('span', { key: g.n, className: 'chip ' + (g.hint ? 'hint' : g.type === 'optimal' ? 'ok' : g.type) }, g.n + '. ' + g.bone);
                         })) : null,
                     streakBlock,
                     e('div', { className: 'route' },
@@ -343,16 +364,8 @@
             );
         }
 
-        // ── REVIEW BANNER ─────────────────────────────────────────────────────
-        var reviewBar = reviewing
-            ? e('div', { className: 'g-review' },
-                e('span', { className: 'hand' }, 'reviewing your route'),
-                e('button', { type: 'button', className: 'nb-btn dark', onClick: h.onStopReview }, 'Back to results'))
-            : null;
-
         return e(React.Fragment, null,
             navbar, challengeBar, colourKey, rightPanel,
-            reviewing ? reviewBar : null,
             overlay, howModal);
     }
 

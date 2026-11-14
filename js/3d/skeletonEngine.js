@@ -69,7 +69,7 @@ function litMeshes() {
 
 var _allMeshes = null;
 function allMeshes() {
-    if (!_allMeshes) { _allMeshes = []; _skeleton.traverse(function(n) { if (n.isMesh) _allMeshes.push(n); }); }
+    if (!_allMeshes) { _allMeshes = []; _skeleton.traverse(function(n) { if (n.isMesh && !n._hlOverlay) _allMeshes.push(n); }); }
     return _allMeshes;
 }
 
@@ -195,6 +195,14 @@ window.getMeshCenter = function(displayName) {
     });
     if (!found) return null;
     return box.getCenter(new THREE.Vector3());
+};
+
+// ── FRAME ONE BONE OR A LIST OF BONES (flash cards, route review) ──────────────────────────────────────────────
+window.focusPart = function(displayName, ms) {
+    if (!_skeleton) return false;
+    var want = [].concat(displayName).map(function (n) { return { name: n }; }), meshes = [];
+    _skeleton.traverse(function(n) { if (n.isMesh && !n._hlOverlay && _matchBone(n, want)) meshes.push(n); });
+    return HL.focus(_camFx, _cam, _ctrl, meshes, ms);
 };
 
 // ── SMOOTH PAN CAMERA TO MIDPOINT BETWEEN TWO BONES ──────────────────────────

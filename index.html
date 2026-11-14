@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="color-scheme" content="light dark">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <link rel="icon" href="favicon.png" type="image/png" sizes="32x32">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -84,6 +85,19 @@
             100% { transform: perspective(1000px) rotateX(-55deg) rotate(-20deg) translate(140px,-560px) scale(.96); opacity: 0; }
         }
 
+        .cards-strip {
+            display: flex; align-items: center; flex-wrap: wrap; gap: 6px 16px;
+            margin: -24px 0 40px; padding: 16px 22px; max-width: 760px;
+            background: var(--hl-green); color: #0E1526; text-decoration: none;
+            border: 2px solid #0E1526; border-radius: 6px; box-shadow: 5px 5px 0 var(--shadow);
+            transform: rotate(-.6deg); transition: transform .2s ease;
+        }
+        .cards-strip:hover { color: #0E1526; transform: translateY(-3px) rotate(-.6deg); }
+        .cards-strip .hand { font-size: 24px; }
+        .cards-strip b { font-size: 26px; letter-spacing: -.03em; }
+        .cards-strip .sub { font-size: 15px; font-weight: 500; flex: 1 1 220px; }
+        .cards-strip .cta { padding: 6px 14px; border-radius: 999px; background: #0E1526; color: #fff; font-weight: 700; font-size: 15px; }
+        :root[data-theme="dark"] .cards-strip { filter: brightness(.88) saturate(.9); }
         footer { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
         .foot-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 22px; font-family: var(--hand); font-weight: 700; font-size: 26px; color: var(--ink-2); }
         .foot-row a { color: var(--ink-2); text-decoration: none; }
@@ -146,6 +160,13 @@
             </a>
         </div>
     </main>
+
+    <a class="cards-strip" href="games/flashcards.html">
+        <span class="hand">just want to learn them?</span>
+        <b>Flash cards</b>
+        <span class="sub">Name the part that lights up. Bones or muscles, no pressure.</span>
+        <span class="cta">Practise →</span>
+    </a>
 
     <footer>
         <div class="foot-row">

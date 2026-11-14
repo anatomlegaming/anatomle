@@ -4,6 +4,7 @@
    :root[data-theme="dark"] block further down (set by js/ui/theme.js).
    ========================================================================== */
 :root {
+    color-scheme: light;   /* with the color-scheme meta tag: stops phones force-darkening light mode */
     --paper:      #FBFCFF;
     --paper-line: #DCE6FA;
     --card:       #FFFFFF;
@@ -293,6 +294,11 @@ body.game { overflow: hidden; }
 .g-log.detour b { background: linear-gradient(transparent 55%, var(--hl-yellow) 55%); align-self: flex-start; }
 .g-log.bad b { text-decoration: line-through; text-decoration-color: var(--red); text-decoration-thickness: 3px; align-self: flex-start; }
 .g-log .why { font-size: 13px; color: var(--ink-2); }
+.g-log.hint .num { background: var(--hl-purple); }
+.g-log.hint b { background: linear-gradient(transparent 55%, var(--hl-purple) 55%); align-self: flex-start; }
+.g-trail .chip.hint { background: var(--hl-purple); }
+.g-feedback.hint { background: var(--hl-purple); }
+.nb-btn .btn-sub { font-weight: 500; font-size: 12px; color: var(--ink-3); }
 .g-log.bad .why { color: var(--red); }
 
 .g-notes {
@@ -401,12 +407,6 @@ body.game { overflow: hidden; }
 .g-card .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 12px; }
 .g-card .row:last-child { margin-bottom: 0; }
 
-.g-review {
-    position: fixed; bottom: 0; left: 0; right: 0; height: 72px; z-index: 700;
-    display: flex; align-items: center; justify-content: center; gap: 16px; padding: 0 24px;
-    background: var(--card-soft); border-top: 2px solid var(--ink);
-}
-.g-review .hand { font-size: 26px; }
 
 /* ── STATIC PAGES (about, credits, contact) ───────────────────────────────── */
 .nb-page nav {
@@ -552,6 +552,7 @@ body.nb-page {
 .k.ok { background: var(--hl-green); }
 .k.detour { background: var(--hl-yellow); }
 .k.bad { background: var(--hl-red); }
+.k.reveal { background: var(--purple); }
 
 .g-feedback {
     position: relative; z-index: 1;
@@ -593,3 +594,18 @@ body.nb-page {
 
 .g-feedback .warnline { display: block; margin-top: 6px; padding-top: 6px; border-top: 1.5px dashed var(--ink); font-weight: 700; font-size: 14.5px; }
 .htp-body .htp-warn { font-size: 14px; color: var(--ink); background: var(--hl-yellow); border-radius: 6px; padding: 6px 10px; }
+
+/* ── FLASH CARDS (games/flashcards.html) ─────────────────────────────────── */
+.fc-card { padding: 22px 24px; justify-content: center; text-align: center; }
+.fc-kicker { font-size: 26px; color: var(--pink-dk); }
+.fc-mask { margin: 14px 0 10px; font-size: 26px; font-weight: 700; letter-spacing: .04em; word-break: break-word; }
+.fc-tip { margin: 0; font-size: 14px; color: var(--ink-3); }
+.fc-verdict { font-family: var(--hand); font-weight: 700; font-size: 30px; }
+.fc-verdict.ok { color: var(--green); }
+.fc-verdict.bad { color: var(--red); }
+.fc-name { margin: 4px 0 12px; font-size: 34px; letter-spacing: -.03em; line-height: 1.1; }
+.fc-fact { margin: 0 0 10px; font-size: 15px; line-height: 1.45; color: var(--ink-2); }
+.fc-links { margin: 0; font-size: 14px; font-weight: 700; color: var(--ink-2); }
+.fc-panel .g-route { flex: 1 1 auto; }
+.g-nav a.nb-btn.fc-deck.hl-btn { box-shadow: 3px 3px 0 var(--shadow); }
+[hidden] { display: none !important; }
