@@ -15,9 +15,17 @@
         if (s === 'dark' || s === 'light') return s;
         return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     }
+    // Tell the browser which colours the page is using, so a phone's own
+    // "dark mode for websites" leaves the light theme alone ("only light").
+    function meta(t) {
+        var m = document.querySelector('meta[name="color-scheme"]');
+        if (!m) { m = document.createElement('meta'); m.name = 'color-scheme'; document.head.appendChild(m); }
+        m.content = t === 'dark' ? 'dark' : 'only light';
+    }
     function get() { return root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light'; }
     function set(t) {
         root.setAttribute('data-theme', t);
+        meta(t);
         try { localStorage.setItem(KEY, t); } catch (e) {}
         document.querySelectorAll('.theme-toggle').forEach(label);
         window.dispatchEvent(new CustomEvent('anatomle-theme', { detail: t }));
@@ -31,6 +39,7 @@
     }
 
     root.setAttribute('data-theme', initial());
+    meta(get());
 
     window.AnatomleTheme = { get: get, set: set, toggle: toggle, label: label };
 
