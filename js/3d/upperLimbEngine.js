@@ -20,7 +20,15 @@ function buildMeshMap() {
     });
 }
 
+// Extra named parts that live in the model's hidden systems, such as the arm
+// bones for the mixed flash card deck: { 'Humerus': ['Humerus.r'] } (names as
+// in the .glb). They show only while they are highlighted.
+window.UL_EXTRA_PARTS = window.UL_EXTRA_PARTS || null;
+function sanitize(n) { return THREE.PropertyBinding ? THREE.PropertyBinding.sanitizeNodeName(n) : n; }
+
 function getMeshesForMuscle(muscleName) {
+    var extra = window.UL_EXTRA_PARTS && window.UL_EXTRA_PARTS[muscleName];
+    if (extra) return extra.map(function(n){ return _meshMap[sanitize(n)]; }).filter(Boolean);
     var data = UPPER_LIMB_MUSCLES[muscleName];
     if (!data || !data.meshes) return [];
     return data.meshes.map(function(n){ return _meshMap[n]; }).filter(Boolean);
@@ -82,7 +90,11 @@ window.update3D = function(bones) {
     hideNonMuscle();
     _model.traverse(function(node) {
         if (!node.isMesh) return;
-        if (node._hidden) return;
+        if (node._hidden) {
+            // a hidden part (an extra part such as a bone) shows while it is lit
+            if (!highlighted[node.name]) return;
+            node.visible = true;
+        }
         HL.apply(node, highlighted[node.name] || null);
     });
 };

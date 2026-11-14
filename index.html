@@ -12,9 +12,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/notebook.css?v=20261114d">
+    <link rel="stylesheet" href="css/notebook.css?v=20261114j">
     <script src="js/ui/theme.js?v=20261114d"></script>
-    <script src="js/core/streak.js?v=20261114d"></script>
+    <script src="js/ui/gameSwitch.js?v=20261114j"></script>
     <style>
         body { min-height: 100vh; overflow-x: hidden; }
         .home {
@@ -29,16 +29,14 @@
         header .title-row { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 20px; }
         header h1 { margin: 0; font-size: clamp(56px, 9vw, 84px); }
         .tagline { font-size: clamp(30px, 4vw, 40px); color: var(--pen); transform: rotate(-3deg); display: inline-block; }
-        .pick { font-size: 32px; color: var(--pen); margin-top: 22px; }
 
         .notes {
-            display: flex; flex-wrap: wrap; justify-content: space-between; gap: 40px 28px;
+            display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 40px 56px;
             margin: 44px 0 56px; padding-top: 14px;
         }
         .slot { position: relative; }
         .slot:nth-child(1) { transform: rotate(-3deg); }
         .slot:nth-child(2) { transform: rotate(2deg); margin-top: 18px; }
-        .slot:nth-child(3) { transform: rotate(-1.5deg); }
         .slot .tape { top: -13px; left: 50%; margin-left: -48px; z-index: 3; background: rgba(255,255,255,.62); border: 1px solid rgba(23,33,58,.08); }
         .slot:nth-child(2) .tape { transform: rotate(3deg); }
         .slot:nth-child(1) .tape { transform: rotate(-4deg); }
@@ -85,24 +83,37 @@
             100% { transform: perspective(1000px) rotateX(-55deg) rotate(-20deg) translate(140px,-560px) scale(.96); opacity: 0; }
         }
 
-        .cards-strip {
+        .note .st { font-size: 15px; font-weight: 700; }
+        .note .st.off { font-weight: 500; opacity: .75; }
+        .note.practice { background: #FF8EBF; }
+        .note.cards    { background: #A8EBC0; }
+
+        .view[hidden] { display: none; }
+        .area-h { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 18px; font-size: 30px; color: var(--pen); margin-top: 22px; }
+        .area-h a { font-size: 24px; color: var(--ink-2); text-decoration: none; }
+        .area-h a:hover { color: var(--pen); text-decoration: underline; text-decoration-thickness: 2px; }
+
+        .practice-strip {
             display: flex; align-items: center; flex-wrap: wrap; gap: 6px 16px;
-            margin: -24px 0 40px; padding: 16px 22px; max-width: 760px;
-            background: var(--hl-green); color: #0E1526; text-decoration: none;
+            margin: -12px 0 40px; padding: 16px 22px; max-width: 760px;
+            background: var(--card); color: #0E1526; text-decoration: none;
             border: 2px solid #0E1526; border-radius: 6px; box-shadow: 5px 5px 0 var(--shadow);
             transform: rotate(-.6deg); transition: transform .2s ease;
         }
-        .cards-strip:hover { color: #0E1526; transform: translateY(-3px) rotate(-.6deg); }
-        .cards-strip .hand { font-size: 24px; }
-        .cards-strip b { font-size: 26px; letter-spacing: -.03em; }
-        .cards-strip .sub { font-size: 15px; font-weight: 500; flex: 1 1 220px; }
-        .cards-strip .cta { padding: 6px 14px; border-radius: 999px; background: #0E1526; color: #fff; font-weight: 700; font-size: 15px; }
-        :root[data-theme="dark"] .cards-strip { filter: brightness(.88) saturate(.9); }
+        .practice-strip:hover { color: #0E1526; transform: translateY(-3px) rotate(-.6deg); }
+        .practice-strip .hand { font-size: 24px; color: var(--pen); }
+        .practice-strip b { font-size: 26px; letter-spacing: -.03em; color: var(--ink); }
+        .practice-strip .sub { font-size: 15px; font-weight: 500; flex: 1 1 220px; color: var(--ink-2); }
+        .practice-strip .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+        .practice-strip .chip { padding: 3px 10px; border: 2px solid #0E1526; border-radius: 999px; font-size: 14px; font-weight: 700; color: #0E1526; }
+        .practice-strip .chip.p { background: #FF8EBF; } .practice-strip .chip.c { background: #A8EBC0; }
+        .practice-strip .cta { padding: 6px 14px; border-radius: 999px; background: #0E1526; color: #fff; font-weight: 700; font-size: 15px; }
+        :root[data-theme="dark"] .practice-strip { background: var(--card); }
+        :root[data-theme="dark"] .practice-strip .cta { background: var(--ink); color: var(--on-ink); }
         footer { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
         .foot-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 22px; font-family: var(--hand); font-weight: 700; font-size: 26px; color: var(--ink-2); }
         .foot-row a { color: var(--ink-2); text-decoration: none; }
         .foot-row a:hover { color: var(--pen); text-decoration: underline; text-decoration-thickness: 2px; }
-        .streak { padding: 0 8px; }
         .disclaimer { font-size: 13px; line-height: 1.5; color: var(--ink-3); max-width: 620px; }
 
         @media (max-width: 760px) {
@@ -122,57 +133,75 @@
 <div class="home" id="home">
     <header>
         <div class="title-row">
-            <img class="brand-mark" src="favicon.svg?v=3" alt="" width="64" height="64">
-            <h1 class="wordmark"><span class="hl-a">a</span>natomle</h1>
+            <h1 class="wordmark"><span class="hl-a">A</span>natomle</h1>
             <span class="hand tagline">know your body? prove it.</span>
         </div>
-        <div class="hand pick">pick a note to start ↓</div>
     </header>
 
-    <main class="notes">
-        <div class="slot">
-            <span class="tape"></span>
-            <a class="note daily" href="games/daily.html">
-                <span class="kicker" id="today">today</span>
-                <span class="ttl">Daily</span>
-                <span class="body">One puzzle for everyone. Resets at midnight UTC. Keep your streak alive.</span>
-                <span class="cta">Play today →</span>
-                <span class="curl"></span>
-            </a>
-        </div>
-        <div class="slot">
-            <span class="tape"></span>
-            <a class="note bones" href="games/full-skeleton.html">
-                <span class="kicker">osteomle</span>
-                <span class="ttl">Bones</span>
-                <span class="body">Unlimited skeleton puzzles. Find the shortest route from one bone to another.</span>
-                <span class="cta">Play bones →</span>
-                <span class="curl"></span>
-            </a>
-        </div>
-        <div class="slot">
-            <span class="tape"></span>
-            <a class="note muscles" href="games/muscle-mini.html">
-                <span class="kicker">muscle mini</span>
-                <span class="ttl">Muscles</span>
-                <span class="body">A daily mini crossword of muscle trivia, head to toe: attachments, actions and antagonists.</span>
-                <span class="cta">Play today's mini →</span>
-                <span class="curl"></span>
-            </a>
-        </div>
-    </main>
+    <section class="view" id="view-daily">
+        <div class="hand area-h"><span class="today">today's two dailies</span> ↓</div>
+        <main class="notes">
+            <div class="slot">
+                <span class="tape"></span>
+                <a class="note daily" href="games/daily.html" data-game="bones">
+                    <span class="kicker">osteomle</span>
+                    <span class="ttl">Bones</span>
+                    <span class="body">Find the shortest route from one bone to another. One path for everyone.</span>
+                    <span class="st off">no streak yet</span>
+                    <span class="cta">Play today →</span>
+                    <span class="curl"></span>
+                </a>
+            </div>
+            <div class="slot">
+                <span class="tape"></span>
+                <a class="note muscles" href="games/muscle-mini.html" data-game="mini">
+                    <span class="kicker">muscle mini</span>
+                    <span class="ttl">Muscles</span>
+                    <span class="body">A mini crossword of muscle trivia, head to toe: attachments, actions and antagonists.</span>
+                    <span class="st off">no streak yet</span>
+                    <span class="cta">Play today →</span>
+                    <span class="curl"></span>
+                </a>
+            </div>
+        </main>
 
-    <a class="cards-strip" href="games/flashcards.html">
-        <span class="hand">just want to learn them?</span>
-        <b>Flash cards</b>
-        <span class="sub">Name the part that lights up. Bones or muscles, no pressure.</span>
-        <span class="cta">Practise →</span>
-    </a>
+        <a class="practice-strip" href="#practice">
+            <span class="hand">just practising?</span>
+            <b>Practice</b>
+            <span class="sub">Unlimited rounds, no streak on the line.</span>
+            <span class="chips"><span class="chip p">Osteomle practice</span><span class="chip c">Flash cards</span></span>
+            <span class="cta">Practise →</span>
+        </a>
+    </section>
+
+    <section class="view" id="view-practice" hidden>
+        <div class="hand area-h">practice ↓ <a href="#">← back to the dailies</a></div>
+        <main class="notes">
+            <div class="slot">
+                <span class="tape"></span>
+                <a class="note practice" href="games/full-skeleton.html">
+                    <span class="kicker">unlimited</span>
+                    <span class="ttl">Osteomle practice</span>
+                    <span class="body">Random bone path rounds, as many as you like. Doesn't touch your streak.</span>
+                    <span class="cta">Play a round →</span>
+                    <span class="curl"></span>
+                </a>
+            </div>
+            <div class="slot">
+                <span class="tape"></span>
+                <a class="note cards" href="games/flashcards.html">
+                    <span class="kicker">learn them</span>
+                    <span class="ttl">Flash cards</span>
+                    <span class="body">Name the part that lights up. Bones, upper body muscles, or both mixed.</span>
+                    <span class="cta">Start cards →</span>
+                    <span class="curl"></span>
+                </a>
+            </div>
+        </main>
+    </section>
 
     <footer>
         <div class="foot-row">
-            <span class="streak" id="streak">no streak yet</span>
-            <span aria-hidden="true">·</span>
             <a href="about.html">about</a>
             <a href="credits.html">credits</a>
             <a href="contact.html">contact</a>
@@ -184,30 +213,35 @@
 <script>
 (function () {
     var now = new Date();
-    document.getElementById('today').textContent =
-        'today · ' + now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+    var day = "today's dailies · " + now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+    document.querySelectorAll('.today').forEach(function (t) { t.textContent = day; });
 
-    // Streak
-    var s = window.StreakManager ? window.StreakManager.get() : { count: 0, best: 0 };
-    var el = document.getElementById('streak');
-    if (s.count > 0) {
-        el.textContent = 'streak: ' + s.count + ' day' + (s.count === 1 ? '' : 's') + ' 🔥';
-        el.classList.add('hl');
-        el.title = 'Best: ' + s.best;
-    }
-
-    // Already played today's daily?
-    try {
-        var key = 'anatomle_daily_v2_' + now.toISOString().slice(0, 10);
-        var saved = JSON.parse(localStorage.getItem(key) || 'null');
-        if (saved && (saved.phase === 'won' || saved.phase === 'lost')) {
+    // Each daily has its own streak and its own "done today" stamp
+    var G = window.AnatomleGames;
+    document.querySelectorAll('.note[data-game]').forEach(function (note) {
+        var st = G && G.status(note.getAttribute('data-game'));
+        if (!st) return;
+        var line = note.querySelector('.st');
+        line.textContent = G.streakText(st.streak);
+        line.classList.toggle('off', !st.streak);
+        if (st.best > st.streak) line.title = 'Best: ' + st.best;
+        if (st.played) {
             var d = document.createElement('span');
             d.className = 'done';
-            d.textContent = saved.phase === 'won' ? 'done ✓' : 'played';
-            document.querySelector('.note.daily').appendChild(d);
-            document.querySelector('.note.daily .cta').textContent = 'See result →';
+            d.textContent = G.playedText(st.played);
+            note.appendChild(d);
+            note.querySelector('.cta').textContent = 'See result →';
         }
-    } catch (e) {}
+    });
+
+    // Practice opens a second menu on the same page (#practice keeps Back working)
+    function showView() {
+        var practice = location.hash === '#practice';
+        document.getElementById('view-daily').hidden = practice;
+        document.getElementById('view-practice').hidden = !practice;
+    }
+    window.addEventListener('hashchange', showView);
+    showView();
 
     // Peel the note off, then go to the game (which swings in like a turned page)
     var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -228,6 +262,7 @@
     // Coming back with the browser Back button: undo the peel
     window.addEventListener('pageshow', function () {
         going = false;
+        showView();
         document.getElementById('home').classList.remove('leaving');
         document.querySelectorAll('.note.peel').forEach(function (n) { n.classList.remove('peel'); });
     });

@@ -632,7 +632,21 @@ body.nb-page {
 .fc-fact { margin: 0 0 10px; font-size: 15px; line-height: 1.45; color: var(--ink-2); }
 .fc-links { margin: 0; font-size: 14px; font-weight: 700; color: var(--ink-2); }
 .fc-panel .g-route { flex: 1 1 auto; }
-.g-nav a.nb-btn.fc-deck.hl-btn { box-shadow: 3px 3px 0 var(--shadow); }
+.fc-decks {
+    flex-shrink: 0; display: flex; border: 2px solid var(--ink); border-radius: 10px; overflow: hidden;
+    background: var(--card); box-shadow: 3px 3px 0 var(--shadow);
+}
+.fc-deck {
+    flex: 1 1 auto; display: flex; align-items: center; justify-content: center; text-align: center;
+    min-height: 38px; padding: 4px 10px; font-weight: 700; font-size: 13px; line-height: 1.15;
+    color: var(--ink); text-decoration: none;
+}
+.fc-deck + .fc-deck { border-left: 2px solid var(--ink); }
+.fc-deck:hover { background: var(--card-soft); color: var(--ink); }
+.fc-deck.on { background: var(--hl-yellow); color: #0E1526; }
+.fc-pick[hidden] { display: none; }
+.fc-pick .sub { max-width: 420px; }
+.fc-pick-list { display: flex; flex-direction: column; gap: 12px; width: min(420px, 100%); text-align: left; margin: 6px 0 8px; }
 [hidden] { display: none !important; }
 
 /* ── PHONES ──────────────────────────────────────────────────────────────────
@@ -709,7 +723,9 @@ body.nb-page {
     /* flash cards: guess box, then the card, then the buttons */
     .fc-panel .fc-card { order: 1; padding: 14px 16px; }
     .fc-panel .g-btns { order: 2; }
-    .g-nav .fc-deck { padding: 0 9px; }
+    .fc-panel .fc-decks { order: 3; }
+    .fc-panel .fc-card { flex: none; }
+    .fc-deck { min-height: 34px; font-size: 12.5px; padding: 3px 8px; }
     .fc-panel .fc-mask { font-size: 20px; margin: 8px 0 6px; }
     .fc-panel .fc-name { font-size: 26px; margin: 2px 0 8px; }
     .fc-panel .fc-kicker { font-size: 20px; }
@@ -891,5 +907,39 @@ body.mini .mx-board { height: auto; aspect-ratio: 1; max-height: calc(100vh - va
     body.reviewing .mx-board, body.reviewing .mx-clue, body.reviewing .mx-kb { display: none; }
     body.reviewing.mini .mx-clues { display: block; flex: 1 1 0; min-height: 0; max-height: none; overflow-y: auto; transform: none; box-shadow: 3px 3px 0 var(--shadow); }
 }
-/* home page: the favicon mark beside the name, tilted like a sticker */
-.brand-mark { width: clamp(50px, 7.5vw, 72px); height: auto; margin-right: -8px; flex-shrink: 0; transform: rotate(-4deg); filter: drop-shadow(3px 3px 0 var(--shadow)); align-self: center; }
+/* ── GAMES SWITCHER (js/ui/gameSwitch.js) ─────────────────────────────── */
+.games-btn { gap: 8px; }
+.gs-ico { display: inline-flex; line-height: 0; }
+.gs-card { text-align: left; max-width: 440px; }
+.gs-card h2 { text-align: center; margin-bottom: 4px; }
+.gs-x {
+    position: absolute; top: 10px; right: 12px; width: 36px; height: 36px;
+    border: none; background: none; font-size: 20px; color: var(--ink-2); cursor: pointer; border-radius: 6px;
+}
+.gs-x:hover { background: var(--card-soft); color: var(--ink); }
+.gs-h { font-family: var(--hand); font-weight: 700; font-size: 24px; color: var(--pen); margin: 14px 0 6px; }
+.gs-list { display: flex; flex-direction: column; gap: 10px; }
+.gs-item {
+    position: relative; display: flex; flex-direction: column; gap: 2px;
+    padding: 10px 14px; border: 2px solid var(--ink); border-radius: 6px;
+    color: #0E1526; text-decoration: none; box-shadow: 3px 3px 0 var(--shadow);
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+.gs-item:hover { color: #0E1526; transform: translate(-1px,-1px); box-shadow: 4px 4px 0 var(--shadow); }
+.gs-item.here { box-shadow: none; opacity: .62; cursor: default; transform: none; }
+.gs-item.tone-yellow { background: #FFE047; }
+.gs-item.tone-blue   { background: #8FD0FF; }
+.gs-item.tone-pink   { background: #FF8EBF; }
+.gs-item.tone-green  { background: var(--hl-green); }
+:root[data-theme="dark"] .gs-item { filter: brightness(.9) saturate(.9); }
+.gs-name { font-weight: 700; font-size: 20px; letter-spacing: -.02em; line-height: 1.1; }
+.gs-sub  { font-size: 14px; font-weight: 500; }
+.gs-meta { font-size: 14px; font-weight: 500; }
+.gs-home { margin-top: 18px; }
+.gs-next { text-align: left; margin: 4px 0 16px; padding-top: 4px; border-top: 2px dashed var(--shadow); }
+.gs-next .gs-item { margin-bottom: 10px; }
+.gs-more { display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+@media (max-width: 760px) {
+    .g-nav .games-btn { width: 36px; padding: 0; }
+    .gs-card { padding: 30px 20px 22px; }
+}

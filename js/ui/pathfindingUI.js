@@ -82,7 +82,7 @@
         var navbar = e('header', { className: 'g-nav' },
             e('div', { className: 'brand' },
                 e('a', { href: '../index.html', className: 'wordmark', title: 'Back to the notes' },
-                    e('span', { className: 'hl-a' }, 'a'), 'natomle'),
+                    e('span', { className: 'hl-a' }, 'A'), 'natomle'),
                 e('span', { className: 'mode' }, gameTitle)
             ),
             e('div', { className: 'acts' },
@@ -90,6 +90,7 @@
                     ? e('button', { type: 'button', className: 'nb-btn htp-btn', title: 'How to play', 'aria-label': 'How to play', onClick: function () { setShowHow(true); } },
                         e('span', { className: 'lbl-long' }, 'How to play'), e('span', { className: 'lbl-short' }, '?'))
                     : null,
+                window.AnatomleGames && s.gameId ? window.AnatomleGames.navButton(s.gameId) : null,
                 window.AnatomleTheme
                     ? e('button', { type: 'button', className: 'nb-btn theme-toggle',
                         title: isDark ? 'Light mode' : 'Dark mode',
@@ -361,6 +362,7 @@
                             e('button', { type: 'button', className: 'nb-btn wide ' + (shared ? 'green' : ''), onClick: h.onShare },
                                 shared ? '✓ Copied' : '📋 Share'))
                         : null,
+                    s.daily && window.AnatomleGames ? window.AnatomleGames.nextUp(s.gameId) : null,
                     e('div', { className: 'row' },
                         h.onNewGame
                             ? e('button', { type: 'button', className: 'nb-btn big hl-btn', onClick: h.onNewGame }, 'Next puzzle →')
