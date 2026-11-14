@@ -35,8 +35,8 @@
 <div id="root"></div>
 
 <script>
-// phones get the crossword alone; the 3D model only downloads if they tap Model
-window.DEFER_UPPER_LIMB_MODEL = window.matchMedia('(max-width: 760px)').matches;
+// the crossword is played without the model; it only downloads for the review after solving
+window.DEFER_UPPER_LIMB_MODEL = true;
 </script>
 <script src="../js/3d/hlFx.js?v=20261114d"></script>
 <script src="../js/3d/upperLimbEngine.js?v=20261114d"></script>

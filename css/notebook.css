@@ -716,9 +716,11 @@ body.nb-page {
 .g-row .clue { background: linear-gradient(transparent 55%, var(--hl-purple) 55%); }
 
 /* ── MUSCLE MINI (js/ui/miniCrosswordUI.js) ──────────────────────────────────
-   The model card on the left as in the other games; the clue, the grid and
-   the clue lists in the side panel. On phones the model is dropped and the
-   grid sits over an on-screen keyboard. */
+   Playing: the clue, the grid and the clue lists, no model. On phones the
+   grid sits over an on-screen keyboard.
+   Reviewing (body.reviewing, after solving): the model card comes back on
+   the left as in the other games and the clue list, with answers, sits in
+   the side panel. */
 :root { --mx-block: #17213A; --mx-cell: var(--card); }
 :root[data-theme="dark"] { --mx-block: #070A12; --mx-cell: #2E3A58; }
 .mx-bar .counts .left b { font-variant-numeric: tabular-nums; }
@@ -807,7 +809,7 @@ body.nb-page {
 .mx-tools .nb-btn { width: 100%; }
 .mx-menu-wrap { position: relative; }
 .mx-menu {
-    position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 30;
+    position: absolute; left: 0; right: 0; bottom: calc(100% + 6px); z-index: 30;   /* opens upward: the tools sit low */
     display: flex; flex-direction: column; overflow: hidden;
     background: var(--card); border: 2px solid var(--ink); border-radius: 8px; box-shadow: 4px 4px 0 var(--shadow);
 }
@@ -843,30 +845,55 @@ body.nb-page {
 /* touch screens have no keyboard of their own here (nothing to type into),
    so phones and tablets get the on-screen one */
 @media (max-width: 760px), (pointer: coarse) { .mx-kb { display: flex; } }
-.mx-model-btn { display: none; }
 .mx-how ul { text-align: left; margin: 0 0 20px; padding-left: 20px; font-size: 15px; line-height: 1.45; color: var(--ink-2); }
 .mx-how li { margin-bottom: 6px; }
 
-/* narrower desktops: one clue list column */
+/* ── playing on a wide screen: no model, the grid with the clues beside it */
+body.mini:not(.reviewing) #cv, body.mini .cv-tape-l, body.mini .reset-view { display: none; }
+body.mini:not(.reviewing) .mx-bar,
+body.mini:not(.reviewing) .mx-panel {
+    left: 50%; right: auto; transform: translateX(-50%);
+    width: min(1040px, calc(100vw - 88px - var(--ad)));
+}
+body.mini:not(.reviewing) .mx-panel {
+    top: calc(var(--nav) + var(--bar) + 4px);
+    flex-direction: row; align-items: flex-start; justify-content: center; gap: 32px;
+}
+.mx-main { display: contents; }   /* only a column of its own while playing on a wide screen */
+body.mini:not(.reviewing) .mx-main { display: flex; flex-direction: column; gap: 12px; flex: 0 1 600px; min-width: 0; }
+body.mini:not(.reviewing) .mx-clues { flex: 0 1 400px; min-width: 260px; max-height: 100%; grid-template-columns: 1fr; }
+body.mini:not(.reviewing) .mx-board { height: auto; aspect-ratio: 1; max-height: calc(100vh - var(--nav) - var(--bar) - 210px); }   /* grids are (nearly) square */
+
+/* ── reviewing: the model, and the answers beside it */
+body.reviewing .mx-kb { display: none; }
+body.reviewing .mx-board { height: min(calc(var(--panel) - 24px), 32vh); }
+body.reviewing .mx-clues { flex: 1 1 0; min-height: 0; }
+.mx-ans {
+    display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 4px;
+    font-style: normal; font-weight: 700; letter-spacing: .06em; background: var(--hl-green); color: #17213A;
+}
+.mx-mus { display: block; margin-top: 2px; font-size: 12px; color: var(--ink-3); }
+.mx-li.on .mx-mus { color: inherit; opacity: .8; }
+
+/* narrower desktops */
 @media (max-width: 1100px) and (min-width: 761px) {
-    .mx-clues { grid-template-columns: 1fr; }
-    .mx-bar .to, .mx-lit { display: none; }
+    body.reviewing .mx-clues { grid-template-columns: 1fr; }
+    body.reviewing .mx-bar .to { display: none; }
+    body.mini:not(.reviewing) .mx-panel { gap: 20px; }
+    body.mini:not(.reviewing) .mx-clues { min-width: 220px; }
 }
 
-/* phones (and tablets held upright): no model, an on-screen keyboard */
+/* ── phones: on-screen keyboard while playing; model on top while reviewing */
 @media (max-width: 760px) {
-    /* the model is a sheet over the grid, opened with the Model button */
-    body.mini #cv {
-        top: calc(var(--nav) + var(--bar) + 66px); bottom: 220px; height: auto; z-index: 250;
-        visibility: hidden; pointer-events: none;
-    }
-    body.mini.show-model #cv { visibility: visible; pointer-events: auto; }
-    body.mini .cv-tape-l, body.mini .reset-view, body.mini .cv-pad { display: none; }
-    .mx-model-btn { display: block; }
     body.mini { --bar: 40px; }
+    body.mini .cv-pad { display: none; }
     .mx-bar .bone { font-size: 16px; }
     .mx-bar .to { font-size: 18px; }
     .mx-lit { display: none; }
+    body.mini:not(.reviewing) .mx-bar, body.mini:not(.reviewing) .mx-panel { left: 10px; right: 10px; width: auto; transform: none; }
+    body.mini:not(.reviewing) .mx-bar { left: 12px; }
+    body.mini:not(.reviewing) .mx-panel { flex-direction: column; align-items: stretch; gap: 8px; }
+    body.mini:not(.reviewing) .mx-main { display: contents; }
     .mx-panel {
         top: calc(var(--nav) + var(--bar) + 4px); left: 10px; right: 10px; bottom: 0; width: auto;
         overflow: hidden; gap: 8px; padding: 0 4px 6px 0;
@@ -874,10 +901,13 @@ body.nb-page {
     @supports (height: 1dvh) { .mx-panel { bottom: calc(100vh - 100dvh); } }
     .mx-clue { min-height: 54px; box-shadow: 3px 3px 0 var(--shadow); border-width: 2px; }
     .mx-clue-txt { font-size: 15px; }
-    .mx-board { flex: 1 1 0; min-height: 0; height: auto; }
+    body.mini:not(.reviewing) .mx-board { flex: 1 1 0; min-height: 0; height: auto; }
     .mx-grid { box-shadow: 3px 3px 0 var(--shadow); }
     .mx-tools .nb-btn { height: 36px; font-size: 13px; padding: 0 8px; box-shadow: 2px 2px 0 var(--shadow); }
-    .mx-menu { top: auto; bottom: calc(100% + 6px); }
     .mx-note { font-size: 13px; padding: 6px 10px; }
-    .mx-clues { display: none; }
+    body.mini:not(.reviewing) .mx-clues { display: none; }
+
+    body.reviewing .mx-panel { top: calc(var(--nav) + var(--bar) + var(--cvh) + 10px); }
+    body.reviewing .mx-board, body.reviewing .mx-clue { display: none; }
+    body.reviewing .mx-clues { display: block; overflow-y: auto; transform: none; box-shadow: 3px 3px 0 var(--shadow); }
 }

@@ -1,7 +1,7 @@
 // ============================================================================
 // ANATOMLE - Muscle Mini: daily crossword generator
 // ============================================================================
-// Builds a small crossword (at most 7 x 7) from MUSCLE_CLUES. The same date
+// Builds a small crossword (at most 8 x 8) from MUSCLE_CLUES. The same date
 // always gives the same grid, so every player gets the same puzzle, and any
 // date works, so the daily puzzle never runs out.
 //
@@ -10,7 +10,7 @@
 //   p.cells[r][c]                null for a black square, else
 //                                {r, c, letter, num, across, down}  (word ids)
 //   p.words[id]                  {id, dir:'across'|'down', num, r, c, answer,
-//                                 clue, muscle, cells:[[r,c]…]}
+//                                 clue, muscles:[…], cells:[[r,c]…]}
 //   p.order                      word ids, across first then down, by number
 //
 // Works in the browser (window.buildMiniCrossword) and in Node (module.exports)
@@ -18,10 +18,9 @@
 // ============================================================================
 
 (function (root) {
-    var MAX = 7;          // the grid is never bigger than MAX x MAX
-    var TARGET = 9;       // stop adding words once there are this many
-    var TRIES = 40;
-    var GYM = /at the gym/;       // grids tried per day; the best one wins
+    var MAX = 8;          // the grid is never bigger than MAX x MAX
+    var TARGET = 10;      // stop adding words once there are this many
+    var TRIES = 40;       // grids tried per day; the best one wins
 
     function rng(seed) {
         var s = seed >>> 0;
@@ -52,7 +51,7 @@
         var out = {};
         rows.forEach(function (r) {
             if (mentions(r[1], r[0])) return;   // a clue never gives itself away
-            (out[r[0]] = out[r[0]] || []).push({ clue: r[1], muscle: r[2] || null });
+            (out[r[0]] = out[r[0]] || []).push({ clue: r[1], muscles: [].concat(r[2] || []) });
         });
         return out;
     }
@@ -108,7 +107,7 @@
             }
             box = { r0: Math.min(box.r0, r), r1: Math.max(box.r1, r + dr * (word.length - 1)),
                     c0: Math.min(box.c0, c), c1: Math.max(box.c1, c + dc * (word.length - 1)) };
-            words.push({ answer: word, dir: dir, r: r, c: c, cells: cells, clue: option.clue, muscle: option.muscle });
+            words.push({ answer: word, dir: dir, r: r, c: c, cells: cells, clue: option.clue, muscles: option.muscles });
         }
 
         // Pick a clue for a new word that names none of the words already in,
@@ -116,8 +115,6 @@
         function clueFor(word) {
             var placed = words.map(function (w) { return w.answer; });
             var own = freeClues(clues[word], placed);
-            // at most one gym nickname (LATS, PECS…) a day
-            if (words.some(function (w) { return GYM.test(w.clue); })) own = own.filter(function (o) { return !GYM.test(o.clue); });
             if (!own.length) return null;
             var swaps = [];
             for (var i = 0; i < words.length; i++) {
@@ -160,7 +157,7 @@
                 if (!best) continue;
                 var pick = clueFor(word);
                 if (!pick) continue;
-                pick.swaps.forEach(function (s) { words[s[0]].clue = s[1].clue; words[s[0]].muscle = s[1].muscle; });
+                pick.swaps.forEach(function (s) { words[s[0]].clue = s[1].clue; words[s[0]].muscles = s[1].muscles; });
                 place(word, best.r, best.c, best.dir, pick.option);
                 used[word] = true;
                 progress = true;
@@ -175,7 +172,7 @@
         var w = g.box.c1 - g.box.c0 + 1, h = g.box.r1 - g.box.r0 + 1;
         var balance = { across: 0, down: 0 };
         g.words.forEach(function (x) { balance[x.dir]++; });
-        var anatomy = g.words.filter(function (x) { return x.muscle; }).length;
+        var anatomy = g.words.filter(function (x) { return x.muscles.length; }).length;
         var tiny = g.words.filter(function (x) { return x.answer.length === 3; }).length;
         return g.words.length * 12 + crossed * 6 + anatomy * 5 - tiny * 5 + cells.length * 1.5 / (w * h) * 20
              - Math.abs(balance.across - balance.down) * 4 - Math.abs(w - h) * 3;
@@ -193,7 +190,7 @@
         });
         var words = g.words.map(function (w, id) {
             return { id: id, dir: w.dir, num: null, r: w.r - g.box.r0, c: w.c - g.box.c0, answer: w.answer,
-                     clue: w.clue, muscle: w.muscle,
+                     clue: w.clue, muscles: w.muscles,
                      cells: w.cells.map(function (x) { return [x[0] - g.box.r0, x[1] - g.box.c0]; }) };
         });
         var n = 0;
