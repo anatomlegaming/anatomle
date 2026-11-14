@@ -220,7 +220,7 @@
         // How to move it, until the player first does
         var hint = document.createElement('div');
         hint.className = 'cv-hint';
-        hint.innerHTML = '<b>drag</b> to turn · <b>scroll</b> to zoom · <b>right-drag</b> to move';
+        hint.innerHTML = '<b>drag</b> to turn · <b>scroll</b> to zoom · <b>double-click</b> to jump to a spot';
         if (matchMedia('(pointer: coarse)').matches) hint.innerHTML = '<b>drag</b> to turn · <b>pinch</b> to zoom · <b>two fingers</b> to move';
         dom.parentNode.appendChild(hint);
         function used() { if (hint.parentNode) { hint.classList.add('gone'); setTimeout(function () { if (hint.parentNode) hint.parentNode.removeChild(hint); }, 400); } }
@@ -242,19 +242,49 @@
             dy = Math.max(-120, Math.min(120, dy));
             var d = cam.position.distanceTo(ctrl.target);
             var from = goal === null ? d : goal;
-            goal = Math.min(ctrl.maxDistance, Math.max(ctrl.minDistance, from * Math.exp(dy * 0.0025)));
+            goal = Math.min(ctrl.maxDistance, Math.max(ctrl.minDistance, from * Math.exp(dy * 0.003)));
             if (dy > 0) { pivot.copy(ctrl.target); }            // zoom out from the middle
             else if (performance.now() - lastPick > 180) {      // zoom in towards the cursor
                 lastPick = performance.now();
-                var r = dom.getBoundingClientRect();
-                mouse.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
-                ray.setFromCamera(mouse, cam);
-                var hits = o.pickables ? ray.intersectObjects(o.pickables(), false) : [];
-                if (hits.length) pivot.copy(hits[0].point);
-                else ray.ray.at(d, pivot);
+                var hit = pick(e);
+                if (hit) pivot.copy(hit);
+                else {
+                    // nothing under the cursor: use the point at the model's depth,
+                    // so the zoom doesn't slide sideways through a gap between bones
+                    plane.setFromNormalAndCoplanarPoint(cam.getWorldDirection(tmp), ctrl.target);
+                    if (!ray.ray.intersectPlane(plane, pivot)) pivot.copy(ctrl.target);
+                }
             }
             dirty = true;
         }, { passive: false, capture: true });
+
+        // The point on the model under the cursor. Thin bones are hard to hit
+        // exactly, so if the cursor is just off one, look a few pixels around.
+        var NEAR = [[0, 0], [6, 0], [-6, 0], [0, 6], [0, -6], [12, 0], [-12, 0], [0, 12], [0, -12], [9, 9], [-9, 9], [9, -9], [-9, -9]];
+        function pick(e) {
+            if (!o.pickables) return null;
+            var r = dom.getBoundingClientRect(), list = o.pickables();
+            for (var i = 0; i < NEAR.length; i++) {
+                mouse.set(((e.clientX + NEAR[i][0] - r.left) / r.width) * 2 - 1, -((e.clientY + NEAR[i][1] - r.top) / r.height) * 2 + 1);
+                ray.setFromCamera(mouse, cam);
+                var hits = ray.intersectObjects(list, false);
+                if (hits.length) return hits[0].point.clone();
+            }
+            mouse.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+            ray.setFromCamera(mouse, cam);   // leave the centre ray for the fallback
+            return null;
+        }
+        var plane = new THREE.Plane();
+
+        // Double-click (or double-tap) a spot to glide right up to it
+        dom.addEventListener('dblclick', function (e) {
+            var hit = pick(e);
+            if (!hit) return;
+            used(); if (o.onUser) o.onUser();
+            var dir = cam.position.clone().sub(ctrl.target).normalize();
+            var dist = Math.max(ctrl.minDistance * 1.6, Math.min(cam.position.distanceTo(ctrl.target), size * 0.3));
+            fly(hit.clone().add(dir.multiplyScalar(dist)), hit, 650);
+        });
 
         function ease(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
         var tmp = new THREE.Vector3();
@@ -296,11 +326,13 @@
         }
 
         // zoom limits that fit the model, and a near plane that never cuts it
-        function setRange(size, box) {
+        var size = 1;
+        function setRange(sz, box) {
+            size = sz;
             if (box) bounds = box.clone().expandByScalar(size * 0.05);
-            ctrl.minDistance = size * 0.12;
-            ctrl.maxDistance = size * 2.6;
-            cam.near = size * 0.005; cam.far = size * 50;
+            ctrl.minDistance = sz * 0.08;
+            ctrl.maxDistance = sz * 2.6;
+            cam.near = sz * 0.004; cam.far = sz * 50;
             cam.updateProjectionMatrix();
         }
 

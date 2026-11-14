@@ -11,14 +11,14 @@
 //
 // The game is won as soon as the start and end are joined by guessed bones
 // (optimal or detour). The result is then graded:
-//   3 stars  Perfect Path    shortest route, no mistakes, guessed in order
+//   3 stars  Perfect!        shortest route, no mistakes, guessed in order
 //                            (each guess touches the one before, walking from
 //                            the start, or backwards from the goal)
-//   2 stars  Clean Route     shortest route, no mistakes, but out of order
-//   2 stars  Shortest Route  shortest route, one or two mistakes
-//   1 star   Path Found      a longer route, or 3+ mistakes
-//   Flatline                 ran out of guesses
-//   Out of reach             ended early: the goal needs more bones than
+//   2 stars  Great!          shortest route, no mistakes, but out of order
+//   2 stars  Nice!           shortest route, one or two mistakes
+//   1 star   Made it         a longer route, or 3+ mistakes
+//   Out of guesses           ran out of guesses
+//   Too far to finish        ended early: the goal needs more bones than
 //                            there are guesses left (the game shows a live
 //                            "need at least N more" counter so this is no surprise)
 // A "mistake" is any guess that wasn't optimal.
@@ -187,27 +187,26 @@
         var steps = a.L - 1;
         if (phase === 'lost') {
             if (left > 0 && need > left)
-                return { tier: 0, stars: 0, label: 'Out of reach.', emoji: '🚧', early: true,
-                         detail: 'The goal needs at least ' + need + ' more, but you only had ' + left +
-                                 ' guess' + (left !== 1 ? 'es' : '') + ' left, so the game ended early.' };
-            return { tier: 0, stars: 0, label: 'Flatline.', emoji: '💣',
-                     detail: 'Out of guesses · ' + mistakes + ' mistake' + (mistakes !== 1 ? 's' : '') };
+                return { tier: 0, stars: 0, label: 'Too far to finish', emoji: '🚧', early: true,
+                         detail: 'You needed ' + need + ' more but had ' + left + ' left.' };
+            return { tier: 0, stars: 0, label: 'Out of guesses', emoji: '💣',
+                     detail: mistakes + ' mistake' + (mistakes !== 1 ? 's' : '') };
         }
         if (phase !== 'won') return null;
         var shortest = route && route.length - 1 === a.L;
         var usedTxt = used + ' guess' + (used !== 1 ? 'es' : '');
         if (shortest && mistakes === 0 && ordered)
-            return { tier: 3, stars: 3, label: 'Perfect Path!', emoji: '🏆', detail: usedTxt + ', no mistakes, all in order' };
+            return { tier: 3, stars: 3, label: 'Perfect!', emoji: '🏆', detail: usedTxt + ' · no mistakes · in order' };
         if (shortest && mistakes === 0)
-            return { tier: 2, stars: 2, label: 'Clean Route!', emoji: '🥇',
-                     detail: usedTxt + ', no mistakes' + (used > steps ? ', ' + (used - steps) + ' spare' : ', but not in order') };
+            return { tier: 2, stars: 2, label: 'Great!', emoji: '🥇',
+                     detail: usedTxt + ' · no mistakes · out of order' };
         if (shortest && mistakes <= 2)
-            return { tier: 2, stars: 2, label: 'Shortest Route!', emoji: '🥈',
-                     detail: usedTxt + ', ' + mistakes + ' mistake' + (mistakes !== 1 ? 's' : '') };
-        return { tier: 1, stars: 1, label: 'Path Found', emoji: '✓',
+            return { tier: 2, stars: 2, label: 'Nice!', emoji: '🥈',
+                     detail: usedTxt + ' · ' + mistakes + ' mistake' + (mistakes !== 1 ? 's' : '') };
+        return { tier: 1, stars: 1, label: 'Made it', emoji: '✓',
                  detail: shortest
-                    ? usedTxt + ', ' + mistakes + ' mistakes'
-                    : 'Your route took ' + (route.length - 2) + ' steps, shortest is ' + steps };
+                    ? usedTxt + ' · ' + mistakes + ' mistakes'
+                    : 'Took ' + (route.length - 2) + ' steps · shortest is ' + steps };
     }
 
     var GRID = { optimal: '🟩', detour: '🟨', bad: '🟥' };
@@ -325,9 +324,14 @@
         }, [puzzle && puzzle.start, puzzle && puzzle.end]);
 
         // ── Suggestions ──────────────────────────────────────────────────────
+        // Once the game ends, clear the box and close the dropdown
+        useEffect(function () {
+            if (phase !== 'playing') { setInput(''); setSelIdx(-1); }
+        }, [phase]);
+
         var suggestions = useMemo(function () {
             var q = input.trim().toLowerCase();
-            if (!q || !puzzle) return [];
+            if (!q || !puzzle || phase !== 'playing') return [];
             var used = {}; guesses.forEach(function (g) { used[g.bone] = true; });
             var list = names.filter(function (n) {
                 return n.toLowerCase().indexOf(q) !== -1 && !used[n] && n !== puzzle.start && n !== puzzle.end;
@@ -338,7 +342,7 @@
                 return rank(x) - rank(y);
             });
             return list.slice(0, 8);
-        }, [input, guesses, puzzle]);
+        }, [input, guesses, puzzle, phase]);
 
         // ── Actions ──────────────────────────────────────────────────────────
         function submit(bone) {

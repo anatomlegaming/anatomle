@@ -43,49 +43,47 @@
         var b = muscle ? 'Triceps Brachii' : 'Radius';
         var mids = muscle ? ['Brachialis'] : ['Scapula', 'Humerus'];
         var things = muscle ? 'muscles' : 'bones';
-        var link = muscle ? 'Two muscles are linked when they attach to the same bone.'
-                          : 'Two bones are linked when they touch at a joint.';
+        var link = muscle ? 'Muscles link if they attach to the same bone.'
+                          : 'Bones link if they meet at a joint.';
 
         return e('div', { className: 'htp' },
             e('span', { className: 'tape pink', style: { top: -13, left: 40, transform: 'rotate(-3deg)' } }),
             e('div', { className: 'htp-head' },
                 e('div', null,
                     e('h2', null, 'How to ', e('span', { className: 'hl-pink' }, 'play')),
-                    e('div', { className: 'hand' }, 'connect the two, one guess at a time')),
+                    e('div', { className: 'hand' }, 'one guess at a time')),
                 e('button', { type: 'button', className: 'nb-btn htp-x', onClick: props.onClose, 'aria-label': 'Close' }, '×')),
 
             e('div', { className: 'htp-steps' },
-                e(Step, { n: 1, title: 'You get a start and a goal' },
+                e(Step, { n: 1, title: 'Get from start to goal' },
                     e('div', { className: 'htp-demo' },
                         e('span', { className: 'hl-green' }, a), e('span', { className: 'hand to' }, ' to '),
                         e('span', { className: 'hl-pink' }, b)),
                     e('p', null, link)),
 
-                e(Step, { n: 2, title: 'Name the ' + things + ' in between' },
-                    e('p', null, 'Type one at a time. Each guess lights up on the 3D model and tells you how it did:'),
+                e(Step, { n: 2, title: 'Guess the ' + things + ' in between' },
                     e('ul', { className: 'htp-key' },
-                        e('li', null, e('i', { className: 'k ok' }), e('b', null, 'Green'), ' is on the shortest route.'),
-                        e('li', null, e('i', { className: 'k detour' }), e('b', null, 'Yellow'), ' connects, but takes the long way.'),
-                        e('li', null, e('i', { className: 'k bad' }), e('b', null, 'Red'), ' can’t reach the goal in time.')),
-                    e('p', { className: 'htp-note' }, 'Every guess uses one of your guesses, even the red ones.'),
-                    e('p', { className: 'htp-warn' }, '\u26A0 Watch the ', e('b', null, 'need at least'),
-                        ' counter by your guesses. It shows the fewest more ' + things + ' that could still finish the route. If it ever goes above your guesses left, the game ends early.')),
+                        e('li', null, e('i', { className: 'k ok' }), e('b', null, 'Green'), ' on the route'),
+                        e('li', null, e('i', { className: 'k detour' }), e('b', null, 'Yellow'), ' works, but the long way'),
+                        e('li', null, e('i', { className: 'k bad' }), e('b', null, 'Red'), ' wrong')),
+                    e('p', { className: 'htp-warn' }, 'Every guess counts. If the ', e('b', null, 'more needed'),
+                        ' count goes above your guesses left, the game ends.')),
 
-                e(Step, { n: 3, title: 'Join them up to win' },
+                e(Step, { n: 3, title: 'Link them all up' },
                     e('div', { className: 'htp-demo chain' },
                         [a].concat(mids).concat([b]).map(function (x, i, arr) {
-                            var cls = i === 0 ? 'hl-green' : i === arr.length - 1 ? 'hl-pink' : 'hl-green';
+                            var cls = i === arr.length - 1 ? 'hl-pink' : 'hl-green';
                             return e('span', { key: x }, e('span', { className: cls }, x), i < arr.length - 1 ? e('span', { className: 'arrow' }, ' → ') : null);
                         })),
                     e('ul', { className: 'htp-grades' },
-                        e('li', null, '🏆 ', e('b', null, 'Perfect'), ': shortest route, no mistakes, guessed in order'),
-                        e('li', null, '🥇 ', e('b', null, 'Clean Route'), ': no mistakes, any order'),
-                        e('li', null, '🥈 ', e('b', null, 'Shortest Route'), ': one or two mistakes'),
-                        e('li', null, '✓ ', e('b', null, 'Path Found'), ': you got there the long way')))
+                        e('li', null, '🏆 ', e('b', null, 'Perfect'), ': no mistakes, in order'),
+                        e('li', null, '🥇 ', e('b', null, 'Great'), ': no mistakes'),
+                        e('li', null, '🥈 ', e('b', null, 'Nice'), ': 1 or 2 mistakes'),
+                        e('li', null, '✓ ', e('b', null, 'Made it'), ': got there')))
             ),
 
             e('div', { className: 'htp-foot' },
-                e('span', { className: 'hand' }, 'tip: click a lit-up ' + kind + ' to learn about it'),
+                e('span', { className: 'hand' }, 'tip: click a coloured ' + kind + ' to learn about it'),
                 e('button', { type: 'button', className: 'nb-btn big hl-btn', onClick: props.onClose }, 'Let’s play →'))
         );
     }
