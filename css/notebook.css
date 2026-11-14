@@ -4,7 +4,8 @@
    :root[data-theme="dark"] block further down (set by js/ui/theme.js).
    ========================================================================== */
 :root {
-    color-scheme: light;   /* with the color-scheme meta tag: stops phones force-darkening light mode */
+    color-scheme: only light;   /* with the meta tag (js/ui/theme.js): stops phones force-darkening light mode */
+    -webkit-text-size-adjust: 100%; text-size-adjust: 100%;   /* no phone font boosting */
     --paper:      #FBFCFF;
     --paper-line: #DCE6FA;
     --card:       #FFFFFF;
@@ -422,9 +423,26 @@ body.game { overflow: hidden; }
 .nb-page h1 span { color: var(--ink) !important; font-style: normal !important; background: linear-gradient(transparent 55%, var(--hl-pink) 55%); }
 .nb-page .eyebrow { font-family: var(--hand) !important; font-weight: 700 !important; font-size: 26px !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--pen) !important; }
 
-/* turn buttons in the corner of the 3D view (js/3d/hlFx.js) */
-.cv-turn { position: absolute; right: 12px; bottom: 12px; z-index: 3; display: flex; gap: 6px; }
-.cv-turn .nb-btn { width: 40px; height: 40px; padding: 0; font-size: 22px; line-height: 1; touch-action: none; user-select: none; -webkit-user-select: none; }
+/* turn pad in the corner of the 3D view (js/3d/hlFx.js); it has its own reset */
+.reset-view { display: none !important; }
+.cv-pad {
+    position: absolute; right: 12px; bottom: 12px; z-index: 3;
+    display: grid; grid-template-columns: repeat(3, 34px); grid-template-rows: repeat(3, 34px); gap: 2px;
+    touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.cv-pad button {
+    padding: 0; border-radius: 50%; cursor: pointer;
+    background: var(--nav-bg); color: var(--ink-2); border: 1.5px solid var(--rule);
+    font-size: 13px; line-height: 1; touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+}
+.cv-pad button:hover { color: var(--ink); border-color: var(--ink-3); }
+.cv-pad button:active { background: var(--hl-yellow); color: var(--ink); }
+.cv-pad .pad-up { grid-area: 1 / 2; }
+.cv-pad .pad-left { grid-area: 2 / 1; }
+.cv-pad .pad-mid { grid-area: 2 / 2; font-size: 16px; }
+.cv-pad .pad-right { grid-area: 2 / 3; }
+.cv-pad .pad-down { grid-area: 3 / 2; }
 .lbl-short { display: none; }
 
 /* static pages set their own body colour; keep the graph paper */
@@ -640,10 +658,8 @@ body.nb-page {
     #cv { left: 10px; right: 10px; top: calc(var(--nav) + var(--bar)); bottom: auto; height: var(--cvh); box-shadow: 4px 4px 0 var(--shadow); }
     .cv-tape-l { display: none; }
     .cv-hint { bottom: 60px; font-size: 11.5px; padding: 4px 10px; }
-    .cv-turn { right: 8px; bottom: 8px; }
-    .reset-view { left: 18px; bottom: auto; top: calc(var(--nav) + var(--bar) + var(--cvh) - 48px); }
-    .g-key { top: calc(var(--nav) + var(--bar) + 8px); left: 18px; max-width: calc(100vw - 40px); font-size: 10.5px; gap: 2px 8px; padding: 3px 7px; }
-    .k { width: 10px; height: 10px; }
+    .cv-pad { right: 6px; bottom: 6px; grid-template-columns: repeat(3, 30px); grid-template-rows: repeat(3, 30px); }
+    .cv-hint, .g-key, .g-feedback.intro, .ask-head { display: none; }
 
     .g-panel {
         top: calc(var(--nav) + var(--bar) + var(--cvh) + 10px); left: 10px; right: 10px; bottom: 0; width: auto;
@@ -651,7 +667,7 @@ body.nb-page {
     }
     .g-guess { order: 0; gap: 6px; }
     .g-btns { order: 1; flex-direction: row; flex-wrap: wrap; gap: 6px; }
-    .g-btns .nb-btn { flex: 1 1 0; min-width: 0; height: 42px; padding: 0 8px; font-size: 14px; }
+    .g-btns .nb-btn { flex: 1 1 0; min-width: 0; height: 36px; padding: 0 8px; font-size: 13px; box-shadow: 2px 2px 0 var(--shadow); }
     .g-btns .nb-btn .btn-sub { display: none; }
     .g-route { order: 2; }
     .g-notes { order: 3; }
@@ -666,7 +682,7 @@ body.nb-page {
     .g-row .dot { width: 22px; height: 22px; }
     .g-row .tag { font-size: 16px; }
 
-    .g-ask { padding: 6px 8px 8px; box-shadow: 4px 4px 0 var(--shadow); border-width: 2px; }
+    .g-ask { padding: 6px; box-shadow: 4px 4px 0 var(--shadow); border-width: 2px; }
     .ask-head { margin: 0 2px 5px; }
     .ask-t { font-size: 16px; }
     .ask-k { display: none; }
