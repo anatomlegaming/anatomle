@@ -61,6 +61,7 @@
         var _t = useState(saved ? saved.time : 0), time = _t[0], setTime = _t[1];
         var _ch = useState(saved ? saved.checks : 0), checks = _ch[0], setChecks = _ch[1];
         var _dn = useState(saved ? !!saved.done : false), done = _dn[0], setDone = _dn[1];
+        var _gu = useState(saved ? !!saved.gaveUp : false), gaveUp = _gu[0], setGaveUp = _gu[1];   // used "Reveal puzzle"
         var _ov = useState(false), showDone = _ov[0], setShowDone = _ov[1];
         var _st = useState(null), streak = _st[0], setStreak = _st[1];
         var _sh = useState(false), shared = _sh[0], setShared = _sh[1];
@@ -100,8 +101,8 @@
 
         // ── save, tick, finish ───────────────────────────────────────────────
         useEffect(function () {
-            save(KEY + date, { fill: fill, revealed: revealed, time: time, checks: checks, done: done });
-        }, [fill, revealed, time, checks, done]);
+            save(KEY + date, { fill: fill, revealed: revealed, time: time, checks: checks, done: done, gaveUp: gaveUp });
+        }, [fill, revealed, time, checks, done, gaveUp]);
 
         var paused = done || howTo;
         useEffect(function () {
@@ -118,10 +119,11 @@
             if (done) return;
             if (right) {
                 setDone(true); setShowDone(true); setNotQuite(false);
-                setStreak(recordStreak(date));
+                // revealing the whole puzzle ends it, but it isn't a solve
+                if (!gaveUp) setStreak(recordStreak(date));
             } else setNotQuite(full);
         }, [full, right]);
-        useEffect(function () { if (saved && saved.done) setStreak(recordStreak(date)); }, []);
+        useEffect(function () { if (saved && saved.done && !saved.gaveUp) setStreak(recordStreak(date)); }, []);
 
 
         // ── moving around ────────────────────────────────────────────────────
@@ -232,24 +234,25 @@
         function reveal(scope) {
             setMenu(null);
             var next = fill.map(function (row) { return row.slice(); });
-            var rv = Object.assign({}, revealed), w2 = Object.assign({}, wrong);
+            var rv = Object.assign({}, revealed), w2 = Object.assign({}, wrong), changed = false;
             scopeCells(scope).forEach(function (x) {
                 var k = x[0] + ',' + x[1], want = p.cells[x[0]][x[1]].letter;
                 if (next[x[0]][x[1]] === want) return;
-                next[x[0]][x[1]] = want; rv[k] = true; delete w2[k];
+                next[x[0]][x[1]] = want; rv[k] = true; delete w2[k]; changed = true;
             });
+            if (scope === 'puzzle' && changed) setGaveUp(true);
             setFill(next); setRevealed(rv); setWrong(w2);
         }
         function reset() {
             setMenu(null);
             if (!sure) { setSure(true); return; }
             setSure(false);
-            setFill(blank(p)); setWrong({}); setRevealed({}); setChecks(0); setTime(0);
+            setFill(blank(p)); setWrong({}); setRevealed({}); setChecks(0); setTime(0); setGaveUp(false);
         }
 
         var reveals = Object.keys(revealed).length;
         function shareText() {
-            var help = !checks && !reveals ? 'no help' :
+            var help = gaveUp ? 'revealed the puzzle' : !checks && !reveals ? 'no help' :
                 [checks ? checks + ' check' + (checks === 1 ? '' : 's') : null,
                  reveals ? reveals + ' reveal' + (reveals === 1 ? '' : 's') : null].filter(Boolean).join(', ');
             return 'Anatomle Muscle Mini · ' + prettyDate(date) + '\n⏱ ' + clock(time) + ' · ' + help + '\nhttps://anatomle.com/games/muscle-mini.html';
@@ -386,13 +389,14 @@
         } else if (showDone) {
             var clean = !checks && !reveals;
             overlay = e('div', { className: 'g-over' },
-                e('div', { className: 'g-card', role: 'dialog', 'aria-label': 'Solved' },
+                e('div', { className: 'g-card', role: 'dialog', 'aria-label': gaveUp ? 'Revealed' : 'Solved' },
                     e('span', { className: 'tape pink' }),
-                    e('div', { className: 'emoji' }, clean ? '🎉' : '✅'),
-                    e('h2', null, e('span', { className: clean ? 'hl-green' : 'hl' }, 'Solved')),
+                    e('div', { className: 'emoji' }, gaveUp ? '👀' : clean ? '🎉' : '✅'),
+                    e('h2', null, e('span', { className: gaveUp ? 'hl' : clean ? 'hl-green' : 'hl' }, gaveUp ? 'Revealed' : 'Solved')),
+                    gaveUp ? e('p', { className: 'detail' }, 'You revealed the puzzle, so today doesn’t count toward your streak. A new mini comes at midnight UTC.') :
                     e('p', { className: 'detail' }, 'in ' + clock(time) + (clean ? ', with no help' :
                         ' · ' + [checks ? checks + ' check' + (checks === 1 ? '' : 's') : null, reveals ? reveals + ' revealed' : null].filter(Boolean).join(', '))),
-                    streak ? e('div', { className: 'g-streak' },
+                    streak && !gaveUp ? e('div', { className: 'g-streak' },
                         e('span', { style: { fontSize: 26, lineHeight: 1 } }, '🔥'),
                         e('div', null,
                             e('div', { className: 'num' }, streak.count + ' day streak'),
