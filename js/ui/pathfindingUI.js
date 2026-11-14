@@ -46,7 +46,6 @@
         var need        = s.need === undefined ? null : s.need;
         var spare       = need === null ? null : left - need;   // guesses you can afford to waste
         var goal        = s.goal   || target.end;
-        var guessNo = {}; log.forEach(function (g) { guessNo[g.bone] = g.n; });
 
         var howState = useState(false);
         var showHow = howState[0], setShowHow = howState[1];
@@ -115,9 +114,9 @@
                     e('b', null, left), left === 1 ? ' guess left' : ' guesses left'),
                 phase === 'playing' && need !== null && isFinite(need)
                     ? e('div', { className: 'need ' + (spare <= 0 ? 'tight' : spare === 1 ? 'close' : ''),
-                                 title: 'The fewest more ' + things + 's that could still finish the route. If this goes above your guesses left, the game ends.' },
-                        'need at least ', e('b', null, need), ' more',
-                        spare <= 0 ? ' \u00B7 no room for mistakes' : spare === 1 ? ' \u00B7 1 spare' : '')
+                                 title: 'The fewest guesses that can still finish. If it beats your guesses left, the game ends.' },
+                        e('b', null, need), ' more needed',
+                        spare <= 0 ? ' \u00B7 no mistakes left' : spare === 1 ? ' \u00B7 1 mistake left' : '')
                     : null)
         );
 
@@ -152,7 +151,6 @@
                 isFirst ? e('span', { className: 'tag' }, 'start')
                 : isLast ? e('span', { className: 'tag' }, 'goal')
                 : revealed ? e('span', { className: 'tag' }, 'answer')
-                : item.guessed && guessNo[item.bone] ? e('span', { className: 'tag' }, 'guess ' + guessNo[item.bone])
                 : null
             );
         });
@@ -160,14 +158,13 @@
         // ── GUESS LOG: every guess in order, with what it did ────────────────
         var logItems = log.slice().reverse().map(function (g) {
             var why, cls;
-            if (g.type === 'optimal') { cls = 'ok'; why = 'on the shortest route'; }
+            if (g.type === 'optimal') { cls = 'ok'; why = 'on the route'; }
             else if (g.type === 'detour') {
                 cls = 'detour';
-                why = 'connects, but adds ' + g.extra + ' step' + (g.extra === 1 ? '' : 's') + (g.onRoute ? ' (used)' : '');
+                why = 'long way (+' + g.extra + ')';
             } else {
                 cls = 'bad';
-                why = g.extra === null ? 'not linked to this route'
-                    : 'too far off course to reach ' + goal + ' in time';
+                why = g.extra === null ? 'doesn\u2019t connect' : 'too far away';
             }
             return e('div', { key: g.n, className: 'g-log ' + cls + (g === last ? ' new' : '') },
                 e('span', { className: 'num' }, g.n),
@@ -175,7 +172,7 @@
                     e('b', null, g.bone),
                     e('span', { className: 'why' }, why)));
         });
-        if (!logItems.length) logItems.push(e('div', { key: 'none', className: 'g-empty' }, 'your guesses show up here'));
+        if (!logItems.length) logItems.push(e('div', { key: 'none', className: 'g-empty' }, 'nothing yet'));
         var mistakes = detours.length + bad.length;
         var found = chain.filter(function (c, i) { return i > 0 && i < chain.length - 1 && c.guessed; }).length;
         var slots = Math.max(chain.length - 2, 0);
@@ -184,23 +181,20 @@
         var fbText, fbCls;
         if (!last) {
             fbCls = 'intro';
-            fbText = [e('b', { key: 'a' }, 'Your move: '), 'name any ' + things + ' that sits between ',
-                      e('span', { key: 'b', className: 'hl-green' }, target.start), ' and ',
-                      e('span', { key: 'c', className: 'hl-pink' }, target.end), '.'];
+            fbText = 'Name a ' + things + ' that links them.';
         } else if (last.type === 'optimal') {
             fbCls = 'ok';
-            fbText = [e('b', { key: 'a' }, '\u2713 ', Pop(last.bone, 'p')), ' is on the shortest route!'];
+            fbText = [e('b', { key: 'a' }, '\u2713 ', Pop(last.bone, 'p')), ' is on the route'];
         } else if (last.type === 'detour') {
             fbCls = 'detour';
-            fbText = [e('b', { key: 'a' }, '~ ' + last.bone), ' connects, but adds ' + last.extra + ' step' + (last.extra === 1 ? '' : 's') + '.'];
+            fbText = [e('b', { key: 'a' }, '~ ' + last.bone), ' works, but the long way'];
         } else {
             fbCls = 'bad';
-            fbText = [e('b', { key: 'a' }, '\u2717 ' + last.bone), last.extra === null ? ' isn\u2019t linked to this route.' : ' is too far off course to reach ' + goal + ' in time.'];
+            fbText = [e('b', { key: 'a' }, '\u2717 ' + last.bone), last.extra === null ? ' doesn\u2019t connect' : ' is too far away'];
         }
         if (last && phase === 'playing' && spare !== null && spare <= 0) {
             fbCls += ' warn';
-            fbText = fbText.concat([e('span', { key: 'w', className: 'warnline' },
-                '\u26A0 No room for mistakes now: you need ' + need + ' more and have ' + left + ' left. One more wrong guess ends the game.')]);
+            fbText = fbText.concat([e('span', { key: 'w', className: 'warnline' }, '\u26A0 No mistakes left')]);
         }
         var feedback = phase === 'playing' && !reviewing
             ? e('div', { key: 'fb' + log.length, className: 'g-feedback ' + fbCls, role: 'status', 'aria-live': 'polite' }, fbText)
@@ -209,9 +203,9 @@
         var colourKey = e('div', { className: 'g-key', 'aria-hidden': true },
             e('span', null, e('i', { className: 'k start' }), 'start'),
             e('span', null, e('i', { className: 'k end' }), 'goal'),
-            e('span', null, e('i', { className: 'k ok' }), 'shortest route'),
+            e('span', null, e('i', { className: 'k ok' }), 'on route'),
             e('span', null, e('i', { className: 'k detour' }), 'long way'),
-            e('span', null, e('i', { className: 'k bad' }), 'can\u2019t reach'));
+            e('span', null, e('i', { className: 'k bad' }), 'wrong'));
 
         // ── SEARCH BAR ────────────────────────────────────────────────────────
         var dropdown = suggestions.length > 0
@@ -228,7 +222,7 @@
         var searchBar = e('div', { className: 'g-search g-ask' + (log.length === 0 && phase === 'playing' ? ' fresh' : '') },
             e('div', { className: 'ask-head' },
                 e('span', { className: 'ask-t' }, phase === 'playing' ? 'Your guess' : 'Game over'),
-                phase === 'playing' ? e('span', { className: 'ask-k' }, 'type, then press Enter \u21B5') : null),
+                phase === 'playing' ? e('span', { className: 'ask-k' }, 'Enter \u21B5') : null),
             e('label', { className: 'g-field' + (input && suggestions.length === 0 ? ' err' : '') + (shaking ? ' shake' : '') },
                 dropdown,
                 e('input', {
@@ -239,8 +233,8 @@
                     'aria-label': 'Your guess',
                     autoComplete: 'off', spellCheck: false,
                     placeholder: phase === 'playing'
-                        ? 'type a ' + things + ' name…'
-                        : (h.onNewGame ? 'game over, hit Next puzzle →' : 'game over, tap Results to review')
+                        ? 'Type a ' + things + '…'
+                        : 'Game over'
                 })
             )
         );
@@ -266,13 +260,13 @@
                 e('span', { className: 'tape pink' }),
                 e('div', { className: 'g-head' },
                     e('span', { className: 't' }, 'the route'),
-                    e('span', { className: 'n' }, found + ' of ' + slots + ' found')
+                    e('span', { className: 'n' }, found + '/' + slots)
                 ),
                 e('div', { className: 'g-list nb-scroll' }, chainItems)
             ),
             e('div', { className: 'g-notes' },
                 e('div', { className: 'g-head' },
-                    e('span', { className: 't' }, 'my guesses'),
+                    e('span', { className: 't' }, 'guesses'),
                     e('span', { className: 'n' + (mistakes ? ' warn' : '') },
                         log.length ? (mistakes ? mistakes + ' mistake' + (mistakes === 1 ? '' : 's') : 'no mistakes') : '')
                 ),
@@ -287,7 +281,7 @@
             var won = phase === 'won';
             var optimal = target.path.length - 2;
             var stars = grade ? grade.stars : won ? (guessesUsed - optimal === 0 ? 3 : guessesUsed - optimal <= 2 ? 2 : 1) : 0;
-            var label = grade ? grade.label : won ? 'Path found!' : 'Flatline.';
+            var label = grade ? grade.label : won ? 'Made it' : 'Out of guesses';
             var hlCls = !won ? 'hl-pink' : stars >= 3 ? 'hl-green' : 'hl';
 
             var streakBlock = null;
@@ -329,21 +323,21 @@
                         e('span', { className: 'hl-pink' }, target.end)),
                     e('div', { className: 'row' },
                         phase === 'lost'
-                            ? e('button', { type: 'button', className: 'nb-btn', onClick: h.onReveal }, '👁 Show the route')
-                            : e('button', { type: 'button', className: 'nb-btn', onClick: h.onReview }, '👁 Review my route')
+                            ? e('button', { type: 'button', className: 'nb-btn', onClick: h.onReveal }, '👁 Show answer')
+                            : e('button', { type: 'button', className: 'nb-btn', onClick: h.onReview }, '👁 See route')
                     ),
                     h.onShare
                         ? e('div', { style: { marginBottom: 12 } },
                             gridText ? e('div', { className: 'g-grid' }, gridText) : null,
                             e('button', { type: 'button', className: 'nb-btn wide ' + (shared ? 'green' : ''), onClick: h.onShare },
-                                shared ? '✓ Copied, go brag' : '📋 Copy & share'))
+                                shared ? '✓ Copied' : '📋 Share'))
                         : null,
                     e('div', { className: 'row' },
                         h.onNewGame
                             ? e('button', { type: 'button', className: 'nb-btn big hl-btn', onClick: h.onNewGame }, 'Next puzzle →')
                             : null,
                         e('button', { type: 'button', className: 'nb-btn big ' + (h.onNewGame ? '' : 'dark'), onClick: home },
-                            h.onNewGame ? 'Menu' : '← Back to the notes')
+                            h.onNewGame ? 'Menu' : '← Menu')
                     )
                 )
             );
